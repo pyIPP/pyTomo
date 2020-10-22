@@ -1,0 +1,9 @@
+******* Record of changes to toroidal array SXR gains *****
+Rc is current sensing resistor preamps [Ohms] for each array. No additional gain in pre-amps after this, i.e. digitized voltage = I*Rc. Unless states otherwise, Rc is same across
+entire array.
+
+shot		Rc(45)	Rc(165)	Rc(195) 
+142673		500k	200k	500k	
+all of 2012  	500k	500k	500k
+153166 (May 2013) 500k	200k	500k
+155862 (Feb 2014) 500k  off	500k

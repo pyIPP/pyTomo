@@ -1,0 +1,41 @@
+******** Record of changes to toroidal SXR-45 settings and filter settings
+
+Rc is current sensing resistor on each channel preamp [Ohms]. 0 is put if disconnected. Gain is additional second stage amplifier gain (if present).
+Rc can be 1e3 Ohm (lo setting) or 1e5 (hi setting). Gain can be 1 or 10 
+
+**** Settings for 2017 (shots xxx - 172691) ********
+Filter 1 - 10 um Ti (120 degrees, full CCW on lower (left) filter wheel ch 1-7; 80 degrees, full CCW on upper (right) filter wheel ch 8-12)
+Filter 2 - ND1 (140 degrees on lower filter wheel, 100 degrees on upper filter wheel)
+Filter 3 - ND2 (160 degrees on lower filter wheel, 125 degrees on upper filter wheel)
+Filter 4 - 25 um Be (180 degrees on lower filter wheel, 145 degrees on upper filter wheel)
+Filter 5 - 125 um Be (200 degrees, full CW on lower filter wheel, 165 degrees, full CW on upper filter wheel)
+
+**** Settings for Fall 2017 - 2018 (shots 172692 - )****
+Filter 1 - 100 um SS (dummy for bakes), full CCW, 0 degrees on lower (left, ch 1-7), 160 degrees on upper (right, ch 8 - 12)
+Filter 2 - 125 um Be (default SXR), 330 degrees on lower, 135 degrees on upper
+Filter 3 - 12.5 um Be (low Te SXR), 305 degrees on lower, 105 degrees on upper
+Filter 4 - hi ND (disruptions Prad), 280 degrees on lower, 80 degrees on upper
+Filter 5 - lo ND (ELM Prad), full CW, 260 degrees on lower, 55 degrees on upper 
+
+shot	Rc	Gain	Filt
+168847	100k	1	5
+169420	1k	10	2
+169425	1k	1	2
+169493	1k	10	2
+169519	100k	1	5
+170467	1k	1	3
+170711	100k	1	5
+172241	1k	1	3
+172261	100k	1	5
+172762	100k	1	1	! dummy for bake
+173305	1k	1	4
+173685	1k	1	1	! dummy for boronization
+173713	100k	1	2
+174567	100k	1	1	! dummy for boronization
+174735	100k	1	2
+175071	100k	1	3
+175122	100k	1	2
+175385	100k	1	1	! dummy for boronization
+175460	100k	1	2
+176625	100k	1	1	! dummy for bake
+176678	100k	1	2

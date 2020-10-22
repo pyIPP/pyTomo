@@ -1,0 +1,96 @@
+#!/bin/tcsh -f
+
+
+setenv osy `fs sysname | awk -F\' '{print $2}'`
+
+if ($osy == "amd64_sles11") then
+    setenv LC_ALL en_US.UTF8
+    echo In case of any problem, please contact: tomas.odstrcil@gmail.com
+
+    source /etc/profile.d/modules.csh
+
+    module purge
+    module load gnuplot/5.0
+
+    module load python27/python/2.7
+    module load python27/scipy/2015.10
+#     module load py27-numpy
+#     module load py27-dateutil/2.1
+#     module load py27-cycler/0.9.0
+#     module load py27-tornado
+    module load qt
+    module load python27/pyqt/4.11
+#     module load py27-pyqt
+#     module load py27-matplotlib/1.5.1
+
+    module load llvm/3.2
+    module load mkl/11.3
+    module load gcc/6.3 cmake
+    module load intel/14.0 
+
+
+    module load fftw
+#     module load py27-pyfftw
+    module load python27/pyfftw/0.9.2
+#     module load py27-cython
+    module load python27/cython/0.23
+
+
+    module load  ffmpeg
+    module load mencoder
+
+
+
+    setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/afs/ipp-garching.mpg.de/home/t/todstrci/SuiteSparse/lib/
+    setenv C_INCLUDE_PATH ${LD_LIBRARY_PATH}:/afs/ipp-garching.mpg.de/home/t/todstrci/SuiteSparse/lib/
+
+    setenv MKL_NUM_THREADS 1
+    
+
+    python /afs/ipp-garching.mpg.de/home/t/todstrci/pytomo_orig/pytomo.py  $argv
+
+else 
+
+    source /etc/profile.d/modules.csh
+
+    module purge 
+    module load mkl intel
+    setenv LD_LIBRARY_PATH ${MKL_HOME}/lib/intel64_lin
+     
+
+
+    #load mencoder nd ffmpeg
+    set path = ($path /afs/@cell/common/soft/visualization/mencoder/ffmpeg/2.7/amd64_sles11/bin/)
+    set path = ($path /afs/@cell/common/soft/visualization/mencoder/svn-2012-11-15/amd64_sles11/bin/)
+    module load gnuplot/5.2 
+#     module ffmpeg/4.1 
+
+
+    setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/afs/ipp-garching.mpg.de/home/t/todstrci/SuiteSparse/lib/
+    setenv C_INCLUDE_PATH ${LD_LIBRARY_PATH}:/afs/ipp-garching.mpg.de/home/t/todstrci/SuiteSparse/lib/
+
+    
+    
+    setenv C_INCLUDE_PATH ${C_INCLUDE_PATH}:/afs/ipp-garching.mpg.de/home/t/todstrci/SuiteSparse/lib/ 
+    setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/afs/ipp-garching.mpg.de/home/t/todstrci/SuiteSparse/CHOLMOD/Include/
+    setenv C_INCLUDE_PATH ${C_INCLUDE_PATH}:/afs/ipp-garching.mpg.de/home/t/todstrci/SuiteSparse/include/
+    setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/afs/ipp-garching.mpg.de/home/t/todstrci/SuiteSparse/lib/ 
+    setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/afs/ipp-garching.mpg.de/home/t/todstrci/SuiteSparse/CHOLMOD/Lib/ 
+    setenv C_INCLUDE_PATH ${C_INCLUDE_PATH}:/afs/ipp-garching.mpg.de/home/t/todstrci/SuiteSparse/CHOLMOD/Lib/
+    
+    
+    
+#     setenv PYTHONPATH ${PYTHONPATH}:/afs/ipp-garching.mpg.de/home/t/todstrci/scikit-sparse-0.4.1/build/lib.linux-x86_64-2.7/
+#     setenv PYTHONPATH ${PYTHONPATH}:/afs/ipp-garching.mpg.de/home/t/todstrci/projects/gacode/shared/python/
+
+
+    setenv MKL_NUM_THREADS 1
+    module load anaconda/3/2019.03
+
+    
+     python   /afs/ipp-garching.mpg.de/home/t/todstrci/pytomo_orig/pytomo.py  $argv
+
+
+
+endif
+switch( 
