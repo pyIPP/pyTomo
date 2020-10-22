@@ -2,6 +2,6 @@
 
 ## Install:
     module load git
-    git clone http://gitlab.aug.ipp.mpg.de/todstrci/pytomo.git
+    git clone https://github.com/pyIPP/tomo.git
     cd ./pytomo
     ./pytomo.sh
