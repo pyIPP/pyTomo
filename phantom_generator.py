@@ -6,6 +6,7 @@ from scipy.io import loadmat, savemat
 from scipy import sparse
 import config
 from scipy.special import erfc
+import os 
 
 def Hamming(x, hollowness = 0.9 ,edge=0.4):
     hollowness = (1-hollowness)/2
@@ -153,13 +154,12 @@ def phantom_generator(tokamak, tvec_new, nx_new=100, ny_new=100, profile = 'Gaus
     rhop,magx, magy = tokamak.mag_equilibrium(mean(tvec_new),return_mean=True)
     
     from scipy.interpolate import RectBivariateSpline
-
-    
+ 
     n_mag = 100
 
     M = M/(amax(M))
     
-    x = sort(r_[linspace(0,1,n_mag),linspace(1,10,n_mag/1)])
+    x = sort(r_[linspace(0,1,n_mag),linspace(1,10,n_mag)])
 
 
     emissivity = zeros((nx_new*ny_new, size(tvec_new)),dtype=single)
@@ -417,6 +417,14 @@ def phantom_generator(tokamak, tvec_new, nx_new=100, ny_new=100, profile = 'Gaus
         edge = 0.99
         P = profile_fun(x, h, edge)
         P /= amax(P)
+        import os
+        print('tmp',  os.path.isdir(tokamak.tmp_folder ))
+        import sys
+        import os
+        print(os.getcwd())
+        sys.stdout.flush()
+       # import IPython
+        #IPython.embed()
         savetxt(tokamak.tmp_folder +'/emiss0', c_[x,P*scale].T)
 
         emissivity[:] = interp(M,x,P).T
