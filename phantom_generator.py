@@ -417,14 +417,7 @@ def phantom_generator(tokamak, tvec_new, nx_new=100, ny_new=100, profile = 'Gaus
         edge = 0.99
         P = profile_fun(x, h, edge)
         P /= amax(P)
-        import os
-        print('tmp',  os.path.isdir(tokamak.tmp_folder ))
-        import sys
-        import os
-        print(os.getcwd())
-        sys.stdout.flush()
-       # import IPython
-        #IPython.embed()
+
         savetxt(tokamak.tmp_folder +'/emiss0', c_[x,P*scale].T)
 
         emissivity[:] = interp(M,x,P).T
