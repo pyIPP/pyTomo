@@ -290,14 +290,10 @@ def main():
 
     inputs['tmp_folder']  = os.path.expanduser(os.path.expandvars(inputs['tmp_folder' ]))
     inputs['output_path'] = os.path.expanduser(os.path.expandvars(inputs['output_path']))
-
+   
     for f in [inputs['tmp_folder'],inputs['output_path']]:
         if not os.path.isdir( f):
-            try:
-                os.mkdir(f)
-            except:
-                print('error: mkdir(%s)'%f)
-                raise
+            os.mkdir(f)
             
     if len(sys.argv) == 1:
         inputs['solid_parallel'] = False
@@ -459,7 +455,8 @@ def main():
     
     parser.add_argument( "--dpi" , default=inputs['dpi'] , type=int, help="Resolution of the figures")
     parser.add_argument( "--img_size",  default=inputs['img_size'],  type=int, help="Size of the figures")
-    
+    parser.add_argument( "--tmp_folder",  default=inputs['tmp_folder'],  type=str, help="Temporal folder")
+
     args = parser.parse_args()
 
     for a in vars(args):
@@ -469,7 +466,7 @@ def main():
  
 
     config.DEBUG = inputs['DEBUG']
-    
+    print('tmp,  ', args.tmp_folder)
     if args.DEBUG:
         rapid_blocks = 1
 
