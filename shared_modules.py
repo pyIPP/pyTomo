@@ -213,7 +213,7 @@ def create_derivation_matrix(g, Bmat,BdMat, regularization, danis, Tok, compute_
         H = Bmat[0]
         
     elif regularization in [7]: #INGESSON anisotropic
-        H = Bmat[0].T*(W*Bmat[0])
+        H = Bmat[0].T*(W*Bmat[0])+Bmat[1]
         
     else:
         raise Exception('regularization not found ')

@@ -90,105 +90,21 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
     
 
     bound = False #boundary will be introduced to H matrix in order to make H regular and reduces rank of T
-    #print 'BUG!!'
-    #error[:] = 1
+
     Bmat,BdMat,bnd, Ts, fs,err,tvec, G  = prepare_inputs(Tok, data, error,dets, tvec, Tmat, normData, G0, danis,bound, regularization, reconstruct, postprocessing)
                         
     ndets = size(fs, 0)
-    #import IPython
-    #IPython.embed()
-    #print( len(fs), mean(fs), sum(BdMat),sum(sum(Bmat).data) , nanmean(err.data), sum(G))
-    
-    #print Ts.shape, Tmat.shape
-    #print sum(Ts.sum(1)==0), sum(Tmat.sum(1)==0)
-    
-    #exit()
-             
-    
-    #print Tmat.shape, ndets
-    #exit()
-    #active_set = []
- #prepare_inputs(Tok, data,error, tvec, Tmat, normData, G0, danis,bound,  regularization, reconstruct, postprocessing)
    
-    #if Tok.transform_index == 0:
-    #BdMat = get_bd_mat(Tok,time=mean(tvec))
-    #H = create_derivation_matrix(G, Bmat,BdMat, regularization, danis, Tok )
-
-
-    
-    ##from scipy.optimize import nnls
-    
-    
-    #def price_func( x, T, Bmat,fs):
-        ##H = create_derivation_matrix(G, Bmat,BdMat, regularization, danis, Tok )
-        #lam = exp(x[0])
-        #x = x[1:]
-        #x = x/mean(x)
-        #x[x<1] = 1
-        #x[x>1] = x[x>1]**2
-        #W=1/sqrt(x)
-        #Bx = W*(Bmat[0]*x)
-        ##H = Bmat[0].T*(W*Bmat[0])
-
-        #res = T*x-fs.T
-        #cost = dot(res,res.T)+ lam*dot(Bx,Bx)
-        ##cost += linalg.norm(Tx-fs)**2
-        ##print cost.shape
-        #return cost
-    
-    #def eqcon(x,T, Bmat,fs):  #zkusit nerovnost? 
-        #return linalg.norm(T*x[1:]-fs)**2-len(fs)
-    
-    #def callback(x):
-        #return
-        #print sum(x[x<0]), sum(x)
-        
-    
-    #from scipy.optimize import fmin_slsqp
-    #x0 = hstack((0,G0))
-    #out,fx,ins,imode,smod=fmin_slsqp( price_func, x0 , args=( Tmat*100, Bmat,fs*100), bounds=[[-10,10]]+[[0,infty]]*nx*ny,eqcons=[eqcon, ] ,callback=callback,full_output=True,iprint=2)
-
-   
-    #Ts = Ts.toarray()
-    #Ts[:,BdMat] = 0  #increae sparsity and reduce rank!! of T matrix, boundary will by added to the smoothing matrix  
-    #Ts = sparse.csc_matrix(Ts)
 
     for step in range(Steps):  # minfisher iterations !!!
         if progress != 0:
             progress.iterateSubStep()
         t = time.time()
         
-        #if input_parameters['main_run'] and input_parameters['rotation_tomography']:
-            #from map_theta_rho9 import prepare_inputs_roto_tomo
-            #Bmat,Ts, fs,tvec,  G = \
-                #prepare_inputs_roto_tomo(Tok, data, error, tvec, Tmat,dets, normData, G, regularization,step)
-
-        
-
-        #print Ts.dtype, fs.dtype
-        #exit()
+ 
         debug('\n======== Linear method -  step === %i' % (step+1))
 
-
-        #print BdMat, G.shape, bnd.shape
         H = create_derivation_matrix(G, Bmat,BdMat, regularization, danis, Tok )
-        
-        
-        #from min_fish_imgess import tomo_minfisher
-        #g,lam,nonnegcorr,lambdacorr,minfishercorr = tomo_minfisher(fs,Ts,H,nx,ny)
-    
-        #exit()
-
-
-        #from cvxpy import *
-
-        #x = Variable(Tok.npix)
-        #objective = Minimize(sum_entries(square(Ts*x - fs ))+sum_entries(square(H*x)))
-        #constraints = [0 >= x,]
-        #prob = Problem(objective, constraints)
-        #print "Optimal value", prob.solve()
-        #print x.value
-        
         
 
         last_step = (step == Steps-1)
@@ -204,80 +120,14 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
        
         solvers = {2:PresolveSVD,3:PresolveSVD3,4:PresolveQR,5:PresolveGEV,6:PresolveGEV_singular}
         
-        #if Ts.shape[0]> 500: #solver optimized for large memory consuming tasks
-            #solvers[3] = PresolveSVD3_sparse2
-            
-        #decomposition = PresolveGEV(Ts,H, Tok.nx,Tok.ny,ndets)
-        #U1,V1,D1 = [decomposition[i] for i in ('U','V','D')]
-        #decomposition = PresolveSVD(Ts,H, Tok.nx,Tok.ny,ndets)
-        #U2,V2,D2 = [decomposition[i] for i in ('U','V','D')]
-        #plot(D1)
-        #plot(D2)
-        #show()
-        
-        #print solvers[solver]
+   
         debug('--------Prepare - time  %g' % (time.time()-t))
 
- 
         
-        
-        #t = time.time()
-
+       
 
         decomposition = solvers[solver](Ts,H, Tok.nx,Tok.ny,ndets,BdMat)
         debug('--------Decomposition - time  %g' % (time.time()-t))
-
-        #print solvers[solver]
-        #exit()
-        #print solvers[solver]
-
-        #if last_step:
-            
-            
-            
-
-
-            
-            
-            #figure()
-            #subplots_adjust(hspace=0.00, wspace = 0.0)
-            #for i in range(tsteps):
-                #subplot(1,tsteps,i+1)
-                #imshow(G_.reshape(tsteps, Tok.nx,Tok.ny).T[:,:,i], origin='lower', interpolation='nearest',aspect='auto')
-                #colorbar()
-                
-
-            
-            
-            
-            #imshow( G_.reshape(tsteps, Tok.nx,Tok.ny).T[0], origin='lower', interpolation='nearest');show()
-            
-            
-            
-            #imshow(G_[:,0].reshape(Tok.nx,Tok.ny));show()
-            
-            #decomposition = solvers[solver](Ts,H, Tok.nx,Tok.ny,ndets)
-        
-            #D = decomposition['D']
-            #U = decomposition['U']
-            #V = decomposition['V']
-            #I = decomposition['wrong_dets']
-
-            #W = 1/(1+median(D**2*10)/D**2)
-            #plot(W)
-            #show()
-            
-            #G2 = dot((dot(U.T, data[0][~I])/D*W), V)
-            
-            #G2 = G2.reshape(Tok.nx,Tok.ny).T
-            #imshow(G2, origin='lower', interpolation='nearest');show()
-
-            
-    #K_ = dot(dot(U1.T,diag(1/D1)),V1)
-    #print 'Decomposition accuracy',linalg.norm((K_* Ts.T)-eye(Ts.shape[0]))
-
-            
-
 
 
         if reconstruct:
@@ -292,219 +142,23 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
             try: g_fract_0 = float(input_parameters['lambda_solver'])
             except: pass
 
-
-            #if not Tok.transform_index in [0,4]:  positive_constrain = False
-            
             error_scale = input_parameters['error_scale']
             rapid_solver = input_parameters['rapid_solver']
             
-             #= False
-
-            
-            #if time_MFI and (step >= 3):
-                ##time space tomography
-                 ##je to předrok pravá regib body tomography
-                 ##tam to bude totiž vypadta podobně!! nebo ne?? 
-                
-                ##do a reconsctruction in 3D - (3. dimension is the time!!)
-                #Gt0 = std(G,1)
-
-                #
-                #
-                ##imshow(1/(hypot(Gt0/amax(Gt0),0.5)-.3).reshape(Tok.ny, Tok.nx,order='F'),vmin=0);colorbar()
-                ##show()
-                ##invsqrtD = sparse.spdiags(1/sqrt(D),(0,),len(D),len(D))
-                
-                #def FourierMatrix(n):
-                    ##create matrix of the unitary fourier operator
-
-                    #A = identity(n)
-                    #F = fft.fft(A)
-                    #F/= sqrt(n/2)
-                    
-                    #return F
-
-                #def G_filter(f, f0, s):
-                    ##filter  of the higher orders of signal with frequency f0, width s
-                    #f_resp = ones_like(f)
-                    #if f0 != None and f0 != 0:
-                        #for i in range(1,int(amax(f)/f0)+2):
-                            #f_resp*= 1-exp(-(f-i*f0*sign(f))**2/(2*(s/i**0.0)**2))/sqrt(1+((i-1)/5.)**2)
-                        
-
-                            ##supress also higher harmonics 
-                        ##higher  orders has a narrower window to force a higher stability 
-                
-                    #return f_resp
-                    
-                #def FilteredDerivative(n,f0,dt):
-                
-                    #n_ext = 2**int(ceil(log2(n*2)))
-                    #f = fft.fftfreq(n_ext, d=dt)
-                    
-                    ##speed of the nonperiodic changes
-                    #s = 0.05
-                    #GF = G_filter(f, f0, s)
-                    #FT_D = 4*sin(pi*f*dt)**2
-
-                    #F = FourierMatrix(n_ext)#fast
-                    
-                    #spectrum = -FT_D*GF*sqrt(n_ext/2)
-
-                    #D = fft.ifft((spectrum[:,newaxis]*F).T)
-
-                    #D = real(D[:n,:n])  #use only a cut (D was 2x larger in order to avoid a edge effects)
-                    ##imag part are only numerical errors
-
-                    #D-= diag(sum(D,axis=1))
-            
-                    #D[abs(D)<1e-5] = 0
-
-                    #return D
-                #W = 1/(Gt0/amax(Gt0)+0.05)**2
-                #W = W.reshape((Tok.ny, Tok.nx),order='F')
-                ##W[:,20:] = 400
-                #W = sparse.spdiags(W.flatten(order='F'),(0,),Tok.npix, Tok.npix )
-                ##W = sparse.eye(Tok.npix, Tok.npix )
-                #H_ = [create_derivation_matrix(g[:,None], Bmat,BdMat, regularization, danis, Tok ) for g in G[:,:tsteps].T]
-                #Ht = (sparse.eye(tsteps,tsteps)-sparse.eye(tsteps,tsteps,k=1))
-                #Ht = Ht.T*Ht
-                #Ht[-1,-1] = 1.001
-                ##imshow(Ht.todense(), interpolation='nearest')
-                ##show()
-                ##mu = dot(G_.T,(sparse.block_diag(H_, format='csc')*G_))/dot(G_.T,(sparse.kron(Ht,W , format='csc')*G_))
-                    
-                #smothing = 1
-                #H = sparse.block_diag(H_, format='csc') +sparse.kron(Ht*1e3,W , format='csc')
-                
-                #Ts_ = sparse.kron(sparse.eye(tsteps,tsteps), Ts , format='csc')
-
-             
-                #t = time.time()
-                #decomposition =  PresolveSVD3_sparse(Ts_,H, Tok.nx*tsteps,Tok.ny*tsteps,ndets*tsteps)
-                #debug(('--------Decomposition - time  %g' % (time.time()-t)))
-                #
-                #
-           
-                #G_,retro, chi2,g = SolveLinearMetods(decomposition,(tvec[0],), fs.T.reshape(-1,1),ndets*tsteps,dets, normData/Tok.normTmat,
-                        #Ts_,H_,input_parameters['error_scale'],last_step,lam_method,False,False,g_fract_0,False )
-                #G = G_.reshape(tsteps, -1).T
-                #G*= normData[None,:]/Tok.normTmat   #rescaling
-                
-
-                #chi2 = chi2[0]*ones(tsteps)
-                #g = g[0]*ones(tsteps)
-                
-                #if last_step:
-                    ##gamma = gamma[0]*ones(tsteps)
-                    #imshow(G_.reshape(Tok.ny,-1, order='F'), origin='lower', interpolation='nearest');colorbar();show()
-                    
-                    
-                    
-                    ##TODO uměle extrémě snížit vakiabilitu v centru, jak to dopadne??
-                    ##ds
-                    #N = 20
-                    #fig=figure()
-                    #fig.subplots_adjust(hspace=0.00, wspace = 0.0)
-                    #for i in range(N):
-                        #ax = fig.add_subplot(N,1,i+1)
-                        #X = decomposition['V'][i].reshape(Tok.ny,-1, order='F')
-                        #vmax = max(X.max(), -X.min())
-                        #ax.imshow(X, origin='lower', interpolation='nearest',vmin=-vmax,vmax=vmax,aspect='auto')
-
-                        
-                    #import fconf
-                    #AxZoom = fconf.AxZoom()
-                    #fig.canvas.mpl_connect('button_press_event', AxZoom.on_click)
-                    #show()
-
-                    
-                                    ##chi2 = chi2*ones(tsteps)
-                                    
-
-
-                                    
-                    #semilogy(abs(decomposition['U'].T*fs.T.reshape(-1,1)[~decomposition['wrong_dets']]))
-                    #semilogy(decomposition['D'])
-                    #show()
-                    #plot(G[::10].T)
-                    
-                    
-                    ##plot(sparse.kron(Ht*1e2,W , format='csc')*decomposition['V'].T)
-                    ##plot(sparse.block_diag(H_, format='csc')*decomposition['V'].T)
-                    
-                    ##HV = sparse.kron(Ht*1e2,W , format='csc')*decomposition['V'].T
-                    ##einsum('ij,jk->i' , sparse.kron(Ht*1e2,W , format='csc')*decomposition['V'].T,decomposition['V'])
-                    #plot(einsum('ij,ji->j' , sparse.kron(Ht*1e3,W , format='csc')*decomposition['V'].T,decomposition['V']))
-                    #plot(einsum('ij,ji->j' , sparse.block_diag(H_, format='csc')*decomposition['V'].T,decomposition['V']))
-                    #show()
-
-                    
-
-                    ##plot((array(sparse.kron(Ht*1e2,W , format='csc')*decomposition['V'].T)*array(decomposition['V']).T).sum(0))
-                    ##plot((array( sparse.block_diag(H_, format='csc')*decomposition['V'].T)*array(decomposition['V']).T).sum(0))
-                    
-                    
-                    
-
-                    
-                #subplot(121)
-                #imshow(Gt0.reshape((Tok.ny, Tok.nx),order='F'),origin='lower',vmin=0,vmax=max(Gt0.max(), std(G,1).max()) );colorbar()
-                #subplot(122)
-                #imshow( std(G,1).reshape((Tok.ny, Tok.nx),order='F'),origin='lower',vmin=0,vmax=max(Gt0.max(), std(G,1).max()));colorbar()
-                #show()
-                
-
-                #subplot(121)
-                #imshow(sqrt(W.diagonal()).reshape((Tok.ny, Tok.nx),order='F'),origin='lower');colorbar()
-                #subplot(122)
-                #imshow(1/( std(G,1)/amax( std(G,1))+0.05).reshape((Tok.ny, Tok.nx),order='F'),origin='lower');colorbar()
-                #show()
-                    
-                ##imshow(G_.reshape(Tok.ny,-1, order='F'), origin='lower', interpolation='nearest');colorbar();show()
-
-                
-            #else:
-                
-                
          
-        
-                
-                
-            #t = time.time()
             estimate_sigma = input_parameters['estimate_sigma']
             G,retro, chi2,g,SigmaGsample = SolveLinearMetods( decomposition,tvec,
                         fs,ndets,dets, normData/Tok.normTmat,Ts,H,BdMat, error_scale,
                         last_step,lam_method,positive_constrain,
                         g_fract_0,rapid_solver, input_parameters,estimate_sigma,
                         input_parameters['lambda_up_lim'],input_parameters['lambda_low_lim'])
-            #debug(('--------Solve - time  %g' % (time.time()-t)))
+           
    
             wrong_dets = decomposition['wrong_dets']
             #BUG  not compatible wit QR!!
             U = decomposition['U']
             R = 1 if not 'R' in decomposition else decomposition['R']
             
-            #print U.shape, fs[~wrong_dets].shape
-
-                
-                
-          
-            
-            #plot(chi2);show()
-
-            #print exp(chi2), ((Ts*G-fs)**2).sum(0)/fs.shape[0]
-            
-            #if Tok.transform_index in [0,4]: #no transformation or zoom
-                #G[G<0] = 0 
-            
-            
-            
-            #wrong_dets = decomposition['wrong_dets']
-            #resid = linalg.norm(fs[~wrong_dets]-decomposition['U']*(decomposition['U'].T*fs[~wrong_dets]))/ linalg.norm(fs)
-            #resid_ = linalg.norm(fs-((Ts*G)*mean(self.emiss)))/ linalg.norm(fs)
-            #print '%d. pass - unexplainable data: %.1f%%, unexplained data %.1f%%'%(step,resid*100, resid_*100)
-                    
             debug('Compute emissivity ')
             #Emis = FastLinEmisivity(decomposition,  fs, normData/Tok.normTmat, tsteps)
 
@@ -516,13 +170,6 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
                 debug( '%d. pass - unexplainable data: %.1f%%, unexplained data %.1f%%'%(step+1,resid*100, resid_*100))
                 
             
-        
-            #if  step == Steps -1:
-                #t = time.time()
-                #debug('Running postprocessing')
-                #entropy, smoothnest_izo, smoothnest_anizo =  make_postprocessing(Tok, 
-                        #Bmat, G,Tok.npix, danis, tsteps, diam, diar, diao,regularization, postprocessing,False)
-                #debug(('--------postprocessing - time  %g' % (time.time()-t)))
 
         else:
             post_its = Bmat, diam, diar, diao
@@ -532,14 +179,6 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
     
     G *= normData[None,:]/Tok.normTmat   #rescaling
 
-    #if  not SigmaGsample is None:
-        #SigmaGsample *= normData[None,:]/Tok.normTmat   #rescaling
-    #import IPython
-    #IPython.embed()
-
-    #imshow(G.reshape((Tok.ny,Tok.nx,-1), order='F').mean(2)==0,origin='lower')
-    ##colorbar()
-    #show()
     if Tok.transform_index in [0,4]:
         G[BdMat] = 0  #no emissivity out of the boundary (this emissivity is not contributing to retrofits!)
         if not SigmaGsample is None:   SigmaGsample[BdMat] = 0 
@@ -551,11 +190,6 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
     
     ind = where(~array(isfinite(err.diagonal()))[0] | all(abs(retro)<1e-5,0))[0]
 
-    #print ind
-    ##BUG!!!
-    #if size(ind): 
-        #err[ind] = 0
-        #err[:,ind] = 0
         
     retro = asarray(err*retro.T).T
     
@@ -1324,8 +958,7 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
     vt[~zero_ins] = vt_.T
     #print 'VT2'
     #vt = ascontiguousarray(vt.T)
-    #import IPython
-    #IPython.embed()
+
     #vt = vt.astype(single,copy=False)
     del vt_
     V = F.solve_Lt(vt) #7ms
@@ -2654,16 +2287,18 @@ def ForcePositivity(E,V,D,BdMat,w,chi2,nx,ny, tokamak):
             BdMat = False
             
         iE[BdMat] = 0
-        lim = iE[iE>0].mean()/100
+        lim = iE[iE>0].mean()/20
 
         #import IPython
         #IPython.embed()
         
         for k in range(10):
             image = iE.reshape(ny,nx,order='F')
+
             
     
             update_active_set =  FindNegLocMin(image,lim)
+      
             
             if all(in1d(update_active_set, active_set)): break  #BUG 
 
@@ -2671,14 +2306,14 @@ def ForcePositivity(E,V,D,BdMat,w,chi2,nx,ny, tokamak):
             active_set = int_(unique(r_[active_set,update_active_set])) #.5ms
                 
             active_set = array(active_set,ndmin=1)
-            #print i, k, len(active_set)
-            #close()
-            if len(active_set) > V.shape[0]: #no positive colutuion can be found
+     
+            if len(active_set) > V.shape[0]: #no positive solution can be found
                 break
                 
            
             
-            if size( active_set) <=  0: break
+            if size( active_set) ==  0:
+                break
 
             #import IPython
             #IPython.embed()
@@ -2714,12 +2349,11 @@ def ForcePositivity(E,V,D,BdMat,w,chi2,nx,ny, tokamak):
             delta_prod = x0-dot(iA,z1) 
             #norm of delta_prod is smaller than x0 and still Emean[active_set] >=0
  
-            iE-= dot(single(w*delta_prod/D), V) #.5ms
-            iE[BdMat] = 0
+   
 
             #vmin  = iE.min()
             #vmax  = iE.max()
-            #print i, k, -sum(image[image<lim]) 
+            #print( i, k, -sum(image[image<lim]) )
             #suptitle(str((i, k, -sum(image[image<lim]) )))
             #subplot(121)
             #itr = dot(single(w*delta_prod/D), V)
@@ -2735,15 +2369,27 @@ def ForcePositivity(E,V,D,BdMat,w,chi2,nx,ny, tokamak):
             #show()
             
             #image2 = copy(iE.reshape(ny,nx,order='F'))
+            #corr = dot(single(w*delta_prod/D), V) #.5ms
             
             #image2.ravel(order='F')[active_set] = nan
-            #title(str(i)+'  '+str(k))
-            #imshow( image2.reshape(ny,nx,order='F'),origin='lower', interpolation='nearest')
+            #figure()
+            #suptitle(str(i)+'  '+str(k))
+            #subplot(121)
+            #imshow( image2.reshape(ny,nx,order='F'),origin='lower', interpolation='nearest', vmin=iE.min(), vmax=0)
             #colorbar()
-            #contour(image,0,colors='w',origin='lower');show()
-            
+            #contour(image2,0,colors='w',origin='lower');
+            #subplot(122)
 
-      
+            #imshow( corr.reshape(ny,nx,order='F'),origin='lower', interpolation='nearest',  vmin=iE.min(), vmax=iE.max())
+            #colorbar()
+            #contour(image,0,colors='w',origin='lower');
+    
+
+         
+            
+            iE-= dot(single(w*delta_prod/D), V) #.5ms
+            iE[BdMat] = 0
+     
         iE[(iE>-lim*2)&(iE<0)] = 0  #delete this almost zero poinsts
 
         #inverse transformation

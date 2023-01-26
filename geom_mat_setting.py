@@ -37,12 +37,13 @@ def geom_mat_setting(tokamak,nx, ny, virt_chord, path=None):
         
         
     ver = '' if tokamak.geometry_version is None else str(tokamak.geometry_version)
-    name = path+'/Geom_matrix_%dx%d-%d-%1.2f-%1.2f-%1.2f-%.2f_%s_%s.npz'\
+    name = path+'Geom_matrix_%dx%d-%d-%1.2f-%1.2f-%1.2f-%.2f_%s_%s.npz'\
         %(nx,ny,virt_chord,xmin,xmax,ymin,ymin,str(tokamak.nl),ver)
 
     try:
-  
-        assert tokamak.name!='DIIID' ,  "Don't use cache at DIII-D"
+        skip 
+        
+        #assert tokamak.name!='DIIID' ,  "Don't use cache at DIII-D"
         assert config.useCache ,  "Don't use cache"
 
         d = load(name, allow_pickle=True,encoding='latin1')
@@ -52,8 +53,9 @@ def geom_mat_setting(tokamak,nx, ny, virt_chord, path=None):
  
         if hasattr(tokamak, 'load_geom'):
             tokamak.load_geom()
-   
-        print('Generating geom. matrix')
+            
+        t = time.time()
+        print('Generating geom. matrix... ',end='')
         if tokamak.camera:
             xchords, ychords, zchords, nl = load_geom_3D(tokamak.geometry_path,list(tokamak.detectors_dict.keys()) )
             Tmat,Xchords,Ychords = generate_3D_matrix(xchords, ychords, zchords,tokamak)
@@ -66,9 +68,9 @@ def geom_mat_setting(tokamak,nx, ny, virt_chord, path=None):
             assert isnan(tokamak.nl) or nl == tokamak.nl, 'wrong number of LOS  '+str(nl)+' '+str(tokamak.nl)
          
             Tmat,Xchords,Ychords = generate_matrix(xchords, ychords, distance,virt_chord,nl,nx, ny, tokamak)
-            tokamak.Xchords = Xchords
-            tokamak.Ychords = Ychords
-        
+            tokamak.Xchords = single(Xchords)
+            tokamak.Ychords = single(Ychords)
+        print('  in %.2fs'%(time.time()-t))
         #just for "ilustration" it calculated for the midlle of the tvec
         try:
             BdMat = get_bd_mat(tokamak, nx, ny, time=(tokamak.min_tvec+tokamak.max_tvec)/2)    # nx can be differnet of tokamk.nx !!!
@@ -80,8 +82,7 @@ def geom_mat_setting(tokamak,nx, ny, virt_chord, path=None):
 
 
     Tmat = sparse.csr_matrix(Tmat)
-    #import IPython
-    #IPython.embed()
+
 
     return Tmat,Xchords,Ychords
 
@@ -114,11 +115,10 @@ def loadgeometry(geometry_path,cameras, virt_chord):
     xchords = []
     distance = []
     nl = 0
-    import os.path
 
     for i,c in enumerate(cameras):
-        xchord= loadtxt(geometry_path+'/detector_'+c+'_x.txt')
-        ychord= loadtxt(geometry_path+'/detector_'+c+'_y.txt')
+        xchord= loadtxt(geometry_path+'detector_'+c+'_x.txt')
+        ychord= loadtxt(geometry_path+'detector_'+c+'_y.txt')
     
         ychord = atleast_2d(ychord).T
         xchord = atleast_2d(xchord).T
@@ -128,7 +128,7 @@ def loadgeometry(geometry_path,cameras, virt_chord):
             print("cannot use virtual chords !!")
             virt_chord = 1
         try:
-            dist_tmp = loadtxt(geometry_path+'/dist_'+c+'.txt')
+            dist_tmp = loadtxt(geometry_path+'dist_'+c+'.txt')
             if size(dist_tmp) == 1:
                 dist_tmp = ones(ndet_los)*dist_tmp
                 
@@ -142,7 +142,7 @@ def loadgeometry(geometry_path,cameras, virt_chord):
 
     if nl == 0:
         raise NameError("Program couldn't import any geometric chords, check \
-            input path and format of geometric data\n"+geometry_path+'/detector_%%s_x.txt')
+            input path and format of geometric data\n"+geometry_path+'detector_%%s_x.txt')
 
     #=====================  Generate the geometric matrix ======================
     return hstack(xchords), hstack(ychords), hstack(distance), nl, virt_chord
@@ -258,7 +258,7 @@ def plot_projection_space(tokamak,xchords, ychords, virt_chord,nl):
     theta = linspace(0,pi,100)
     
     
-    xbnd, ybnd  = loadtxt(tokamak.geometry_path+'/border.txt',unpack=True)
+    xbnd, ybnd  = loadtxt(tokamak.geometry_path+'border.txt',unpack=True)
 
 
     chamber_bnd = TransformBoundary(xbnd, ybnd,X0,Y0,theta)
@@ -490,8 +490,8 @@ def generate_matrix(xchords, ychords, distance,virt_chord,nl,nx, ny,  tokamak):
     fk = ones(virt_chord)/virt_chord
         
     if virt_chord > 1:
-        if os.path.isfile(geometry_path+'/virt_chord_profile.txt'):
-            fk =  loadtxt(geometry_path+'/virt_chord_profile.txt').T
+        if os.path.isfile(geometry_path+'virt_chord_profile.txt'):
+            fk =  loadtxt(geometry_path+'virt_chord_profile.txt').T
             fk  = interp(linspace(0,1,virt_chord), linspace(0,1,len(fk)),fk)
             fk = fk/sum(fk)
         else:
@@ -521,25 +521,24 @@ def gen_cython(xchords, ychords, distance,nx, ny, Tok,chord_profile):
     *Cython version, stupid algorithm but 5x faster than better matrix algorithm*
 
     """
+#os.environ['CPATH'] = get_include()
 
     import pyximport
 
-    os.environ['CPATH'] = get_include()
-    if sys.platform == 'win32':
-        mingw_setup_args = { 'options': { 'build_ext': { 'compiler': 'mingw32' }} }
-        pyximport.install(setup_args=mingw_setup_args)
-    else:
-        pyximport.install()
+    #if sys.platform == 'win32':
+        #mingw_setup_args = { 'options': { 'build_ext': { 'compiler': 'mingw32' }}, "include_dirs":np.get_include() }
+        #pyximport.install(setup_args=mingw_setup_args)
+    #else:
+    pyximport.install(setup_args={"include_dirs":get_include() })
 
     # troubles with JET old python !!!!!
     from geom_mat_gen_cython import geom_mat_gen_cython
-    #import IPython
-    #IPython.embed()
+
 
     
     Tmat,Xchords,Ychords = geom_mat_gen_cython(xchords,ychords,distance, Tok,  nx, ny,chord_profile)
 
-    
+
     virt_chord = len(chord_profile)
     Xchords = Xchords[:,virt_chord//2::virt_chord]
     Ychords = Ychords[:,virt_chord//2::virt_chord]
@@ -1301,14 +1300,14 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
             print("i%d/%d"%(i, nl))
 
         Tmat_reflections = sparse.csc_matrix(Tmat_reflections, dtype="single")
-        save(tokamak.geometry_path + '/Tmat_reflections.npy', Tmat_reflections)
+        save(tokamak.geometry_path + 'Tmat_reflections.npy', Tmat_reflections)
         
 
-        save(tokamak.geometry_path + '/Tmat_diffusion.npy', Tmat_diffusion)
+        save(tokamak.geometry_path + 'Tmat_diffusion.npy', Tmat_diffusion)
 
 
         
-        save(tokamak.geometry_path + '/projections.npy', projections)
+        save(tokamak.geometry_path + 'projections.npy', projections)
         
         
         
@@ -2044,13 +2043,13 @@ def load_geom_3D(geometry_path,cameras):
     
     for i,c in enumerate(cameras):
         try:
-            xchords.append(load(geometry_path+'/detector_'+c+'_x.npy'))
-            ychords.append(load(geometry_path+'/detector_'+c+'_y.npy'))
-            zchords.append(load(geometry_path+'/detector_'+c+'_z.npy'))
+            xchords.append(load(geometry_path+'detector_'+c+'_x.npy'))
+            ychords.append(load(geometry_path+'detector_'+c+'_y.npy'))
+            zchords.append(load(geometry_path+'detector_'+c+'_z.npy'))
         except:
-            xchords.append(loadtxt(geometry_path+'/detector_'+c+'_x.txt'))
-            ychords.append(loadtxt(geometry_path+'/detector_'+c+'_y.txt'))
-            zchords.append(loadtxt(geometry_path+'/detector_'+c+'_z.txt'))
+            xchords.append(loadtxt(geometry_path+'detector_'+c+'_x.txt'))
+            ychords.append(loadtxt(geometry_path+'detector_'+c+'_y.txt'))
+            zchords.append(loadtxt(geometry_path+'detector_'+c+'_z.txt'))
         
         
     #i = 0

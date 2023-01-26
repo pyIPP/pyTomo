@@ -154,12 +154,13 @@ def phantom_generator(tokamak, tvec_new, nx_new=100, ny_new=100, profile = 'Gaus
     rhop,magx, magy = tokamak.mag_equilibrium(mean(tvec_new),return_mean=True)
     
     from scipy.interpolate import RectBivariateSpline
- 
+
+    
     n_mag = 100
 
     M = M/(amax(M))
     
-    x = sort(r_[linspace(0,1,n_mag),linspace(1,10,n_mag)])
+    x = sort(r_[linspace(0,1,n_mag),linspace(1,10,n_mag//10)])
 
 
     emissivity = zeros((nx_new*ny_new, size(tvec_new)),dtype=single)
@@ -364,7 +365,7 @@ def phantom_generator(tokamak, tvec_new, nx_new=100, ny_new=100, profile = 'Gaus
             P /= amax(P)
             emissivity[:, it] = interp(M[ it,:],x,P*(1+sin(2*pi*w*x+it)/10.)).T
             emissivity[:,-it] = interp(M[-it,:],x,P*(1+cos(2*pi*w*x+it)/10.)).T
-        savetxt(tokamak.tmp_folder +'/emiss0', c_[x,P].T)
+        savetxt(tokamak.tmp_folder +os.sep+'emiss0', c_[x,P].T)
         
     elif profile == 'poloidal_modes':
         theta = arctan2(ygrid[:,None]-y0.mean(),xgrid[None,:]-x0.mean()).flatten(order='F')
@@ -376,7 +377,7 @@ def phantom_generator(tokamak, tvec_new, nx_new=100, ny_new=100, profile = 'Gaus
         P =  Gaussian(x, h, edge)
         P /= amax(P)
     
-        savetxt(tokamak.tmp_folder +'/emiss0', c_[x,P].T)
+        savetxt(tokamak.tmp_folder +os.sep+'emiss0', c_[x,P].T)
 
         P = interp(M[0,:],x,P)
         for it,w in enumerate(omega):
@@ -417,8 +418,7 @@ def phantom_generator(tokamak, tvec_new, nx_new=100, ny_new=100, profile = 'Gaus
         edge = 0.99
         P = profile_fun(x, h, edge)
         P /= amax(P)
-
-        savetxt(tokamak.tmp_folder +'/emiss0', c_[x,P*scale].T)
+        savetxt(tokamak.tmp_folder +os.sep+'emiss0', c_[x,P*scale].T)
 
         emissivity[:] = interp(M,x,P).T
 
@@ -465,7 +465,7 @@ def phantom_generator(tokamak, tvec_new, nx_new=100, ny_new=100, profile = 'Gaus
     
     Tmat_ , _, _ = geom_mat_setting(tokamak, tokamak.nx, tokamak.ny, tokamak.virt_chord)
 
-    savez_compressed(tokamak.tmp_folder+'/Emiss0.npz',G = reshape(emissivity_out,(tokamak.ny,tokamak.nx,tsteps), order='F')
+    savez_compressed(tokamak.tmp_folder+os.sep+'Emiss0.npz',G = reshape(emissivity_out,(tokamak.ny,tokamak.nx,tsteps), order='F')
             ,Rc= xgridc_out,Zc= ygridc_out,tvec=tvec_new, 
             xgridc=xgridc,ygridc=ygridc,G0=emissivity.reshape(ny_new, nx_new,tsteps,order='F'))
 

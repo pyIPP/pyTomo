@@ -657,8 +657,8 @@ class Equlibrium:
         self.eqm._read_profiles()
         self.eqm._read_pfm()
 
-
-        os.nice(3)
+        if os.name != 'nt':
+            os.nice(3)
         n_rho = 40
         n_theta = 150
         rho = linspace(0.01,0.998,n_rho)
@@ -778,8 +778,7 @@ class Equlibrium:
 
         args = [(jt/float(nti),jt,rho,R_cont[jt],z_cont[jt],R0[jt], Z0[jt], mom_order) for jt in arange(nti)]
         
-        
-
+    
         t1 = time()
         #Descur_fit_core(args[96]) 
         #args[96] = args[97] 

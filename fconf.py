@@ -8,7 +8,7 @@ from pylab import get_cmap
 import numpy as np
 #import matplotlib.pyplot as plt
 from matplotlib.transforms import TransformedBbox, Affine2D
-from IPython import embed
+#from IPython import embed
 
 
 PAD_INCHES = 0.1

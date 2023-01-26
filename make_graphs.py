@@ -16,7 +16,6 @@ from matplotlib import rcParams
 from matplotlib.backends.backend_agg import FigureCanvas as FigureCanvas
 from matplotlib import colors,cbook,cm
 from matplotlib.colors import Normalize
-import matplotlib
 
 from shared_modules import fsvd,fast_svd,debug, get_rho_tan
 from annulus import get_bd_mat, get_rho_field_mat
@@ -27,11 +26,13 @@ try:
 except:
     pass
 
+import matplotlib
+
+
 try:
     from scipy.stats import nanmedian,nanstd
 except:
     pass
-
 
 global my_cmap
 from matplotlib import colors,cbook,cm
@@ -151,6 +152,12 @@ class MyFormatter(ScalarFormatter):   # improved format of axis
         return ScalarFormatter.__call__(self, x, pos)
 
 
+#help share large global variables between processes on Windows
+def glob_initializer( plot_details_):
+    global  plot_details
+    plot_details = plot_details_
+
+
 def make_graphs(input_data, plot_svd = False):
     """
     Prepare graphs for GUI and export. This is main plotting module. It can plot via Gnuplot (fast) and matplotlib (slow, better quality).
@@ -205,6 +212,12 @@ def make_graphs(input_data, plot_svd = False):
     tvec = results['tvec']
     G = results['g'].T
     G*= tokamak.norm    #convert from W/m^2/cm na W/m^3
+    G_samples = results.get('g_samples',None)
+    if G_samples is not None:
+        G_samples = G_samples.T
+        G_samples*= tokamak.norm    #convert from W/m^2/cm na W/m^3
+        
+    
 
     data[:,results['dets']]  = results['data']  #include data correction (bacground substraction) done during preprocessing  
     error[:,results['dets']] = results['error']  #include data correction (bacground substraction) done during preprocessing  
@@ -292,9 +305,11 @@ def make_graphs(input_data, plot_svd = False):
         G  -= G0
         savez(tmp_folder+'/'+'data0_'+str(shot),data0=data_0)
         savez(tmp_folder+'/'+'G0_'+str(shot),  G0=G0)
-        
-  
-    gres=reshape(G,(tokamak.ny,tokamak.nx,tsteps), order='F')
+    #from IPython import embed
+    #embed()
+    gres=G.reshape(tokamak.ny,tokamak.nx,tsteps, order='F')
+    if G_samples is not None:
+        gres_samples=G_samples.reshape(tokamak.ny,tokamak.nx,G_samples.shape[1],-1, order='F')
  
         
     if plot_svd:
@@ -325,10 +340,14 @@ def make_graphs(input_data, plot_svd = False):
         
         
 
-
+    #what was this step for???  it is usually doing nothing
     xslice  = slice( max(0, int(round((tokamak.plot_coord[0] - tokamak.xmin)/tokamak.dx)) ), min(tokamak.nx, int(round((tokamak.plot_coord[1]-tokamak.xmin)/tokamak.dx)) ) )
     yslice  = slice( max(0, int(round((tokamak.plot_coord[2] - tokamak.ymin)/tokamak.dy)) ), min(tokamak.ny, int(round((tokamak.plot_coord[3]-tokamak.ymin)/tokamak.dy)) ) )
     gres = gres[yslice, xslice]
+    if G_samples is not None:
+        gres_samples = gres_samples[yslice, xslice]
+
+    
     ny, nx, nt = shape(gres)
     xmin, xmax, ymin, ymax = tokamak.plot_coord
     
@@ -360,30 +379,39 @@ def make_graphs(input_data, plot_svd = False):
     try:
         gresnorm = 1
         if inputs['save_profiles'] or inputs['enable_output']:
-            print('saving emissivity ... ')
+            #print('saving emissivity ... ')
+            print('saving tomography ...   ', end = '')
+
             BdMat = BdMat.reshape((tokamak.ny, tokamak.nx), order="F")
             
             xgrid = (tokamak.xgrid+tokamak.dx/2)/tokamak.norm  #centers of the pixels
             ygrid = (tokamak.ygrid+tokamak.dy/2)/tokamak.norm  #centers of the pixels
             gresnorm = maximum((1+gres.max(0).max(0)),(1-gres.min(0).min(0)))/65504
             gres/= gresnorm[None,None,:]
+
+            if G_samples is not None:
+                gres_samples_norm = maximum((1+gres_samples.max(0).max(0)),(1-gres_samples.min(0).min(0)))/65504
+                gres_samples /= gres_samples_norm[None, None]
+                gres_samples = gres_samples.astype(float16)
+            else:
+                gres_samples_norm = None
+                gres_samples  = None
+                
             tokamak_tmp = inputs.pop('tokamak_tmp') #do not save it!
             inputs['impur_inject_t'] = tokamak.impur_inject_t
             name = 'Emissivity_%.3f-%.3f'%(tvec[0], tvec[-1])+base+str(shot)
+            savez_compressed(tmp_folder+'/'+name,gres=gres.astype(float16),tvec=tvec,\
+                        rvec=xgrid,zvec=ygrid,inputs=inputs,gres_norm=gresnorm,BdMat=BdMat,
+                        gres_samples=gres_samples, gres_samples_norm=gres_samples_norm)#,Rho=Rho)
             if inputs['enable_output']:
-                print('saving tomography')
-                savez_compressed(output_path+'/'+name, gres=gres.astype(float16),tvec=tvec,\
-                        rvec=xgrid,zvec=ygrid,inputs=inputs,gres_norm=gresnorm,BdMat=BdMat)
+                copyfile(tmp_folder+'/'+name+'.npz',output_path+'/'+name+'.npz')
                 if inputs['rem_back']:
                     copyfile(tmp_folder+'/'+'G0_'+str(shot)+'.npz',output_path+'/G0_'+str(shot)+'.npz')
                     copyfile(tmp_folder+'/'+'data0_'+str(shot)+'.npz',output_path+'/data0_'+str(shot)+'.npz')
             else:
-                savez_compressed(tmp_folder+'/'+name,gres=gres.astype(float16),tvec=tvec,\
-                        rvec=xgrid,zvec=ygrid,inputs=inputs,gres_norm=gresnorm,BdMat=BdMat)#,Rho=Rho)
-            
-            inputs['tokamak_tmp'] = tokamak_tmp
+                inputs['tokamak_tmp'] = tokamak_tmp
   
-     
+            print('done')
     except Exception as e:
         print('saving of radiation profile has failured', e)
     finally:
@@ -407,13 +435,36 @@ def make_graphs(input_data, plot_svd = False):
     
 
 
-
+    #dictionary with all setings for plotting
     plot_details = {}
     plot_details['geometry'] = array((xmin,xmax,ymin,ymax))/tokamak.norm
     plot_details['mat_size'] = array((nx,ny))
     plot_details['output_path'] = inputs['output_path']
     plot_details['local_path'] = inputs['local_path']
     plot_details['enable_output'] = inputs['enable_output']
+    plot_details['geometry_path'] = tokamak.geometry_path
+    plot_details['shot'] = tokamak.shot
+    plot_details['detectors_dict'] = getattr(tokamak,'detectors_dict',None)
+    plot_details['dets_index'] = tokamak.dets_index
+    plot_details['input_diagn'] = tokamak.input_diagn
+    plot_details['name'] = tokamak.name
+    plot_details['transform_index'] = tokamak.transform_index
+    plot_details['Xchords'] = tokamak.Xchords
+    plot_details['Ychords'] = tokamak.Ychords
+    plot_details['dx'] = tokamak.dx
+    plot_details['dy'] = tokamak.dy
+    plot_details['norm'] = tokamak.norm
+    plot_details['struct_dict'] = getattr(tokamak,'struct_dict',None)
+    plot_details['transform_index'] = getattr(tokamak,'transform_index',None)
+    plot_details['xmin'] = tokamak.xmin
+    plot_details['xmax'] = tokamak.xmax
+    plot_details['ymin'] = tokamak.ymin
+    plot_details['ymax'] = tokamak.ymax
+    plot_details['nx'] = tokamak.nx
+    plot_details['ny'] = tokamak.ny
+    plot_details['ygrid'] = tokamak.ygrid
+    plot_details['xgrid'] = tokamak.xgrid
+
     plot_details['plot_autoscale'] = inputs['plot_autoscale']
     plot_details['plot_svd'] = plot_svd
     plot_details['plot_contours'] = inputs['plot_contours']
@@ -423,11 +474,17 @@ def make_graphs(input_data, plot_svd = False):
     plot_details['show_fit_residuum'] = inputs['show_fit_residuum']
     plot_details['dpi'] = inputs['dpi']
     plot_details['img_size'] = inputs['img_size']
+    
+    plot_details['rem_back'] = inputs['rem_back']
+    plot_details['rem_fsa'] = inputs['rem_fsa']
+    plot_details['output_type'] = inputs['output_type']
+    plot_details['tmp_folder']  = inputs['tmp_folder']
+    plot_details['plot_chords'] = inputs['plot_chords']
 
     if hasattr(tokamak, 'ICRH_rezonance'):
         plot_details['ICRH_position'] = tokamak.ICRH_rezonance
 
-    savez_compressed(tmp_folder+'/'+'mag_'+str(shot),magx=magx_all,magy = magy_all, tvec=tvec)
+    savez_compressed(tmp_folder+'/'+'mag_'+str(shot),magx=single(magx_all),magy = single(magy_all), tvec=tvec)
     
     
 
@@ -466,14 +523,16 @@ def make_graphs(input_data, plot_svd = False):
                          magx=single(MAGX), magy = single(MAGY), rhop = rhop_, tvec=tvec )
     
     if (inputs['plot_all'] or tsteps == 1) and inputs['plot_surfaces']:
-        skip_mag = max(size(magx_all, 1)//10, 1)    #use maximaly 10 lines in the graph
-        ind = slice(skip_mag-1,None,skip_mag)
+
         
         if 'magx' in results:
+            skip_mag = max(size(results['magx'], 1)//10, 1)    #use at most 10 lines in the graph
+            ind = slice(skip_mag-1,None,skip_mag)
             magx_all = results['magx'][:,ind].T
             magy_all = results['magy'][:,ind].T
-            rhop = rhop[ind]
+            rhop = results['mag_rho'][ind]
         else:
+            ind = slice(6-1,None,6)
             rhop,magx_all,magy_all = tokamak.mag_equilibrium(tvec,surf_slice=ind,n_rho=11)
 
         plot_details['mag_field'] = True
@@ -508,12 +567,15 @@ def make_graphs(input_data, plot_svd = False):
         vmin = min(vmin,-vmax)
     
     if inputs['plot_all']  or tsteps == 1:
+  
         try:
             n_cpu = cpu_count()
+            #use initializer to share 
             p = Pool(n_cpu)
-        except:
+        except Exception as e:
+            print('Pool initialization error: ', e)
             n_cpu = 1
-  
+
         if tsteps == 1:
             name = ['previewA'+str(shot)+base, 'previewB'+str(shot)+base]
             namesA,namesB = [name[0],],[name[1],]
@@ -545,7 +607,7 @@ def make_graphs(input_data, plot_svd = False):
 
         args = [(r_[ii],gres[...,ii],padding,data[ii,:], error[ii,:],retro[ii,:],dets
                 ,tvec,my_cmap,mag_field[...,ii],chi2[ii],lam[ii],tsteps,tokamak.rho_label,
-                base,(data_norm,prof_norm),(limit,glim)) for ii in ind]
+                base,(data_norm,prof_norm),(limit,glim),plot_details) for ii in ind]
             
 
         if tokamak.input_diagn in ['BOLO', ]:
@@ -571,7 +633,7 @@ def make_graphs(input_data, plot_svd = False):
             pass
       
 
-    #convert *1_rec_.png -background white -alpha remove %d.png 
+    #convert *1_rec_.png -background white -alpha remove %04d.png 
     #mencoder "mf://*.png" -o ./movie_30579.avi -ovc lavc -lavcopts vcodec=mpeg4:mbd=1:vbitrate=2800
     #ffmpeg -r 60 -f image2 -s 1920x1080 -i %2d.png -vcodec libx264 -crf 25  -pix_fmt yuv420p test.mp4
     #mencoder "mf://*.png" -o ./movie_30579.avi -ovc lavc -lavcopts vcodec==mpeg2:tsaf:vbitrate=8000
@@ -674,15 +736,15 @@ def matplotlib_preview(g_profilx, g_profily, padding, data,dets, titleX, titleY,
     Make preview of recontruction using the Matplotlib library, it is slower than GNUPLOT but it has higher quality
     """
 
-    
-    global tokamak, plot_details
+    global  plot_details
+
     enable_output = plot_details['enable_output']
     geometry = plot_details['geometry']
 
 
-    shot = tokamak.shot
-    xgrid = tokamak.xgrid/tokamak.norm
-    ygrid = tokamak.ygrid/tokamak.norm
+    shot = plot_details['shot']
+    xgrid = plot_details['xgrid']/plot_details['norm']
+    ygrid = plot_details['ygrid']/plot_details['norm']
     
     under = max(1,len(tvec)//500)
     tvec = tvec[:,None]
@@ -726,24 +788,25 @@ def matplotlib_preview(g_profilx, g_profily, padding, data,dets, titleX, titleY,
 
   
 def matplotlib_data_tg(params):
-    
+    #advacent plotting method for the showing  the measured brighntess and back calculated values at function of tangential radius
+
     try:
-        #clean font cache in forked processes
+        #clean catch in foked processes
         matplotlib.font_manager._get_font.cache_clear()
     except:
         pass
-    #advacent plotting method for the showing  the measured brighntess and back calculated values at function of tangential radius
+    
     (ntvec,G,padding, Data,Error,Fc,dets,tvec,my_cmap,
-                    mag_field,chi2,lam,tsteps,rho_label,base,linthresh,limits) = params
+                    mag_field,chi2,lam,tsteps,rho_label,base,linthresh,limits,plot_details) = params
     T = time.time()
     from collections import OrderedDict
     from scipy.ndimage.interpolation import map_coordinates
     from shared_modules import MovingAveradge,extrap1d
 
-    global inputs, plot_details,tokamak
-    os.nice(3)
+    if os.name != 'nt':
+        os.nice(3)
     
-    shot = tokamak.shot
+    shot = plot_details['shot']
     enable_output=   plot_details['enable_output']
     geometry=   plot_details['geometry']
     mat_size=   plot_details['mat_size']
@@ -762,41 +825,41 @@ def matplotlib_data_tg(params):
 
     plot_loglin = linthresh[0]!= None
     dmin,dmax = limits[0]
-    output_type = inputs['output_type']
-    tmp_folder = inputs['tmp_folder']
+    output_type = plot_details['output_type']
+    tmp_folder = plot_details['tmp_folder']
     
-    if inputs['rem_back'] or plot_details['plot_svd']:
+    if plot_details['rem_back'] or plot_details['plot_svd']:
         plot_details['show_fit_residuum'] = False
 
             
-    
-    dets_dict = tokamak.detectors_dict if hasattr(tokamak, 'detectors_dict') else None  #BUG!!
+
+    dets_dict = plot_details['detectors_dict']
     cam_ind = OrderedDict()
 
-    for det, key in zip(tokamak.dets_index,list(dets_dict.keys())):
+    for det, key in zip(plot_details['dets_index'],list(dets_dict.keys())):
         if len(key)==2 and key[-1].isdigit(): key =  key[ 0]  #convect SXR different cameras from AUG together 
         if not key in  cam_ind: cam_ind[key] = []
         cam_ind[key].append(det)
     #jont some comeraras from the same poloidal port
-    if tokamak.name == 'ASDEX' and tokamak.input_diagn[:3] == 'SXR' and 'F' in cam_ind:
+    if plot_details['name'] == 'ASDEX' and plot_details['input_diagn'][:3] == 'SXR' and 'F' in cam_ind:
         cam_ind_ = OrderedDict()
         cam_ind_['F+G'] = cam_ind.pop('F')+cam_ind.pop('G')
         cam_ind_.update(cam_ind)
         cam_ind = cam_ind_
         
-    if tokamak.name == 'ASDEX' and tokamak.input_diagn =='AXUV':
+    if plot_details['name'] == 'ASDEX' and plot_details['input_diagn'] =='AXUV':
         cam_ind_ = OrderedDict()
         cam_ind_['D13+DVC'] = cam_ind.pop('D13')+cam_ind.pop('DVC')
         cam_ind_.update(cam_ind)
         cam_ind = cam_ind_        
  
-    if tokamak.name == 'DIIID' and '45R1' in cam_ind and '195R1' in cam_ind:
+    if plot_details['name'] == 'DIIID' and '45R1' in cam_ind and '195R1' in cam_ind:
         cam_ind_ = OrderedDict()
         cam_ind_['45R1+195R1'] = cam_ind.pop('45R1')+cam_ind.pop('195R1')
         cam_ind_.update(cam_ind)
         cam_ind = cam_ind_
         
-    if tokamak.name == 'DIIID' and '90RP1a' in cam_ind and '90RP1b' in cam_ind :
+    if plot_details['name'] == 'DIIID' and '90RP1a' in cam_ind and '90RP1b' in cam_ind :
         cam_ind_ = OrderedDict()
         cam_ind_['90RP1a+90RP1b'] = cam_ind.pop('90RP1a')+cam_ind.pop('90RP1b')
         cam_ind_['90RM1a+90RM1b'] = cam_ind.pop('90RM1a')+cam_ind.pop('90RM1b')
@@ -832,7 +895,7 @@ def matplotlib_data_tg(params):
         axis[ax] = {}
         ax.xaxis.grid(True)
         ax.set_xlim(-1.1,1.1)
-        if tokamak.input_diagn == 'AXUV' and tokamak.name=='ASDEX':
+        if plot_details['input_diagn'] == 'AXUV' and plot_details['name']=='ASDEX':
             ax.set_xlim(-1.2,1.2)
 
         fcmax = abs(Fc).max()  
@@ -855,7 +918,7 @@ def matplotlib_data_tg(params):
         if not plot_details['plot_autoscale']:
             ax.set_ylim((-amax(Fc[:,dets])*.05+dmin)/fac ,dmax/fac)
             
-        if inputs['rem_back'] or (inputs['rem_fsa'] and tokamak.transform_index==1) or plot_details['plot_svd']:
+        if plot_details['rem_back'] or (plot_details['rem_fsa'] and plot_details['transform_index']==1) or plot_details['plot_svd']:
             ax.set_ylim(dmin/fac,dmax/fac)
 
         if i < len(cam_ind)-n_col:
@@ -889,16 +952,16 @@ def matplotlib_data_tg(params):
             
         if det.find('+') != -1: 
             cameras = det.split('+')
-        elif tokamak.input_diagn[:3] == 'SXR' and tokamak.name=='ASDEX':
+        elif plot_details['input_diagn'][:3] == 'SXR' and plot_details['name']=='ASDEX':
             cameras = [k for k in list(dets_dict.keys()) if k[0]==det]
             if det.find('+')!= -1: cameras = det.split('+')
         else:
             cameras = det,
                     
         for k,(cam, ic) in enumerate(zip(cameras, c)):
-            ax.text(0.7, 0.8-k/15., cam, transform=ax.transAxes,color=ic)#,backgroundcolor='w')
+            ax.text(0.3, 0.2-k/15., cam, transform=ax.transAxes,color=ic)#,backgroundcolor='w')
 
-    G = G.reshape(tokamak.ny, tokamak.nx,-1, order='F')
+    G = G.reshape(plot_details['ny'], plot_details['nx'],-1, order='F')
 
     #prepare data for plotting and the plotting  
     for it, tt in enumerate(ntvec):
@@ -906,15 +969,15 @@ def matplotlib_data_tg(params):
         t = time.time()
  
         rho_tangent,chordsx,chordsy = get_rho_tan(rhop,magx_all[:,:,it],
-                            magy_all[:,:,it],tokamak.Xchords, tokamak.Ychords) #40ms
+                            magy_all[:,:,it],plot_details['Xchords'], plot_details['Ychords']) #40ms
   
         fc = Fc[it]
         data = Data[it]
         error = Error[it]
         
 
-        scaling = array([tokamak.dx  ,tokamak.dy  ])
-        offset  = array([tokamak.xmin,tokamak.ymin])+scaling/2
+        scaling = array([plot_details['dx']  ,plot_details['dy']  ])
+        offset  = array([plot_details['xmin'],plot_details['ymin']])+scaling/2
         
         ax = list(axis.keys())[0]
         vmax = 0
@@ -925,10 +988,10 @@ def matplotlib_data_tg(params):
             rho_tg_cam = []
             retro_interp_cam = []
             ind_ = hstack(inds)
-            orientation = sign(mean(tokamak.Ychords[-1,ind_]-tokamak.Ychords[0,ind_]))
+            #orientation = sign(mean(tokamak.Ychords[-1,ind_]-tokamak.Ychords[0,ind_]))
             #orientation = 1d
             for j,ind in enumerate(inds):
-                #orientation = sign(mean(tokamak.Ychords[-1,ind]-tokamak.Ychords[0,ind]))
+                orientation = sign(mean(plot_details['Ychords'][-1,ind]-plot_details['Ychords'][0,ind]))
 
                 correct = in1d(ind, dets)&isfinite(error[ind])
                 rhotg = orientation*rho_tangent[ind]
@@ -996,7 +1059,7 @@ def matplotlib_data_tg(params):
        
         if plot_details['plot_autoscale']:
             ax.set_ylim(-vmax/fac*.05 ,vmax/fac*1.1)
-            if inputs['rem_back'] or plot_details['plot_svd']:
+            if plot_details['rem_back'] or plot_details['plot_svd']:
                 vmax = amax(abs(fc[dets]))/fac*1.1
                 ax.set_ylim(-vmax ,vmax)
     
@@ -1028,17 +1091,19 @@ def matplotlib_data_tg(params):
 def matplotlib_data(params):
     
     try:
-        #clean font cache in forked processes
+        #clean catch in foked processes
         matplotlib.font_manager._get_font.cache_clear()
     except:
         pass
     
+
     (ntvec,gprof,padding, data,error,fc,dets,tvec,my_cmap,
-                      mag_field,chi2,lam,tsteps,rho_label,base,linthresh,limits) = params
-    os.nice(3)
+                      mag_field,chi2,lam,tsteps,rho_label,base,linthresh,limits,plot_details) = params
+    
+    if os.name != 'nt':
+        os.nice(3)
+    
 
-
-    global inputs, tokamak, plot_details
 
     enable_output=   plot_details['enable_output']
     geometry=   plot_details['geometry']
@@ -1051,11 +1116,11 @@ def matplotlib_data(params):
     nx,ny = mat_size
     xmin, xmax, ymin, ymax = geometry
 
-    dxm=tokamak.dx/tokamak.norm
-    dym=tokamak.dy/tokamak.norm
-    shot = tokamak.shot
-    output_type = inputs['output_type']
-    tmp_folder  = inputs['tmp_folder']
+    dxm=plot_details['dx']/plot_details['norm']
+    dym=plot_details['dy']/plot_details['norm']
+    shot = plot_details['shot']
+    output_type = plot_details['output_type']
+    tmp_folder  = plot_details['tmp_folder']
 
     dmin,dmax = limits[0]
 
@@ -1073,14 +1138,14 @@ def matplotlib_data(params):
 
     ax.axhline(0, c='k')
 
-    for di in tokamak.dets_index[:-1]:
+    for di in plot_details['dets_index'][:-1]:
         ax.axvline(x=0.5+amax(di), ls='--')
 
 
     #upper axis with detectors names 
-    if hasattr(tokamak, 'detectors_dict'):
-        xlabels = [median(ind) for ind in tokamak.dets_index]
-        labels = list(tokamak.detectors_dict.keys())
+    if plot_details['detectors_dict'] is not None:
+        xlabels = [median(ind) for ind in plot_details['dets_index']]
+        labels = list(plot_details['detectors_dict'].keys())
         ax2 = ax.twiny()
         ax2.set_xticks(xlabels)
         ax2.set_xticklabels(labels)
@@ -1176,22 +1241,23 @@ def matplotlib_image(params):
     """   
     
     try:
-        #clean font cache in forked processes
+        #clean catch in foked processes
         matplotlib.font_manager._get_font.cache_clear()
     except:
         pass
-    
-    
+
     (ntvec,gprof,padding, data,error,fc,dets,tvec,my_cmap,
-                        mag_field,chi2,lam,tsteps,rho_label,base,linthresh,limits) = params
-    os.nice(3)
+                        mag_field,chi2,lam,tsteps,rho_label,base,linthresh,limits,plot_details) = params
+    
+    if os.name != 'nt':
+        os.nice(3)
+    
     try:
         import matplotlib._cntr as cntr
     except:   #slower option from new matplolib      
         import matplotlib._contour as _contour
 
-    global inputs, tokamak, plot_details   
-        
+    
     enable_output=   plot_details['enable_output']
     geometry=   plot_details['geometry']
     mat_size=   plot_details['mat_size']
@@ -1200,16 +1266,17 @@ def matplotlib_image(params):
     n_contours=   plot_details['n_contours']
     dpi=   plot_details['dpi']
     img_size=   plot_details['img_size']
+        
 
 
 
     nx,ny = mat_size
     xmin, xmax, ymin, ymax = geometry
-    dxm=tokamak.dx/tokamak.norm
-    dym=tokamak.dy/tokamak.norm
-    shot = tokamak.shot
-    output_type = inputs['output_type']
-    tmp_folder  = inputs['tmp_folder']
+    dxm=plot_details['dx']/plot_details['norm']
+    dym=plot_details['dy']/plot_details['norm']
+    shot = plot_details['shot']
+    output_type = plot_details['output_type']
+    tmp_folder  = plot_details['tmp_folder']
 
     gmin,gmax = limits[1]
 
@@ -1221,10 +1288,10 @@ def matplotlib_image(params):
     fig = Figure((8*img_size/6.,img_size))
     FigureCanvas(fig)
 
-    if inputs['plot_chords']:  # !! allow plotting of chords !!! 
+    if plot_details['plot_chords']:  # !! allow plotting of chords !!! 
         from geom_mat_setting import loadgeometry
-        Xchord, Ychord, distance, nl,virt_chord  = loadgeometry(tokamak.geometry_path,
-                                                list(tokamak.detectors_dict.keys()), 1)   
+        Xchord, Ychord, distance, nl,virt_chord  = loadgeometry(plot_details['geometry_path'],
+                                                list(plot_details['detectors_dict'].keys()), 1)   
         Xchord = Xchord[:,dets]
         Ychord = Ychord[:,dets]
 
@@ -1232,13 +1299,13 @@ def matplotlib_image(params):
 
     area = (xmin, xmax, ymin,ymax)
 
-    area_tight = (tokamak.xmin/tokamak.norm,tokamak.xmax/tokamak.norm\
-        ,(tokamak.ymin)/tokamak.norm,(tokamak.ymax)/tokamak.norm)
+    area_tight = (plot_details['xmin']/plot_details['norm'],plot_details['xmax']/plot_details['norm']\
+        ,(plot_details['ymin'])/plot_details['norm'],(plot_details['ymax'])/plot_details['norm'])
  
     sym_colorbar = False
     white_bg = True
 
-    if inputs['rem_back'] or (inputs['rem_fsa'] and tokamak.transform_index==1) or plot_details['plot_svd']:
+    if plot_details['rem_back'] or (plot_details['rem_fsa'] and plot_details['transform_index']==1) or plot_details['plot_svd']:
         sym_colorbar = True
         white_bg = True
         
@@ -1268,7 +1335,7 @@ def matplotlib_image(params):
         norm = Normalize(vmin=gmin,vmax=gmax)
         ticks = None
 
-   
+
     if plot_details['blacken_negative'] and not sym_colorbar:
         extend = 'min'
     else: extend = 'neither'
@@ -1292,7 +1359,7 @@ def matplotlib_image(params):
         if plot_contours:
             gmin = 0
             levels = norm.inverse(linspace(norm(gmin),norm(gmax),n_contours))
-            prof_img = ax.contourf(gprof[:,:,0]*fact,norm=norm,vmin=gmin,vmax=gmax,
+            prof_img = ax.contourf(gprof[:,:,0]*fact,norm=norm,#vmin=gmin,vmax=gmax,
                                    levels=levels,extent=area_tight,cmap=cmap_typ[0],
                                    extend=extend)
 
@@ -1300,7 +1367,7 @@ def matplotlib_image(params):
         else:
             
             prof_tmp = concatenate([padding, gprof[:,:,0]*fact, padding], axis=1)
-            prof_img= ax.imshow(prof_tmp,cmap= cmap_typ[0],extent=area,vmin=gmin,vmax=gmax,norm=norm,
+            prof_img= ax.imshow(prof_tmp,cmap= cmap_typ[0],extent=area,norm=norm,#vmin=gmin,vmax=gmax,
                 interpolation='nearest',aspect = str((ymax-ymin)/(xmax-xmin)), origin='lower')
             prof_img.set_clim((gmin,gmax)) 
 
@@ -1341,12 +1408,12 @@ def matplotlib_image(params):
         ax.set_xlabel('R [m]')
         ax.set_ylabel('z [m]', labelpad=-5)
         tlt = ax.set_title('')
-        if inputs['plot_chords']:
-            ax.plot(Xchord/tokamak.norm, Ychord/tokamak.norm, 'gray', lw=.25)
+        if plot_details['plot_chords']:
+            ax.plot(Xchord/plot_details['norm'], Ychord/plot_details['norm'], 'gray', lw=.25)
 
-        if hasattr(tokamak,'struct_dict'):
+        if plot_details['struct_dict'] is not None:
 
-            for _,(xstruct,ystruct) in tokamak.struct_dict.items():
+            for _,(xstruct,ystruct) in plot_details['struct_dict'].items():
                 if len(xstruct) > 1:
                     color = '.5' if typ =='bw' or white_bg else 'w'
                     ax.plot(xstruct,ystruct, color,lw=0.5)
@@ -1371,6 +1438,8 @@ def matplotlib_image(params):
                 gmin = min(gmin,-gmax)
                 gmax = max(-gmin,gmax)
                 
+            if plot_details['blacken_negative']:
+                gmin = -gmax/100
             if plot_contours:
 
                 
@@ -1378,8 +1447,7 @@ def matplotlib_image(params):
                 prof[prof>gmax*(1-1e-5)] = gmax*(1-1e-5)
                 if not plot_details['blacken_negative'] and not sym_colorbar:
                     prof[prof<gmin] = gmin
-                if plot_details['blacken_negative']:
-                    gmin = 0
+  
                 gmin -= gmax*1e-10
                 
                 if linthresh[1] != None:
@@ -1472,7 +1540,7 @@ def matplotlib_image(params):
             ax.set_aspect('equal', 'datalim')
 
             
-            if typ is not 'bw':   
+            if typ != 'bw':   
                 s = img_size/6.
                 fig.savefig(filename,transparent=True, dpi=dpi,bbox_inches=Bbox([[.3*s,.1*s],[7.1*s,5.74*s]]))
 
@@ -1762,7 +1830,7 @@ def plot_2D_adv(yvec,xvec,data,name,plot_type=0,cmap=my_cmap_,norm=Normalize(),s
             im.set_clim([min(vmin,-vmax), max(-vmin, vmax)])
         else:
             im.set_clim([vmin,vmax])
-        levels = linspace(vmin,nanmax(data),15)
+        levels = linspace(vmin,nanmax(data),30)
 
         ax.contour( data, levels=levels, linewidths=.1,  colors='k',extent=extent)
         ax.xaxis.set_major_locator(MaxNLocator(5))

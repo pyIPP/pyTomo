@@ -9,6 +9,8 @@ from collections import OrderedDict
 try:
     import config
 except:
+    import  config_loc  as config
+
     pass
 from numpy import *
 from matplotlib.pylab import *
@@ -300,7 +302,7 @@ def xraypaths(shot, toroidal=False):
         #   sx90rm1s1 and the last to sx90rm1s32.  The top array cooresponds to
         #   sx90rp1s1 ect.  The shot of interest is 89364.
         #
-        #   The shot of interest should be 91378 instead of 89364.  The transition
+        #   The shot of interest should be 9137config8 instead of 89364.  The transition
         #   from old soft x-ray system and point names to the new ones for the 
         #   poloidal array was made on April,'97 after the RDP vent. (Snider 7-31-98)
 
@@ -582,9 +584,9 @@ def get_calib(shot,calib_path,cam):
     # Get electronic settings and filter setting
 
     if PA:
-        SXRsettings = calib_path+'/SXRsettingsPA.dat'  
+        SXRsettings = calib_path+os.sep+'SXRsettingsPA.dat'  
     else:
-        SXRsettings = calib_path+'/SXRsettings45U.dat'  #BUG!!!
+        SXRsettings = calib_path+os.sep+'SXRsettings45U.dat'  #BUG!!!
     index = open(SXRsettings,'r')
 
     shots, Rc, Gain,Filt = [],[],[],[]
@@ -631,7 +633,7 @@ def get_calib(shot,calib_path,cam):
     return Rc, Gain, pinhole, filter
 
 def get_calib_fact(shot, geometry_path,  toroidal=False):
-    # --------------------------
+    ## --------------------------
     # Get subsystem calibrations
     # --------------------------
     if verbose: print('Getting SXR Calibration Settings')
@@ -845,8 +847,8 @@ class loader_SXR():
         # Start with R+1 #1-32 then R-1 #1-32
         # angle of view from R in degrees
       
-        if not os.path.exists(self.geometry_path+'/data/'):
-            os.mkdir(self.geometry_path+'/data/')
+        if not os.path.exists(self.geometry_path+'data'):
+            os.mkdir(self.geometry_path+'data')
  
         r_p,z_p,r2_p,z2_p,xangle_p = xraypaths(1e6, toroidal=False)
         r_t,z_t,r2_t,z2_t,xangle_t = xraypaths(self.shot, toroidal=True)
@@ -918,14 +920,14 @@ class loader_SXR():
         self.dets_index = [array(v) for k,v in self.cam_ind.items()]
         self.dets = arange(self.nl)
         
-        self.fast_downsample = 4
+        self.fast_downsample = 1
         self.fast_data_downsapled=False
    
         if fast_data:
             MDSserver = self.MDSconn.hostspec
 
             suffix = 'TA' if toroidal else 'PA'
-            catch_path = self.geometry_path+'/data/%d_%s_fast.npz'%(self.shot, suffix)
+            catch_path = os.path.join(self.geometry_path,'data','%d_%s_fast.npz'%(self.shot, suffix))
             if config.useCache:
                 try:
                     data_file = load(catch_path,allow_pickle=True,encoding='latin1' )
@@ -954,21 +956,23 @@ class loader_SXR():
                 
                 for i in range(n_chunks): 
                     self.tvec_fast[i] /= 1e3 #s
-                    self.tvec_fast[i] = self.tvec_fast[i].reshape(-1,self.fast_downsample).mean(1) 
+                    if self.fast_downsample > 1:
+                        self.tvec_fast[i] = self.tvec_fast[i].reshape(-1,self.fast_downsample).mean(1) 
 
                 
             
             self.tvec = hstack(self.tvec_fast)#.reshape(-1,self.fast_downsample).mean(1) #dowsample
         else:
             suffix = 'TA' if self.toroidal else 'PA'
-            catch_path = self.geometry_path+'/data/%d_%s.npz'%(self.shot, suffix)
+            catch_path = os.path.join(self.geometry_path,'data','%d_%s.npz'%(self.shot, suffix))
             if os.path.isfile(catch_path) and config.useCache:
                 self.tvec = load(catch_path,allow_pickle=True,encoding='latin1')['tvec']
                 
             elif self.MDSconn is not None:
                 cam = cams[0] if toroidal else cams[0][:-1]
                 try:
-                    #eeedd
+                    #print('DO not load fast dowsampled data')
+                    #eee
                     #downsampled fast data, if availible
                     self.MDSconn.openTree('spectroscopy', self.shot)
                     self.tvec = MDSconn.get('dim_of(\\SX165R1F:SX165R1F05)').data()/1e3
@@ -1002,8 +1006,7 @@ class loader_SXR():
         pos_corr = loadtxt(path+'/'+corrections+'.txt',
                            dtype={'names': ('det', 'angle'),'formats': ('U6',  'f4')})
         pos_corr =  {k:item for k,item in pos_corr}
-        #import IPython
-        #IPython.embed()
+ 
     
         coord_dict = OrderedDict()
  
@@ -1011,9 +1014,9 @@ class loader_SXR():
         
         for icam,(det,channels) in enumerate(self.detectors_dict.items()):
    
-            xfile = open(self.geometry_path+'/detector_%s_x.txt'%det,'w')
-            yfile = open(self.geometry_path+'/detector_%s_y.txt'%det,'w')
-            dist_file = open(self.geometry_path+'/dist_%s.txt'%det,'w')
+            xfile = open(self.geometry_path+'detector_%s_x.txt'%det,'w')
+            yfile = open(self.geometry_path+'detector_%s_y.txt'%det,'w')
+            dist_file = open(self.geometry_path+'dist_%s.txt'%det,'w')
 
             coord_dict[det] = []
             verts = []
@@ -1119,13 +1122,12 @@ class loader_SXR():
         #self.cache_fast
         
         suffix = 'TA' if self.toroidal else 'PA'
-        catch_path = self.geometry_path+'/data/%d_%s_fast.npz'%(self.shot, suffix)
+        catch_path = os.path.join(self.geometry_path,'data','%d_%s_fast.npz'%(self.shot, suffix))
         if not hasattr(self,'cache_fast') and config.useCache:
             if os.path.isfile(catch_path):
                 
                 try:
                     data_file = load(catch_path,allow_pickle=True,encoding='latin1')
-                #tvec = data_file['tvec']
                     self.cache_fast = data_file['cache_fast'].item()
                 except Exception as e:
                     print(e)
@@ -1158,7 +1160,10 @@ class loader_SXR():
                 for cam, channels in self.detectors_dict.items():
                     for ch in channels:#downsample to 125kHz
                         #supress spikes?
-                        self.cache_fast[i][cam][ch] = median(data[j].reshape(-1,self.fast_downsample),1)#.mean(1)
+                        if self.fast_downsample  > 1:
+                            self.cache_fast[i][cam][ch] = median(data[j].reshape(-1,self.fast_downsample),1)#.mean(1)
+                        else:
+                            self.cache_fast[i][cam][ch] = data[j]
                         #print self.cache_fast[i][cam][ch].dtype
                         j+= 1
         
@@ -1215,7 +1220,7 @@ class loader_SXR():
             tvec_offset, data_offset,_ = self.get_data_fast(tmin=-infty,tmax=.2, calib=False)
             data -= data_offset.mean(0)
             data_offset-= data_offset.mean(0)
-            data_err+= data_offset.std(0)/10  #sqrt is just manual tunning 
+            data_err+= data_offset.std(0)/10  
             
             for cam, ind in cam_ind.items():
                 if cam in self.calib:
@@ -1229,18 +1234,20 @@ class loader_SXR():
                  
 
  
-    def get_data(self,tmin,tmax):
+    def get_data(self,tmin,tmax,fetch_errors=True):
         
         if self.fast_data:
             return self.get_data_fast(tmin,tmax)
      
         #store data for faster loading 
         suffix = 'TA' if self.toroidal else 'PA'
-        catch_path = self.geometry_path+'/data/%d_%s.npz'%(self.shot, suffix)
+        catch_path = os.path.join(self.geometry_path,'data','%d_%s.npz'%(self.shot, suffix))
+
         if not hasattr(self,'cache') and config.useCache:
         
             if os.path.isfile(catch_path):
                 try:
+                    #eeeee
                     data_file = load(catch_path,allow_pickle=True,encoding='latin1')
                     tvec = data_file['tvec']
                     data = data_file['data']
@@ -1263,6 +1270,7 @@ class loader_SXR():
             return tvec[t_ind],data[t_ind],data_err[t_ind]
         
       
+
         #number of parallel downloads
         numTasks = 8
         
@@ -1287,9 +1295,10 @@ class loader_SXR():
             for cam, channels in self.detectors_dict.items():
                 if not self.toroidal: cam = cam[:-1]
                 TDIcalls += [TDIcall%(cam,cam,int(ch.split('_')[-1])) for ch in channels]
-            TDIcalls += ['error_of(%s)'%tdi for tdi in TDIcalls]
+            if fetch_errors:
+                TDIcalls += ['error_of(%s)'%tdi for tdi in TDIcalls]
             TDIcalls = array(TDIcalls) 
-            print(TDIcalls)
+            #print(TDIcalls)
             
         else:
             TDIcall = 'PTDATA2("SX%sS%s",%d)'
@@ -1308,21 +1317,38 @@ class loader_SXR():
             out = mds_par_load(MDSserver, TDIcalls,  numTasks)
             
         print('data loaded in %.2f'%( time.time()-t))
+        
+        from IPython import embed
  
         data = zeros((nt, self.nl), dtype='single')
         data_error = zeros_like(data)+1e-6
+        
+        #embed()
 
         for i,ch in enumerate(index):
             data[:size(out[i]),ch] = out[i]
             data[size(out[i]):,ch] = out[i][-1]
-            if self.fast_data_downsapled and not isinstance(out[self.nl+i],str):
+            if self.fast_data_downsapled and not isinstance(out[self.nl+i],str) and fetch_errors:
                 data_error[:size(out[i]),ch] = out[self.nl+i]
             data_error[size(out[i]):,ch] = infty  #data from TA system are 2s longer than from PA system
         
+        data_error[:] = abs(data)*0.02+data.max(1)[:,None]*0.01
+        
+        #embed()
+        #try:
+            #print('Saving raw data RM1 plot', )
+            #plot(tvec, data[:,32:])
+            #axhline(4.8/10,ls='--')
+            #savefig(r'C:\Users\odstrcil\tomography\%d.png'%self.shot)
+            #clf()
+        #except:
+            #pass
+                
         from scipy.stats.mstats import mquantiles
+        #embed()
 
 
-        print(', '.join(['%.2f'%mquantiles(abs(d),.999) for d in data.T]))
+        #print(', '.join(['%.2f'%mquantiles(abs(d),.999) for d in data.T]))
         if not self.toroidal:
             overburned = abs(data) > 4.6  #only a rough value, different for each LOS
             ' SLOW CH is saturated pos.( >4.95V)at this time'
@@ -1455,14 +1481,27 @@ class loader_SXR():
             else:
                 print('Warning: calibration for camera %s is not availible'%cam)
   
-        data_error[overburned] = infty
+        #data_error[overburned] = infty
+        
+        
+        #trick to replace missign fast channel by a slow data 
+        if all(std(data[:,[15,20]],0)<100):
+            try:
+                slow_data = load(catch_path+'_')
+                data[:,15] = np.interp(tvec,slow_data['tvec'],slow_data['data'][:,15])
+                data[:,20] = np.interp(tvec,slow_data['tvec'],slow_data['data'][:,20])
+                data_error[:,15] = np.interp(tvec,slow_data['tvec'],slow_data['data_error'][:,15])
+                data_error[:,20] = np.interp(tvec,slow_data['tvec'],slow_data['data_error'][:,20])
+            except:
+                pass
         
         # data for to accelerate further loading
         self.cache = tvec, data,data_error
         
         ##store data for faster loading 
-        savez_compressed(catch_path,tvec=tvec, data=data, data_error=data_error,
-                            wrong_det = self.wrong_dets_damaged)
+        if config.useCache:
+            savez_compressed(catch_path,tvec=tvec, data=data, data_error=data_error,
+                                wrong_det = self.wrong_dets_damaged)
 
         imin,imax = tvec.searchsorted([tmin,tmax])
         t_ind = slice(imin,imax+1)
@@ -1552,12 +1591,19 @@ class loader_SXR():
                 data[:,self.cam_ind['195R1'][0]] *= 2*0.96/1.53
                 data_err[:,self.cam_ind['195R1'][0]] *= 2*0.96/1.53
                 
-            elif self.shot <  180000:
+            elif self.shot <  181100:
                 data[:,self.cam_ind['195R1'][0]] *= 2*0.96/1.53/1.1
                 data_err[:,self.cam_ind['195R1'][0]] *= 2*0.96/1.53/1.1
+            else:
+                data[:,self.cam_ind['195R1'][0]] *= 2*0.96/1.53/1.1*1.1
+                data_err[:,self.cam_ind['195R1'][0]] *= 2*0.96/1.53/1.1*1.1
+                data[:,self.cam_ind['195R1'][1]] *=   1.1
+                data_err[:,self.cam_ind['195R1'][1]] *=   1.1
                 
             
-            data_err[:,self.cam_ind['45R1'][10]] *= 1000 #corrupte channel
+            if self.shot > 170000: #just a guess!!      
+                data_err[:,self.cam_ind['45R1'][10]] *= 1000 #corrupte channel
+            
             if self.fast_data or self.fast_data_downsapled:
                 ch = self.cam_ind['195R1'][-2]
                 #print self.toroidal, ch, sign(mean(data[:,ch]))
@@ -1571,7 +1617,7 @@ class loader_SXR():
             if self.shot > 163300 and self.shot < 168847: #just guess
                 self.wrong_dets_damaged = ('45R1_11',)
      
-            if self.shot > 168847:      
+            if self.shot > 168847 and not (183200 < self.shot < 183214):      
                 self.wrong_dets_damaged = self.detectors_dict['45R1']
                 
                      #catch_path = self.geometry_path+'/data/%d_%s.npz'%(self.shot, suffix)
@@ -1596,36 +1642,127 @@ def main():
     
     
     
-    r_p,z_p,r2_p,z2_p,xangle_p = xraypaths(1e6, toroidal=False)
+    #r_p,z_p,r2_p,z2_p,xangle_p = xraypaths(1e6, toroidal=False)
         
     
-    mds_server = "atlas.gat.com"
-    #mds_server = "localhost"
+    #mds_server = "atlas.gat.com"
+    mds_server = "localhost"
 
     import MDSplus as mds
     MDSconn = mds.Connection(mds_server )
     
-    #print MDSconn.get('PTDATA2("SX90PF20_0",%d)'%174720 )
+    config.useCache=False
+    shot = 181536
+    x = MDSconn.get('PTDATA2("X1VOLTS",%d)'%shot).data()
+    t = MDSconn.get('dim_of(PTDATA2("X1VOLTS",%d))'%shot).data()
 
-    for shot in range(175000, 173902,-1):
-        t = MDSconn.get('PTDATA2("SX45F01_3",%d)'%shot)
-        if len(t) > 2: print(shot)
-        #else: 
-            #print 'no ', shot 
-            
-
-    exit()
-    #154858
-    sxr_ta = loader_SXR(163303, '/home/tomas/tomography/geometry/DIIID/SXR/',MDSconn, False, True)
-    tvec_ta, sxr_ta, _ = sxr_ta.get_data(0,6)
     
-    sxr_pa = loader_SXR(163303, '/home/tomas/tomography/geometry/DIIID/SXR/',MDSconn, False, False)
-    tvec_pa, sxr_pa, _ = sxr_pa.get_data(0,6)
-    
-    #sxr_pa = sxr_pa[:,:32]
+    PTNAME = '_x=PTDATA2("LYA1%s%.2dRAW",%d,1)'
+ 
+    x2 = MDSconn.get(PTNAME%('H',1,shot)).data()
+    t2 = MDSconn.get('dim_of(_x)').data()
+  
+    x_ = (x-mean(x))/std(x)
+    x2_ = (x2-mean(x2))/std(x2)
+        
     import IPython
     IPython.embed()
     
+    
+    #from scipy.signal import lfilter
+    
+    #a = .05
+    #x3 = lfilter([a],[1,-1+a],x_)
+    ##plot(t,x3/std(x3))
+    ##plot(t, x_)
+    
+    #plot(t2,x2_ )
+    #plot(t2, x2_-interp(t2-0.02,t,x3/std(x3) ))
+    ##plot(t, x)
+    #xlim(5000,5001)
+    #show()
+    
+    #fx=np.fft.rfft(x_)
+    #fx2=np.fft.rfft(x2_)
+    
+    ind =(t > 0)&(t < 7000)
+    x_ = x_[ind]
+    
+    ind = (t2 >= 0)&(t2 < 7000)
+    x2_ = x2_[ind]
+    
+    
+    fx=np.fft.rfft(x_)
+    fx2=np.fft.rfft(x2_)
+    fx_ = zeros_like(fx2)
+    fx_[:len(fx)] = fx
+    
+    plot(abs(fx)/len(x_)) 
+    plot(abs(fx2)/len(x2_)) 
+    show()
+    
+    
+    x2r = reshape(x2, (100,-1))
+    
+    x2r = reshape(x2, (-1,500))
+
+    
+    
+
+    #sxr_fast = loader_SXR(shot, '/home/tomas/tomography/geometry/DIIID/SXR/',MDSconn, True, False)
+
+    #tvec_fast, data_fast, _ = sxr_fast.get_data(0,6)
+    
+    sxr_fast = loader_SXR(shot, '/home/tomas/tomography/geometry/DIIID/SXR/',MDSconn, False, False)
+
+    tvec_slow, data_slow, _ = sxr_fast.get_data(0,6)
+    
+    import IPython
+    IPython.embed()
+    
+    
+    print( MDSconn.get('PTDATA2("SX90PF20_0",%d)'%174720 ))
+
+    #for shot in range(175000, 173902,-1):
+        #t = MDSconn.get('PTDfATA2("SX45F01_3",%d)'%shot)
+        #if len(t) > 2: print(shot)
+        #else: 
+            #print 'no ', shot 
+    #shot = 175860
+    #exit()
+    
+    shots = loadtxt('/home/tomas/Desktop/DIII-D/carbon_database/database1.txt').T[0]
+    #154858
+    #sxr_ta = loader_SXR(shot, '/home/tomas/tomography/geometry/DIIID/SXR/',MDSconn, False, True)
+    #tvec_ta, sxr_ta, _ = sxr_ta.get_data(0,6)
+    try:
+        os.mkdir('sxr_database')
+    except:
+        pass
+    for shot in arange(176979, 183000):
+        if shot < 176979: continue
+        #import IPython
+        #IPython.embed()
+        t = MDSconn.get('PTDATA2("SX90PF20",%d)'%shot)
+        try:
+            print(shot, t)
+        except:
+            continue
+        if np.size(t.data()) < 2:
+            continue
+
+        sxr_pa = loader_SXR(shot, '/home/tomas/tomography/geometry/DIIID/SXR/',MDSconn, False, False)
+        tvec_pa, sxr_pa, _ = sxr_pa.get_data(1,6)
+        N = len(tvec_pa)/1000
+
+        imshow(sxr_pa[:len(sxr_pa)/N*N].reshape(-1,N,sxr_pa.shape[1]).mean(1),aspect='auto',interpolation='nearest', vmin=0, origin='lower')
+        savefig('sxr_database/%d.png'%shot)
+        clf()
+        
+        
+    #sxr_pa = sxr_pa[:,:32]
+
+    exit()
     
     SXR = hstack((sxr_pa[:,:32],sxr_ta[:,:12]))
     
@@ -1661,16 +1798,7 @@ def main():
     
 
     
-    sxr_fast = loader_SXR(167541, '/home/tomas/tomography/geometry/DIIID/SXR/',MDSconn, True, False)
 
-    tvec_fast, data_fast, _ = sxr_fast.get_data(0,6)
-    
-    sxr_fast = loader_SXR(167541, '/home/tomas/tomography/geometry/DIIID/SXR/',MDSconn, False, False)
-
-    tvec_slow, data_slow, _ = sxr_fast.get_data(0,6)
-    
-    import IPython
-    IPython.embed()
     
     #from matplotlib.pylab import *
     ion()

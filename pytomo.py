@@ -62,37 +62,37 @@ matplotlib.rcParams['backend'] = 'Qt4Agg'  #choose one of GTK GTKAgg GTKCairo Co
 ##!! with no X use Agg !! 
 matplotlib.rcParams['backend'] = 'Agg'  #choose one of GTK GTKAgg GTKCairo CocoaAgg FltkAgg MacOSX QtAgg Qt4Agg TkAgg WX WXAgg Agg Cairo GDK PS PDF SVG
 
-if matplotlib.compare_versions(matplotlib.__version__, '1.9.9'):
+#if matplotlib.compare_versions(matplotlib.__version__, '1.9.9'):
 # http://matplotlib.org/users/dflt_style_changes.html
-    params = { 
-            'axes.labelsize': 'medium',
-            'axes.titlesize': 'medium',
-            'xtick.labelsize' :'medium',
-            'ytick.labelsize': 'medium',
-            'font.size':12,
-            'mathtext.fontset': 'cm',
-            'mathtext.rm': 'serif',
-            'grid.color': 'k',
-            'grid.linestyle': ':',
-            'grid.linewidth': 0.5,
-            'lines.linewidth'   : 1.0,
-            'lines.dashed_pattern' : (6, 6),
-            'lines.dashdot_pattern' : (3, 5, 1, 5),
-            'lines.dotted_pattern' : (1, 3),
-            'lines.scale_dashes': False,
-            'errorbar.capsize':3,
-            'mathtext.fontset': 'cm',
-            'mathtext.rm' : 'serif',
-            'legend.loc':'upper right',
-            'legend.fontsize':'large',
-            'legend.framealpha':None,
-            'legend.scatterpoints':3,
-            'legend.edgecolor':'inherit'}
-                
+params = { 
+        'axes.labelsize': 'medium',
+        'axes.titlesize': 'medium',
+        'xtick.labelsize' :'medium',
+        'ytick.labelsize': 'medium',
+        'font.size':12,
+        'mathtext.fontset': 'cm',
+        'mathtext.rm': 'serif',
+        'grid.color': 'k',
+        'grid.linestyle': ':',
+        'grid.linewidth': 0.5,
+        'lines.linewidth'   : 1.0,
+        'lines.dashed_pattern' : (6, 6),
+        'lines.dashdot_pattern' : (3, 5, 1, 5),
+        'lines.dotted_pattern' : (1, 3),
+        'lines.scale_dashes': False,
+        'errorbar.capsize':3,
+        'mathtext.fontset': 'cm',
+        'mathtext.rm' : 'serif',
+        'legend.loc':'upper right',
+        'legend.fontsize':'large',
+        'legend.framealpha':None,
+        'legend.scatterpoints':3,
+        'legend.edgecolor':'inherit'}
+            
 
-    
-    
-    matplotlib.rcParams.update(params)
+
+
+matplotlib.rcParams.update(params)
 
 
 import sys,os
@@ -198,40 +198,32 @@ s
     """
 
 
-    #os.path.abspath(
-    program_path = os.path.abspath(__file__)
-    program_path = program_path[:program_path.rfind('/')]+'/'
-        
-    local_path = os.path.expanduser('~/tomography/')
+    program_path = os.path.dirname(os.path.realpath(__file__))
+            
+    local_path = os.path.expanduser(os.path.join('~','tomography',''))
     if not os.path.exists(local_path):
-        try:
-            os.mkdir(local_path)
-        except:
-            print('error: os.mkdir(local_path)')
-            raise
-    if not os.path.exists(local_path+'/geometry/'):
-        try:
-            os.mkdir(local_path+'/geometry')
-        except:
-            print('error: os.mkdir(geometry)')
-            raise
+        os.mkdir(local_path)
+    
+    if not os.path.exists(os.path.join(local_path,'geometry')):
+        os.mkdir(os.path.join(local_path,'geometry'))
+        
         
     if not os.path.isfile(local_path+cfg_file+'.cfg'):
         print('copy original setting')
-        copyfile(program_path+cfg_file+".cfg",local_path+cfg_file+'.cfg')
+        copyfile(os.path.join(program_path,cfg_file+'.cfg'),os.path.join(local_path,cfg_file+'.cfg'))
         
     
     inputs = read_config(local_path+cfg_file+".cfg")
  
     inputs['program_path']= program_path
     inputs['local_path']  = local_path
-    inputs['output_path'] = os.path.expanduser(os.path.expandvars(inputs['output_path']))+'/'
-    inputs['tmp_folder']  = os.path.expanduser(os.path.expandvars(inputs['tmp_folder']))+'/'
+    inputs['output_path'] = os.path.expanduser(os.path.expandvars(os.path.normpath(inputs['output_path'])))+os.sep
+    inputs['tmp_folder']  = os.path.expanduser(os.path.expandvars(os.path.normpath(inputs['tmp_folder'])))+os.sep
 
         
     config.wrong_dets_pref = inputs['wrong_dets']
-    if 'usecache' in inputs:
-        config.useCache = inputs['usecache']
+    if 'useCache' in inputs:
+        config.useCache = inputs['useCache']
 
     return inputs
 
@@ -290,10 +282,11 @@ def main():
 
     inputs['tmp_folder']  = os.path.expanduser(os.path.expandvars(inputs['tmp_folder' ]))
     inputs['output_path'] = os.path.expanduser(os.path.expandvars(inputs['output_path']))
-   
+
     for f in [inputs['tmp_folder'],inputs['output_path']]:
         if not os.path.isdir( f):
             os.mkdir(f)
+            
             
     if len(sys.argv) == 1:
         inputs['solid_parallel'] = False
@@ -457,6 +450,9 @@ def main():
     parser.add_argument( "--img_size",  default=inputs['img_size'],  type=int, help="Size of the figures")
     parser.add_argument( "--tmp_folder",  default=inputs['tmp_folder'],  type=str, help="Temporal folder")
 
+    
+    
+    
     args = parser.parse_args()
 
     for a in vars(args):
@@ -466,16 +462,21 @@ def main():
  
 
     config.DEBUG = inputs['DEBUG']
-    print('tmp,  ', args.tmp_folder)
+    
     if args.DEBUG:
         rapid_blocks = 1
+        
+        
+    args.dpi = int(float(os.environ.get('QT_SCALE_FACTOR',1))*args.dpi)
+
 
     wrong_dets =  inputs['wrong_dets']
     if wrong_dets != [] and isinstance(wrong_dets[0],str):
         wrong_dets = eval('r_['+''.join(wrong_dets)+']')-1
  
-    config.wrong_dets_pref = []
-    config.wrong_dets_defined = wrong_dets
+    config.wrong_dets_pref = hstack(( config.wrong_dets_pref , wrong_dets))
+    #config.wrong_dets_defined = wrong_dets
+    #print('config.wrong_dets_defined', config.wrong_dets_defined)
 
     config.magfield_shift = args.sx,args.sy
   
@@ -485,19 +486,9 @@ def main():
 
     if not inputs['gui'] or inputs['reconstruct']:
         tok.prepare_tokamak()
-        
-        
-    if hasattr(tok,'min_tvec'):
-       inputs['tmin'] = max(tok.min_tvec,inputs['tmin'])
-    if hasattr(tok,'max_tvec'):
-       inputs['tmax'] = min(tok.max_tvec,inputs['tmax'])
-
-    #print(tok.max_tvec)
-    #print(inputs['tmin'], inputs['tmax'])
-    #exit()
-
+ 
     if inputs['show_preview']:
-        from matplotlib.backends.backend_qt5agg import FigureCanvasQT as FigureCanvas
+        from matplotlib.backends.backend_qt4agg import FigureCanvasQT as FigureCanvas
         import matplotlib.pylab as plt
         preview(plt.gcf(),inputs, tok,True, True)
         plt.show()
@@ -594,17 +585,11 @@ def startCUI(inputs, tok):
     output_path  = os.path.expanduser(os.path.expandvars(inputs['output_path']))
 
     if not os.path.isdir( tmp_folder):
-        try:
-            os.mkdir(tmp_folder)
-        except:
-            print('error:os.mkdir(tmp_folder)')
-            raise
+        os.mkdir(tmp_folder)
+        
     if not os.path.isdir( output_path):
-        try:
-            os.mkdir(output_path)
-        except:
-            print('error:os.mkdir(output_path)')
-            raise
+        os.mkdir(output_path)
+        
      
     
     inputs['postprocessing'] |= inputs['impurities']

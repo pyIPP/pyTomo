@@ -4,6 +4,6 @@
 
 
 DEBUG = False
-useCache =  False #defined in configfile
+useCache =   True#defined in configfile
 safe_interpolation = False
 wrong_dets_defined = []

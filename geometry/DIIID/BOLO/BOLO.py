@@ -190,6 +190,7 @@ def richardson_lucy(tmp):
     (img, psf, numiter,offset,relax) = tmp
     import scipy.ndimage as nd
     from scipy.signal import fftconvolve
+    
 
     epsilon = 1e-8 
     PSF_inv = np.flipud(psf)
@@ -213,18 +214,19 @@ def richardson_lucy(tmp):
         #update *= cur_est
         #update = Wupd*fftconvolve( 1 - img_ / img_model, PSF_inv, 'full')[len(PSF_inv)-1:]  * cur_est
         cur_est = maximum(0, cur_est -  relax* update);
-
+ 
     return cur_est
 
 
 def medfilt_deconv(xxx_todo_changeme2):
     (data,drtau,tdel,tau,gamma, scrfact ) = xxx_todo_changeme2
-    m         = 2*int(int(drtau/tdel)/2)+1
+    m         = max(2*int(int(drtau/tdel)/2)+1, 3)
     k         = arange(m)-((m-1)/2.)
+    
     k[k != 0] = 1.0/k[k != 0]
     k        = k/tdel/(int(m/2.)*2)
     temp      = data-mean(data[:20],0)
-    temp      = temp.reshape(-1,4).mean(1)
+    temp      = temp[:len(temp)//4*4].reshape(-1,4).mean(1)
     temp      = medfilt(temp,m)
     drdt      = np.convolve( temp,k, mode='same')
     drdt      = medfilt(drdt,m)
@@ -387,53 +389,66 @@ class loader_BOLO():
         #return eqm.rho2rz(rho**2, tvec,'Psi',True)  
         
         
-    def get_total_rad(self):
-        powers = []
-        print('get_total_rad')
-        signals = 'PRAD_TOT','PRAD_DIVL','PRAD_DIVU'
-        self.MDSconn.openTree(self.tree,self.shot)
-        for sig in signals:
-            TDIcall = "\\BOLOM::TOP.PRAD_01.PRAD:"
-            prad = self.MDSconn.get(TDIcall+sig).data()
-            powers.append((sig, self.tvec, prad))
+    #def get_total_rad(self):
         
-        self.MDSconn.closeTree(self.tree,self.shot)
-        for tree in ('EFIT02','EFIT01'):
+        
+        #if hasattr(self, 'powers'):
+            #return self.powers
+        try:
             try:
-                self.MDSconn.openTree(tree,self.shot)
-                
-                ptot = zeros_like(self.tvec)
-                TDIcall = "\\%s::TOP.RESULTS.CONFINEMENT.POWER:PNBI"%tree
-                data = self.MDSconn.get('_x ='+TDIcall).data()
-                tvec = self.MDSconn.get('dim_of(_x)').data()/1000
-                dt = mean(diff(tvec))
-                decay = 150e-3#s
-                from scipy.signal import lfilter
-                data = lfilter((dt/decay ,), [1,-1+dt/decay], data)
-
-                ptot+=interp(self.tvec,tvec,data )
-                
-                TDIcall = "\\%s::TOP.RESULTS.CONFINEMENT.POWER:PECH"%tree
-                data = self.MDSconn.get('_x ='+TDIcall).data()
-                tvec = self.MDSconn.get('dim_of(_x)').data()/1000
-                data = lfilter((dt/decay ,), [1,-1+dt/decay], data)
-                ptot+=interp(self.tvec,tvec,data )
-                
-                TDIcall = "\\%s::TOP.RESULTS.CONFINEMENT.POWER:POH"%tree
-                data = self.MDSconn.get('_x ='+TDIcall).data()
-                tvec = self.MDSconn.get('dim_of(_x)').data()/1000
-                ptot+=interp(self.tvec,tvec,data )
-        
-                
-                powers.append(("%s:PTOT"%tree,self.tvec,ptot ))
-                self.MDSconn.closeTree(tree,self.shot)
-                break
+                self.powers = list(np.load(geometry_path+'/power_%d.npz'%self.shot, allow_pickle=True)['power'])
             except:
-                pass
+                #try:
+                self.powers = []
+                print('get_total_rad')
+                signals = 'PRAD_TOT','PRAD_DIVL','PRAD_DIVU'
+                self.MDSconn.openTree(self.tree,self.shot)
+                for sig in signals:
+                    TDIcall = "\\BOLOM::TOP.PRAD_01.PRAD:"
+                    prad = self.MDSconn.get(TDIcall+sig).data()
+                    self.powers.append((sig, self.tvec, prad))
+                
+                self.MDSconn.closeTree(self.tree,self.shot)
+                for tree in ('EFIT02','EFIT01'):
+                    try:
+                        self.MDSconn.openTree(tree,self.shot)
+                        
+                        ptot = zeros_like(self.tvec)
+                        TDIcall = "\\%s::TOP.RESULTS.CONFINEMENT.POWER:PNBI"%tree
+                        data = self.MDSconn.get('_x ='+TDIcall).data()
+                        tvec = self.MDSconn.get('dim_of(_x)').data()/1000
+                        dt = mean(diff(tvec))
+                        decay = 150e-3#s
+                        from scipy.signal import lfilter
+                        data = lfilter((dt/decay ,), [1,-1+dt/decay], data)
 
+                        ptot+=interp(self.tvec,tvec,data )
+                        
+                        TDIcall = "\\%s::TOP.RESULTS.CONFINEMENT.POWER:PECH"%tree
+                        data = self.MDSconn.get('_x ='+TDIcall).data()
+                        tvec = self.MDSconn.get('dim_of(_x)').data()/1000
+                        data = lfilter((dt/decay ,), [1,-1+dt/decay], data)
+                        ptot+=interp(self.tvec,tvec,data )
+                        
+                        TDIcall = "\\%s::TOP.RESULTS.CONFINEMENT.POWER:POH"%tree
+                        data = self.MDSconn.get('_x ='+TDIcall).data()
+                        tvec = self.MDSconn.get('dim_of(_x)').data()/1000
+                        ptot+=interp(self.tvec,tvec,data )
+                
+                        
+                        self.powers.append(("%s:PTOT"%tree,self.tvec,ptot ))
+                        self.MDSconn.closeTree(tree,self.shot)
+                        break
+                    except:
+                        pass
+                
+                #np.savez_compressed(geometry_path+'_power.npz', power=self.powers)
+                np.savez_compressed(geometry_path+'/power_%d.npz'%self.shot, power=self.powers)
+        except:
+            pass
         #import IPython
         #IPython.embed()
-        return powers
+        #return self.powers
       
       
       
@@ -465,53 +480,71 @@ class loader_BOLO():
         #kappa =  self.MDSconn.get( "\\BOLOM::TOP.PRAD_01.PRAD:KAPPA").data()[:self.nl]
         print('loading data...')
         #dt = mean(diff(tvec))
-        TDI = ['dim_of('+TDIcall+name+'_V)', ]
+        #import IPython
+        #IPython.embed()
+        TDI_data = ['dim_of('+TDIcall+name+'_V)', ]
+        TDI_params = []
         for cam, index in self.cam_ind.items():
             for i in index:
                 name = self.detectors_dict[cam][i-index[0]]
-                TDI.append(TDIcall+name+'_V')
-                TDI.append(TDIcall+name+'_V:TAU')
-                TDI.append(TDIcall+name+'_V:GAM')
-                TDI.append(TDIcall+name+'_V:SCRFACT')
+                TDI_data.append(TDIcall+name+'_V')
+                TDI_params.append(TDIcall+name+'_V:TAU')
+                TDI_params.append(TDIcall+name+'_V:GAM')
+                TDI_params.append(TDIcall+name+'_V:SCRFACT')
 
-                #print TDIcall+name+'_V'
-                #data[:,i]  = self.MDSconn.get(TDIcall+name+'_V').data() 
-                #tau[i]     = self.MDSconn.get(TDIcall+name+'_V:TAU').data() 
-                #gamma[i]   = self.MDSconn.get(TDIcall+name+'_V:GAM').data() 
-                #scrfact[i] = self.MDSconn.get(TDIcall+name+'_V:SCRFACT').data() 
+        self.MDSconn.openTree(self.tree,self.shot)
+        params = self.MDSconn.get('['+','.join(TDI_params)+']').data()
+        tau, gamma,scrfact =  params.reshape(-1,3).T
+        #t = time.time()
+        data = self.MDSconn.get('['+','.join(TDI_data)+']').data()
+        #print(time.time()-t)
+
+        #t = time.time()
         
-        numTasks = 8
-        MDSserver = self.MDSconn.hostspec
-        out = mds_par_load(MDSserver,TDI, self.tree, self.shot,  numTasks)
-        tvec = out.pop(0)/1000 
-        data   = vstack(out[::4]).T
-        tau    = hstack(out[1::4])
-        gamma  = hstack(out[2::4])
-        scrfact= hstack(out[3::4])**2#BUG in order to match the official bolometers data!!
+ 
+        tvec = data[0]/1000 
+        data   = data[1:].T
+        #tau    = hstack(out[1::4])
+        #gamma  = hstack(out[2::4])
+        scrfact= scrfact**2#BUG in order to match the official bolometers data!!
         
         print('done')
 
-        import IPython
-        IPython.embed()
+
+        offset = (tvec<0)&(tvec  > -0.7)
+        noise = std(data[offset],axis=0)
+
+        data-= data[offset].mean(0)
+        it = tvec.searchsorted(-.7)//2*2
+        data= data[it:]
+        tvec= tvec[it:]
+        fs = 1/diff(tvec).mean()
+
+        data -= outer(tvec,data[tvec>10].mean(0))/tvec[tvec>10].mean()
+        import scipy.signal
+        notch_filt = ((7.1,1),(6,1))
+        for f0,width in notch_filt:
+            b,a = scipy.signal.iirnotch(f0,f0/width,fs)
+            data = scipy.signal.filtfilt(b, a, data,axis=0)
+
+
+        #noise = std(data[offset],axis=0)
+        drtau = 0.05*maximum(1,sqrt(noise/median(noise))) #more smoothing for noise channels
         
-        data-= data[tvec<0].mean(0)
-        data-= data[tvec<0].mean(0)#probably due to a finite number accuracy? 
-
-        data[tvec>0] -= outer(tvec[tvec>0],data[tvec>10].mean(0))/tvec[tvec>10].mean()
-
-
-        noise = std(data[tvec<0],axis=0)
-        drtau = 0.05*sqrt(noise/median(noise)) #more smoothing for noise channels
-        
-        method = 'median'
+  
+        method = 'richardson_lucy'
         print('Deconvolution using %s method'%method)
         t,x = self.deconvolve_bolo(tvec, data,tau,gamma,scrfact, method, drtau=drtau )
         print('Done')
-
+        #import IPython
+        #IPython.embed()
         from shared_modules import MovingAveradge
-        downsample = round(mean(diff(self.tvec))/mean(diff(t)))
-        x =  MovingAveradge(copy(x.T),downsample).T
-        t =  MovingAveradge(copy(t),downsample)
+        downsample = 40
+        
+        self.tvec = t.reshape()
+        #downsample = round(mean(diff(self.tvec))/mean(diff(t)))
+        #x =  MovingAveradge(copy(x.T),downsample).T
+        #t =  MovingAveradge(copy(t),downsample)
         pwr = zeros((len(self.tvec), self.nl), dtype='single')
         pwr_err = zeros((len(self.tvec), self.nl), dtype='single')
         pwr_err+= std(x[t<0])*sqrt(noise/median(noise))[None,:]*5+pwr.mean(1)[:,None]*0.10 #just guess 
@@ -537,10 +570,13 @@ class loader_BOLO():
      
      
         
-        t1,x1 = self.deconvolve_bolo(tvec, data,tau,gamma,scrfact, 'median', drtau=0.05 )
-        t2,x2 = self.deconvolve_bolo(tvec, data,tau,gamma,scrfact, 'golay', drtau=0.05 )
-        t3,x3 = self.deconvolve_bolo(tvec, data,tau,gamma,scrfact, 'richardson_lucy', drtau=0.05 )
-        t4,x4 = self.deconvolve_bolo(tvec, data,tau,gamma,scrfact, 'wiener', drtau=0.05 )
+        t1,x1 = self.deconvolve_bolo(tvec, data,tau,gamma,scrfact, 'median', drtau=drtau )
+        t2,x2 = self.deconvolve_bolo(tvec, data,tau,gamma,scrfact, 'golay', drtau=drtau )
+        #t3,x3 = self.deconvolve_bolo(tvec, data,tau,gamma,scrfact, 'richardson_lucy', drtau=drtau )
+        t4,x4 = self.deconvolve_bolo(tvec, data,tau,gamma,scrfact, 'wiener', drtau=drtau )
+        
+        
+        
         pwr = zeros((len(self.tvec), self.nl), dtype='single')
         pwr_err = zeros((len(self.tvec), self.nl), dtype='single')
         
@@ -577,12 +613,15 @@ class loader_BOLO():
         ax[0,0].set_title('median')
         ax[0,1].plot(t2, x2)
         ax[0,1].set_title('golay')
-        ax[1,0].plot(t3, x3)
-        ax[1,0].set_title('richardson_lucy')
-        ax[1,1].plot(t4, x4)
+        #ax[1,0].plot(t3, x3)
+        #ax[1,0].set_title('richardson_lucy')
+        ax[1,1].plot(t4[:len(t4)//16*16].reshape(-1,16).mean(1), x4[:len(t4)//16*16].reshape(-1, 16,self.nl).mean(1))
         ax[1,1].set_title('wiener')
         show()
         from scipy.signal import fftconvolve, medfilt
+        
+        imshow(x1[:len(t4)//16*16].reshape(-1, 16,self.nl).mean(1), aspect='auto')
+        imshow(x1 , aspect='auto')
 
 
         import IPython
@@ -659,7 +698,7 @@ class loader_BOLO():
         #ax[1].plot(tvec, y_)
         #ax[1].plot(self.tvec,power[:,ch])
         #ax[0].set_title(ch)
-        #ax[1].grid('on')
+        #ax[1].grid(True)
         #show()
         
         #plot(tvec, pwr6[:,ch])
@@ -810,11 +849,11 @@ class loader_BOLO():
         if filtertype == 'richardson_lucy': #Richardson-Lucy deconvolution.
 
             data = medfilt(data,(3,1)) #remove spikes
-
+            s = 8
             offset = std(data[tvec<0],0)*2            
-            tvec = tvec.reshape(-1,8).mean(1)
+            tvec = tvec[:len(tvec)//s*s].reshape(-1,s).mean(1)
             n = 2**int(ceil(log2(sum(tvec>0))))
-            data = data.reshape(-1,8,self.nl).mean(1)[-n:]
+            data = data[:len(data)//s*s].reshape(-1,s,self.nl).mean(1)[-n:]
             tvec = tvec[-n:]
             dt*=8
             #multiprocessing!!!
@@ -831,12 +870,12 @@ class loader_BOLO():
 
         
             pool = Pool(cpu_count())
-            out = pool.map(richardson_lucy,args)
+            out = map(richardson_lucy,args)
             pool.close()
             pool.join()
             
             
-            pwr = vstack(out).T*(tau/dt/scrfact/array([sum(a[1]) for a in args]))
+            pwr = vstack(list(out)).T*(tau/dt/scrfact/array([sum(a[1]) for a in args]))
   
             
         
@@ -846,9 +885,12 @@ class loader_BOLO():
             
         if filtertype == 'median': #median filter  
 
-            tvec     = tvec.reshape(-1,4).mean(-1)
+            tvec     = tvec[:len(tvec)//4*4].reshape(-1,4).mean(1)
             tdel      = dt*4
-            args = [(data[:,i],drtau[i],tdel,tau[i],gamma[i], scrfact[i] ) for i in range(self.nl)]
+            #args = [(data[:,i],drtau[i],tdel,tau[i],gamma[i], scrfact[i] ) for i in range(self.nl)]
+            one = ones(len(tau))
+            args = zip(data.T,drtau*one,tdel*one,tau,gamma,scrfact)
+
             pool = Pool(cpu_count())
             out = pool.map(medfilt_deconv,args)
             pool.close()
@@ -868,23 +910,23 @@ class loader_BOLO():
             
             from scipy.signal import savgol_coeffs
             N = 2                 # Order of polynomial fit
-            F = int(drtau/dt/2)*2+1                # Window length
+            F = int_(drtau/dt/2)*2+1                # Window length
             # Calculate S-G coefficients
-            g = [savgol_coeffs(F,N, i) for i in range(2)]
             for m in range(self.nl):            
+                g = [savgol_coeffs(F[m],N, i) for i in range(2)]
                 y = data[:,m]          
-                SG0 = convolve(g[0][::-1],y ,mode='same')
-                SG1 = convolve(g[1][::-1],y ,mode='same')/dt # Turn differential into derivative
+                SG0 = convolve(g[0][::-1],y, mode='same')
+                SG1 = convolve(g[1][::-1],y, mode='same')/dt # Turn differential into derivative
                 pwr[:,m] = (SG0*gamma[m]-SG1*tau[m])/scrfact[m]
             
 
         
         elif filtertype == 'butter':
             from scipy.signal import butter, filtfilt
-            fmax = 1./drtau
             facq = 1./ mean(diff(tvec))
-            b,a = butter(5,fmax/facq) # Butterworth filter at 100 Hz
             for m in range(self.nl):            
+                fmax = 1./drtau[m]
+                b,a = butter(5,fmax/facq) # Butterworth filter at 100 Hz
                 rp=gradient(data[:,m])/dt
                 rp=filtfilt(b,a,rp)
                 pwr[:,m] =  (data[:,m]*gamma[m]+rp*tau[m])/scrfact[m]
@@ -938,7 +980,7 @@ class loader_BOLO():
                 h = exp(-(tvec-tvec[0])/tau_)
                 H = np.fft.rfft(h)
                 N = abs(np.fft.rfft(x*(tvec<0)))
-                S=2e-4/exp(drtau/0.05)
+                S=2e-4/exp(drtau[ch]/0.05)
                 smoothN = savitzky_golay(N, 101,1,firstvals=mean(N[:200]))
                 G = conj(H)*S/(H*conj(H)*S+smoothN)
                 pwr[:,ch]=  np.fft.irfft(G*fx)*tau[ch]/dt/scrfact[ch]
@@ -1018,8 +1060,8 @@ class loader_BOLO():
             m_alpha = mean(m_alpha)
             
             
-            xfile = open(self.geometry_path+'/detector_%s_x.txt'%det,'w')
-            yfile = open(self.geometry_path+'/detector_%s_y.txt'%det,'w')
+            xfile = open(self.geometry_path+'detector_%s_x.txt'%det,'w')
+            yfile = open(self.geometry_path+'detector_%s_y.txt'%det,'w')
             
             
             alpha = arctan2(Z2-Z1,R2-R1) #to same jako alphas? 
@@ -1038,8 +1080,8 @@ class loader_BOLO():
                 R21 = R1+Ll*cos(alpha-theta)
                 R22 = R1+Lr*cos(alpha+theta)
                 
-                savetxt(self.geometry_path+'/detector_%s_x.txt'%det, c_[R21,R22,R1], fmt='%5.4f')
-                savetxt(self.geometry_path+'/detector_%s_y.txt'%det, c_[Z2,Z1], fmt='%5.4f')
+                savetxt(self.geometry_path+'detector_%s_x.txt'%det, c_[R21,R22,R1], fmt='%5.4f')
+                savetxt(self.geometry_path+'detector_%s_y.txt'%det, c_[Z2,Z1], fmt='%5.4f')
                 for r1,r21,z1,r22,z2 in zip(R1,R21,Z1,R22,Z2):
                     verts.append([[r1,z1],[r21,z2 ],[r22,z2]])
 
@@ -1061,8 +1103,8 @@ class loader_BOLO():
                 
                 
 
-                savetxt(self.geometry_path+'/detector_%s_x.txt'%det, c_[R2,R1], fmt='%5.4f')
-                savetxt(self.geometry_path+'/detector_%s_y.txt'%det, c_[Z21,Z22,Z1], fmt='%5.4f')  
+                savetxt(self.geometry_path+'detector_%s_x.txt'%det, c_[R2,R1], fmt='%5.4f')
+                savetxt(self.geometry_path+'detector_%s_y.txt'%det, c_[Z21,Z22,Z1], fmt='%5.4f')  
    
                 for z1,z21,r1,z22,r2 in zip(Z1,Z21,R1,Z22,R2):
                     verts.append([[r1,z1],[r2,z21],[r2,z22]])
@@ -1091,7 +1133,7 @@ def main():
     #, shot, geometry_path,MDSconn
     c = mds.Connection('localhost' )
 
-    bolo = loader_BOLO(175886,'/home/tomas/tomography/geometry/DIIID/BOLO/',c )
+    bolo = loader_BOLO(189876,'/home/tomas/tomography/geometry/DIIID/BOLO/',c )
     T = time.time()
     bolo.get_data_(1.9,3)
     bolo.get_total_rad(4,6)

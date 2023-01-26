@@ -73,7 +73,6 @@ def tomography(inputs, tokamak, progress = None):
 
     tokamak.prepare_emiss0( (inputs['tmax']+inputs['tmin'])/2.)
     
-
     data_all, error_all, tvec, dets, Tmat_all, normData = tokamak.prepare_data(inputs['tmin'], inputs['tmax'], 
                         inputs['data_smooth'], inputs['data_undersampling'], inputs['error_scale'], inputs['prune_dets'], False)
 
@@ -83,13 +82,12 @@ def tomography(inputs, tokamak, progress = None):
     error = error_all[dets]
     Tmat  =  Tmat_all[dets]
 
-
-    if not tokamak.default_calb is 'none':# and  tokamak.allow_self_calibration:
+    if tokamak.default_calb != 'none':# and  tokamak.allow_self_calibration:
         if inputs['ratiosolver'] != 0:
             calb = pre_calibrate(tokamak, inputs, inputs['ratiosolver'], inputs['ifishmax'], 
                                     data, error, data_all,error_all, tvec, dets,Tmat, normData)
             cams = list(tokamak.detectors_dict.keys())
-            calib_file = tokamak.geometry_path+'/calibration/%d.txt'%tokamak.shot
+            calib_file = tokamak.geometry_path+'calibration'+os.sep+'%d.txt'%tokamak.shot
 
             f = open(calib_file, 'w')
             for k,i in zip(cams, calb): f.write('%s  %.3f\n'%( k,i ))
@@ -157,9 +155,10 @@ def tomography(inputs, tokamak, progress = None):
         try:
             os.remove(tokamak.tmp_folder+'/Emiss0.npz')
         except:
-            pass
+            pass                
+
         
-    #debug( 'mean error  %.4f'%(median(error[isfinite(error)]/(1e-10+data[isfinite(error)]))))
+    debug( 'mean error  %.4f'%(median(error[isfinite(error)]/(1e-10+data[isfinite(error)]))))
     debug( 'mean error  %.4f'%(median(error[isfinite(error)])/median(data[isfinite(error)])))
 
 
@@ -254,6 +253,7 @@ def tomography(inputs, tokamak, progress = None):
 
             data -= mean(data[:,subst_ind],axis=1)[:,None]
             error = tile(data[:,subst_ind].std(1)*inputs['error_scale'], (len(tvec),1)).T
+            error[:] = error.mean()  #assume the same error for all LOS 
             corrupted = isinf(error)
             
             error[corrupted] = infty
@@ -306,7 +306,7 @@ def tomography(inputs, tokamak, progress = None):
         postprocessing = True
         sequence = array([(i,data[:,ii],error[:,ii],tvec[ii],Tmat,dets, normData[ii], 
                     G0[i],lam0[i],  numSteps, postprocessing,inputs, tokamak,
-                    inputs['solver'], inputs['ifishmax'], time_0,postprocessing)  for i,ii in enumerate(ind)],copy=False)    
+                    inputs['solver'], inputs['ifishmax'], time_0,postprocessing)  for i,ii in enumerate(ind)],copy=False,dtype=object)    
             
         sequence = array_split(sequence, numTasks)
         pool = multiprocessing.Pool(min(numcores,numSteps))
@@ -375,7 +375,7 @@ def tomography(inputs, tokamak, progress = None):
     mean_chi2 = exp(nansum(log(output['chi2']))/tsteps)
     mean_lam = median(output['lam0'])
     
-    print('Statistics: \n Mean time: %.3gs \n Mean Chi2: %.6g \n Mean Lam: %.3g \n Time slices: %d\n Blocks: %d'\
+    print('Statistics: \n Mean time: %.3gs \n Mean Chi2: %.3g \n Mean Lam: %.3g \n Time slices: %d\n Blocks: %d'\
             %(TotTime/tsteps,mean_chi2,mean_lam,tsteps ,numSteps ))
     if 'mag_rho' in output:
         output['mag_rho'] =  output['mag_rho'][0]
@@ -548,9 +548,9 @@ def presolve(tokamak, data, error, tvec, Tmat, dets,  normData,
         nt = size(tvec)
         
         ind = [slice(i*nt//numSteps,(i+1)*nt//numSteps) for i in range(numSteps)]
-        sequence = [(i,data[:,ii],error[:,ii],tvec[ii],Tmat,dets, normData[ii],G0.mean(-1),lam0[i], 
+        sequence = array([(i,data[:,ii],error[:,ii],tvec[ii],Tmat,dets, normData[ii],G0.mean(-1),lam0[i], 
                          numSteps, False,inputs, tokamak,
-                        solver, ifishmax, time_0, postprocessing)  for i,ii in enumerate(ind)]
+                        solver, ifishmax, time_0, postprocessing)  for i,ii in enumerate(ind)],copy=False,dtype=object) 
 
 
 
@@ -678,7 +678,8 @@ def main_cycle(input):
         :param double time_0:   Initial time of recontruction, it is used to guess remaining time
     """
     debug('Starter main cycle')
-    os.nice(3)
+    if os.name != 'nt':
+        os.nice(3)
 
     
 
@@ -734,6 +735,9 @@ def main_cycle(input):
             SigmaGsample = tokamak.Transform*SigmaGsample
 
     output['g'] = g.T
+    if SigmaGsample is not None:
+        output['g_samples'] = SigmaGsample.T[None]
+        
     output['retro'] = retro
     output['lam0'] = lam0
     output['bnd']  = bnd

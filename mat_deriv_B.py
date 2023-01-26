@@ -357,13 +357,16 @@ def generate_aniso_imgesson(coord, rho, BdMat, in_out_frac, danis):
     #---diagonal and side diagonal matrices to construct differential operators---
 
     
+    #weight pushing emissivity in far sol (Psi > 1.3) to zero
 
     #---creating differential operators---
     D = eye(npix,format='csr')
     
+
+    
     
     Dx = zeros((3,npix))
-    Dx[0] =  -1/2.
+    Dx[0] =-1/2.
     Dx[2] = 1/2.  #central derivative => /2 factor
     #calculating the gradients at the edges
     Dx[1,i_right] = -1
@@ -494,9 +497,14 @@ def generate_aniso_imgesson(coord, rho, BdMat, in_out_frac, danis):
     cyy= spdiags(cyy*deltax*deltay,0,npix, npix)
     cxy= spdiags(cxy*deltax*deltay,0,npix, npix)
     
-    B = cx*Dx+cy*Dy+cxx*Dxx+cyy*Dyy+2*cxy*Dxy
 
-    return B, 
+    #supress radiationin in far SOL
+    Wout = spdiags( 100*maximum(0, rho.flatten('F')-1.1)**2 , 0, npix, npix,format='csr')
+
+    B = cx*Dx+cy*Dy+cxx*Dxx+cyy*Dyy+2*cxy*Dxy 
+
+ 
+    return B,Wout 
 
 
 
