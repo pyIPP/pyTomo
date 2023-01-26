@@ -172,11 +172,10 @@ class ASDEX(Tokamak):
         if not load_data_only:
      
             self.load_mag_equilibrium()
-            
+
             self.min_tvec = 0
             self.max_tvec = self.tsurf[-1]+0.1
-   
-            
+
             self.VesselStructures()
 
             self.load_LBO()
@@ -208,7 +207,7 @@ class ASDEX(Tokamak):
             self.AXUV()
             self.index = 12 
             
-
+            
         self.max_tvec = min(self.max_tvec,  self.tvec[-1])
         try:
             self.load_geom()
