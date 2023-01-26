@@ -217,7 +217,7 @@ s
         elif os.path.exists('/p/'):
             tok_name = 'NSTX'
         else:
-            tok_name = 'D3D'
+            tok_name = 'DIIID'
             print('Local installation of pyTomo - location is DIII-D?')
         cfg_path = os.path.join(program_path,cfg_file+'_'+tok_name+'.cfg')
         copyfile(cfg_path,os.path.join(local_path,cfg_file+'.cfg'))
