@@ -31,8 +31,7 @@ try:
     from signal_analysis.sfft  import sfft
     from signal_analysis.sstft import sstft
 except:
-    pass
-    #print('pyfftw is missing')
+    print('pyfftw is missing')
 
 
 from matplotlib.widgets import Slider, RadioButtons,RectangleSelector

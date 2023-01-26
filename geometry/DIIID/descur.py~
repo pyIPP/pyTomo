@@ -221,8 +221,8 @@ class DESCUR:
     #print parent_path
     libdsc = ct.cdll.LoadLibrary(parent_path+'/descur_idl.so')
     
-   # t = np.linspace(0,100)*2*np.pi
-    #r_surf,z_surf = sin(t),cos(t)
+    t = np.linspace(0,100)*2*np.pi
+    r_surf,z_surf = sin(t),cos(t)
     momtype=4
     nphi=1
     c_nmom=ct.c_long(mom_order)

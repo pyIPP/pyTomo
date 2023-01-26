@@ -1412,6 +1412,7 @@ def matplotlib_image(params):
             ax.plot(Xchord/plot_details['norm'], Ychord/plot_details['norm'], 'gray', lw=.25)
 
         if plot_details['struct_dict'] is not None:
+
             for _,(xstruct,ystruct) in plot_details['struct_dict'].items():
                 if len(xstruct) > 1:
                     color = '.5' if typ =='bw' or white_bg else 'w'

@@ -145,7 +145,7 @@ sqrt(max(data))
     
         self.VesselStructures()
         if 'inner boundary' in self.struct_dict:
-            self.vessel_boundary = array(self.struct_dict['inner boundary']).T
+            self.vessel_boundary = self.struct_dict['inner boundary'].T
         else:
             self.vessel_boundary = loadtxt(path+border_file)
 

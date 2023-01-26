@@ -58,7 +58,7 @@ for tomography and command-line interface. All functions should be fully accesib
 
 #try:
 import matplotlib   #on JET must  be used Qt4Agg backend
-matplotlib.rcParams['backend'] = 'Qt4Agg'  #choose one of GTK GTKAgg GTKCairo CocoaAgg FltkAgg MacOSX QtAgg Qt4Agg TkAgg WX WXAgg Agg Cairo GDK PS PDF SVG
+matplotlib.rcParams['backend'] = 'Qt5Agg'  #choose one of GTK GTKAgg GTKCairo CocoaAgg FltkAgg MacOSX QtAgg Qt4Agg TkAgg WX WXAgg Agg Cairo GDK PS PDF SVG
 ##!! with no X use Agg !! 
 matplotlib.rcParams['backend'] = 'Agg'  #choose one of GTK GTKAgg GTKCairo CocoaAgg FltkAgg MacOSX QtAgg Qt4Agg TkAgg WX WXAgg Agg Cairo GDK PS PDF SVG
 
@@ -285,7 +285,7 @@ def main():
     """
     import argparse
     import matplotlib   #on JET must  be used Qt4Agg backend
-    matplotlib.rcParams['backend'] = 'Agg'  #choose one of GTK GTKAgg GTKCairo CocoaAgg FltkAgg MacOSX QtAgg Qt4Agg TkAgg WX WXAgg Agg Cairo GDK PS PDF SVG
+    #matplotlib.rcParams['backend'] = 'Agg'  #choose one of GTK GTKAgg GTKCairo CocoaAgg FltkAgg MacOSX QtAgg Qt4Agg TkAgg WX WXAgg Agg Cairo GDK PS PDF SVG
     # !! with no X use Agg !! 
 
  

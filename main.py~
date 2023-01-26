@@ -544,11 +544,7 @@ def presolve(tokamak, data, error, tvec, Tmat, dets,  normData,
     lam0 = 3 *ones(numSteps)
     retro = None
     postprocessing=False
-    
-    #MDSplus object is not pickable
-    if hasattr(tokamak, 'MDSconn' ):
-        del tokamak.MDSconn
-        
+
     if solver in r_[1:7]:  # MFI rapid, SVD,SVD2, QR, GEV,GSVD   #(numSteps > 10 and solver == 1) or solver == 2:
         if G0 == None:
             G0 = single(tokamak.emiss_0)
