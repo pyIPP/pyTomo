@@ -396,7 +396,7 @@ sqrt(max(data))
  
                 from . import map_equ
                 if not hasattr(self,'eqm'):
-                    self.eqm = map_equ.equ_map(self.MDSconn)   
+                    eqm = map_equ.equ_map(self.MDSconn)   
                 
 
                 
@@ -405,9 +405,9 @@ sqrt(max(data))
                 stat = False
                 
                 for diag,mag_exp,mag_ed  in eq_diags:
-                    stat = self.eqm.Open(self.shot, diag=diag, exp=mag_exp, ed=mag_ed)
-                    #print size(self.eqm.t_eq)
-                    if stat and size(self.eqm.t_eq) >2 : break
+                    stat = eqm.Open(self.shot, diag=diag, exp=mag_exp, ed=mag_ed)
+                   
+                    if stat and size(eqm.t_eq) >2 : break
                     warning('Warning: equlibrium for shot:%d diag:%s  exp:%s  ed:%d  was not found!! other will be used'%(self.shot,diag,mag_exp,mag_ed))
 
                 if not stat:
@@ -417,7 +417,7 @@ sqrt(max(data))
                 mag_diag = self.mag_diag
                 from .mag_equ import  Equlibrium
 
-                EQU = Equlibrium(self.MDSconn,self.eqm, self.shot, mag_diag,self.mag_exp,self.mag_ed)
+                EQU = Equlibrium(self.MDSconn,eqm, self.shot, mag_diag,self.mag_exp,self.mag_ed)
                 
                 if 'TRA' in mag_diag:
                     output = EQU.getTranspEquilibrium()
@@ -433,12 +433,12 @@ sqrt(max(data))
             
                 try:
                         
-                    pfm = copy(self.eqm.pfm)
-                    pfm-= self.eqm.psi0
-                    pfm/= (self.eqm.psix-self.eqm.psi0)
-                    pfm_tvec = self.eqm.t_eq
-                    pfm_R = self.eqm.Rmesh
-                    pfm_Z = self.eqm.Zmesh
+                    pfm = copy(eqm.pfm)
+                    pfm-= eqm.psi0
+                    pfm/= (eqm.psix-eqm.psi0)
+                    pfm_tvec = eqm.t_eq
+                    pfm_R = eqm.Rmesh
+                    pfm_Z = eqm.Zmesh
                     self.PFM = {'pfm':pfm,'pfm_tvec':pfm_tvec,'pfm_R':pfm_R,'pfm_Z':pfm_Z}
                     output.update(self.PFM)
                 except:

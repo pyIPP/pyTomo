@@ -331,7 +331,7 @@ def tomography(inputs, tokamak, progress = None):
                 if currentThread is not None:
                     if currentThread().isInterruptionRequested():
                         raise Exception('Externally interrupted!')
-             
+           
                 out = method(main_cycle, seq)  #   pool.imap(main_cycle, seq)  #!!!open main cycle !!!
                 gc.collect()
                 results.extend(out)
