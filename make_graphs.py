@@ -1794,15 +1794,16 @@ def plot_2D_adv(yvec,xvec,data,name,plot_type=0,cmap=my_cmap_,norm=Normalize(),s
     
     vmin,vmax = mquantiles(data[isfinite(data)],(0.01, 0.99))
     vmin =  min(0,vmin) 
-        
+    
+    extend = 'neither'
     if sym_colorbar:
         vmax = max(-vmin,vmax)
         vmin = min(vmin,-vmax)
     elif inputs['blacken_negative']:
         vmin = (vmin-vmax)/1e3
+        extend = 'min'
         
-    
-        
+   
  
     fig = Figure((1.3*img_size,img_size))
     FigureCanvas(fig)
@@ -1819,7 +1820,7 @@ def plot_2D_adv(yvec,xvec,data,name,plot_type=0,cmap=my_cmap_,norm=Normalize(),s
         else:
             ticks = None
 
-        c = fig.colorbar(im,format=LogFormatterTeXExponent('%.2e'),ticks=ticks)
+        c = fig.colorbar(im,format=LogFormatterTeXExponent('%.2e'),ticks=ticks,extend=extend)
 
   
         if ticks is None:
@@ -1842,7 +1843,7 @@ def plot_2D_adv(yvec,xvec,data,name,plot_type=0,cmap=my_cmap_,norm=Normalize(),s
     elif plot_type == 1:
         im = ax.imshow( data, interpolation='bilinear', origin='lower', cmap ='binary', extent=extent,norm=norm)
   
-        c = fig.colorbar(im,format=LogFormatterTeXExponent('%.2e'))
+        c = fig.colorbar(im,format=LogFormatterTeXExponent('%.2e'),extend=extend)
 
         ax.contour( data, 20, linewidths=1,  colors='k',extent=extent)
     elif plot_type == 2:
