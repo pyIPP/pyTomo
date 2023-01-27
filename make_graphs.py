@@ -537,6 +537,7 @@ def make_graphs(input_data, plot_svd = False):
 
         plot_details['mag_field'] = True
         plot_details['mag_field_rhop'] = rhop
+
         if 'plot_surfaces_outer' in inputs and inputs['plot_surfaces_outer'] and tokamak.use_pfm:
 
             rho_out = linspace(1,1.1,5)
@@ -1386,6 +1387,7 @@ def matplotlib_image(params):
 
         if 'mag_field' in plot_details: #BUG is not working if False
             mag_surfs=ax.plot(mag_field[0,:,:,0],mag_field[1,:,:,0],'--',c='0.75',lw=.5)
+            
         if 'mag_out' in plot_details:
             magr_out,magz_out = plot_details['mag_out']
             mag_surfs_out = [ax.plot(r,z,':',c='0.75',lw=.5)[0] for r,z in zip(magr_out[0],magz_out[0])]

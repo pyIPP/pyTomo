@@ -653,11 +653,15 @@ class equ_map:
                     #nlist = nlist[:len(nlist)//2]
                 #except: #slower option  
                     #try:
-                nlist = gen.create_contour(fl)[0]
-                    #nlist = nlist[:len(nlist)//2]
-                    #except:
-                        #from IPython import embed
-                        #embed()
+                    
+                
+                nlist = gen.create_contour(fl)
+                #output differes for variosu matplotlib versions
+                if len(nlist) > 0 and isinstance(nlist[0], list):
+                    nlist = nlist[0]
+               
+                    
+             
 
                 #j_ctrs = len(nlist)
                 if len(nlist) == 0:
@@ -678,11 +682,8 @@ class equ_map:
                             line = l
        
                 R_surf, z_surf = list(zip(*line))
-                try:
-                    R_surf = np.array(R_surf, dtype = np.float32)
-                except:
-                    from IPython import embed
-                    embed()
+                
+                R_surf = np.array(R_surf, dtype = np.float32)
                 z_surf = np.array(z_surf, dtype = np.float32)
                 if not all_lines:
                     ind = (z_surf >= self.ssq['Zunt'][i])

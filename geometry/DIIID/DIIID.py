@@ -144,10 +144,10 @@ sqrt(max(data))
         border_file = 'border_sas.txt' if self.shot > 168847 else 'border.txt' 
     
         self.VesselStructures()
-        if 'inner boundary' in self.struct_dict:
-            self.vessel_boundary = array(self.struct_dict['inner boundary']).T
-        else:
-            self.vessel_boundary = loadtxt(path+border_file)
+        #if 'inner boundary' in self.struct_dict:
+            #self.vessel_boundary = array(self.struct_dict['inner boundary']).T
+        #else:
+        self.vessel_boundary = loadtxt(path+border_file)
 
        
         Tokamak.__init__(self, input_parameters, input_diagn, coord,

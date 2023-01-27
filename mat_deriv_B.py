@@ -458,6 +458,8 @@ def generate_aniso_imgesson(coord, rho, BdMat, in_out_frac, danis):
 
     
     gradRho=DxM**2+DyM**2
+    
+    gradRho[gradRho == 0] = 1e-6
 
     cxx=(Dperp*DxM**2+Dpar*DyM**2)/gradRho
     cyy=(Dperp*DyM**2+Dpar*DxM**2)/gradRho
