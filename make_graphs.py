@@ -1781,10 +1781,7 @@ def plot_adv(tvec, data, name, save_data = True,**kwarg):
 def plot_2D_adv(yvec,xvec,data,name,plot_type=0,cmap=my_cmap_,norm=Normalize(),sym_colorbar=False,**kwarg):
     
     global inputs,tokamak
-    #for a in ['output_path', 'tmp_folder', 'enable_output' ,'output_type']:                    #Loads all prepared data
-        #exec(a+" = inputs['"+a+"']")
-    #for a in ['dpi', 'img_size' ]:                    #Loads all prepared data
-        #exec(a+" = plot_details['"+a+"']")
+
         
     img_size = plot_details['img_size']
     dpi = plot_details['dpi']
@@ -1792,7 +1789,7 @@ def plot_2D_adv(yvec,xvec,data,name,plot_type=0,cmap=my_cmap_,norm=Normalize(),s
     tmp_folder = inputs['tmp_folder'] 
     enable_output =  inputs['enable_output']
     output_type =  inputs['output_type']
-
+    inputs['blacken_negative']
     
     
     vmin,vmax = mquantiles(data[isfinite(data)],(0.01, 0.99))
@@ -1801,6 +1798,10 @@ def plot_2D_adv(yvec,xvec,data,name,plot_type=0,cmap=my_cmap_,norm=Normalize(),s
     if sym_colorbar:
         vmax = max(-vmin,vmax)
         vmin = min(vmin,-vmax)
+    elif inputs['blacken_negative']:
+        vmin = (vmin-vmax)/1e3
+        
+    
         
  
     fig = Figure((1.3*img_size,img_size))

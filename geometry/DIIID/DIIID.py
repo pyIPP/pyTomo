@@ -392,7 +392,7 @@ sqrt(max(data))
                 
             else:
           
-                print('No cached equilibrum file '+str( e))
+                print('No cached equilibrum file ' )
  
                 from . import map_equ
                 if not hasattr(self,'eqm'):
