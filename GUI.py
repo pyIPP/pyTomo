@@ -1920,10 +1920,14 @@ def main(setting, tokamak):
     new_font = app.font()
     new_font.setPointSize(  12 )
     app.setFont( new_font )
-    setting['screen_width']  = app.desktop().screenGeometry().width()
-    setting['screen_height'] = app.desktop().screenGeometry().height()
+    #setting['screen_width']  = app.desktop().screenGeometry().width()
+    #setting['screen_height'] = app.desktop().screenGeometry().height()
+    setting['screen_width']  = 1920
+    setting['screen_height'] = 1080
 
     myapp = MainWindow(setting, tokamak)
+    #app.resize(1050, 650)
+
     myapp.show()
     app.exec_()
 
