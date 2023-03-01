@@ -20,7 +20,7 @@ from matplotlib.colors import Normalize
 from shared_modules import fsvd,fast_svd,debug, get_rho_tan
 from annulus import get_bd_mat, get_rho_field_mat
 try:
-    from multiprocessing import Process, Pool, cpu_count
+    from multiprocessing import Process, Pool
     import threading
     threading._DummyThread._Thread__stop = lambda x:40
 except:
@@ -570,9 +570,8 @@ def make_graphs(input_data, plot_svd = False):
     if inputs['plot_all']  or tsteps == 1:
   
         try:
-            n_cpu = cpu_count()
             #use initializer to share 
-            p = Pool(n_cpu)
+            p = Pool(inputs['n_cpu'])
         except Exception as e:
             print('Pool initialization error: ', e)
             n_cpu = 1
@@ -603,7 +602,7 @@ def make_graphs(input_data, plot_svd = False):
             mag_field = nan*ones(tsteps)
             
         #high quality matplotlib output
-        n_split = 1 if tsteps < 2*n_cpu else 2*n_cpu
+        n_split = 1 if tsteps < 2*inputs['n_cpu'] else 2*inputs['n_cpu']
         ind = [slice(i*tsteps//n_split,(i+1)*tsteps//n_split) for i in range(n_split)]
 
         args = [(r_[ii],gres[...,ii],padding,data[ii,:], error[ii,:],retro[ii,:],dets

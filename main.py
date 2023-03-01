@@ -24,7 +24,7 @@ from asymmetries import CalcAsymNew
 
 
 try:
-    from multiprocessing import Process, Pool, cpu_count
+    from multiprocessing import Process, Pool
     import threading
     threading._DummyThread._Thread__stop = lambda x:40
 except:
@@ -278,12 +278,12 @@ def tomography(inputs, tokamak, progress = None):
 
         import multiprocessing
         inputs['main_run'] = True #flag that this is the main run
-        numcores = multiprocessing.cpu_count()
+        
         if inputs['solid_parallel'] or tokamak.npix < 1000:    #faster, but unbreakable, without progressbar, for nx*ny<1000 is parallel processing too slow
             numTasks = 1
             debug( 'Uses solid parallel solve => Cancel button will not work')
         else:
-            numTasks = int(ceil(numSteps/(numcores*4.)))
+            numTasks = int(ceil(numSteps/(inputs['n_cpu']*4.)))
         numTasks = min(100,numTasks) #small speed improvement for very large number of blocks
         
         if config.DEBUG:
@@ -313,7 +313,7 @@ def tomography(inputs, tokamak, progress = None):
                     inputs['solver'], inputs['ifishmax'], time_0,postprocessing)  for i,ii in enumerate(ind)],copy=False,dtype=object)    
             
         sequence = array_split(sequence, numTasks)
-        pool = multiprocessing.Pool(min(numcores,numSteps))
+        pool = multiprocessing.Pool(min(inputs['n_cpu'],numSteps))
         method =  map if config.DEBUG or numSteps==1 else pool.map        
         results = []
         try:
@@ -527,7 +527,7 @@ def presolve(tokamak, data, error, tvec, Tmat, dets,  normData,
 
     :var double lam0: Initial value of parameter lambda in min. fisher
     """
-    from multiprocessing import Pool, cpu_count
+    from multiprocessing import Pool
     inputs = inputs.copy()
     inputs['regularization'] = regularization
     inputs['postprocessing'] = False
@@ -566,12 +566,12 @@ def presolve(tokamak, data, error, tvec, Tmat, dets,  normData,
         if  config.DEBUG == True:
             out = list(map(main_cycle, sequence))
         else:
-            numTasks = 1 if solid_parallel else int(ceil(numSteps/double(cpu_count())))
+            numTasks = 1 if solid_parallel else int(ceil(numSteps/inputs['n_cpu']))
 
             sequence = array_split(sequence, numTasks)
 
             from tqdm import tqdm
-            pool = Pool(min(cpu_count(),numSteps) )
+            pool = Pool(min(inputs['n_cpu'],numSteps) )
 
             for seq in tqdm(sequence,desc='Presolver: '):
 
@@ -639,7 +639,7 @@ def presolve(tokamak, data, error, tvec, Tmat, dets,  normData,
     
    
         try:
-            pool = Pool(min(cpu_count(),numSteps))
+            pool = Pool(min(inputs['n_cpu'],numSteps))
             out =  pool.map(main_cycle, sequence)
         except:
             print('multiprocessing in preprocessing has failured, turning it off')

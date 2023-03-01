@@ -230,8 +230,8 @@ s
     inputs['local_path']  = local_path
     inputs['output_path'] = os.path.expanduser(os.path.expandvars(os.path.normpath(inputs['output_path'])))+os.sep
     inputs['tmp_folder']  = os.path.expanduser(os.path.expandvars(os.path.normpath(inputs['tmp_folder'])))+os.sep
-
-        
+    from multiprocessing import cpu_count
+    inputs.setdefault('n_cpu', cpu_count())
     config.wrong_dets_pref = inputs['wrong_dets']
     if 'useCache' in inputs:
         config.useCache = inputs['useCache']
