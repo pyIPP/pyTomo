@@ -1,4 +1,4 @@
-import sys
+import sys, os
 import MDSplus as mds
 #sys.path.append("/fusion/projectEs/codes/pytomo/geometry/DIIID")
 from geometry.DIIID.mag_equ import  Equlibrium
@@ -58,9 +58,10 @@ def main():
         output.update(PFM)
     except:
         pass
-        
-        
-    savez_compressed('~/eq_tomo/MagField_fast_%d.npz'%shot,diag=mag_diag,exp=mag_exp,ed=mag_ed,**output)
+    
+    path = '/local-scratch/'+os.environ.get('USER')+'/'
+    os.mkdir(path)
+    savez_compressed(path+'/MagField_fast_%d.npz'%shot,diag=mag_diag,exp=mag_exp,ed=mag_ed,**output)
 
 
     MDSconn.closeAllTrees()
