@@ -60,7 +60,7 @@ def main():
         pass
         
         
-    savez_compressed('/home/odstrcilt/eq_tomo/MagField_fast_%d.npz'%shot,diag=mag_diag,exp=mag_exp,ed=mag_ed,**output)
+    savez_compressed('~/eq_tomo/MagField_fast_%d.npz'%shot,diag=mag_diag,exp=mag_exp,ed=mag_ed,**output)
 
 
     MDSconn.closeAllTrees()
