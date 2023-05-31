@@ -1471,12 +1471,13 @@ def matplotlib_image(params):
                 
                 CS2 = ax.contour(prof_img, levels=prof_img.levels[1:],colors = 'k',linewidths=.2,
                                         origin='lower',norm=norm,vmin=gmin,vmax=gmax)
-
-                c._boundaries = asarray(levels)
+                
+                c._boundaries[1:] = levels
                 prof_img.set_clim(gmin,gmax)
                 c.vmin = gmin
                 c.vmax = gmax
                 c.update_ticks()
+                
 
             else:
                 prof_tmp = concatenate([padding, gprof[:,:,i]*fact, padding], axis=1)
