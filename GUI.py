@@ -1640,14 +1640,14 @@ class MainWindow(QMainWindow):
                 self.progressBar.reset()
                 return
         
-        try:
-            FreeMemory=int(os.popen("free -m").readlines()[2].split()[3])
-        except:
-            FreeMemory = 1e4
-        if (double(steps)*double(self.nx*self.ny)*16.0  > FreeMemory*1e6 and self.reconstruct) and  not (self.solver == 2 and self.ratiosolver in [0,2]):   #limit of memory usage
-            print('free memory ', FreeMemory*1e6, double(steps)*double(self.nx*self.ny)*16.0)
-            QMessageBox.warning(self,"Setting error", "Array is too big \n Use lower resolution or less timeslices"  ,QMessageBox.Ok)
-            return
+        #try:
+            #FreeMemory=int(os.popen("free -m").readlines()[2].split()[3])
+        #except:
+            #FreeMemory = 1e4
+        #if (double(steps)*double(self.nx*self.ny)*16.0  > FreeMemory*1e6 and self.reconstruct) and  not (self.solver == 2 and self.ratiosolver in [0,2]):   #limit of memory usage
+            #print('free memory ', FreeMemory*1e6, double(steps)*double(self.nx*self.ny)*16.0)
+            #QMessageBox.warning(self,"Setting error", "Array is too big \n Use lower resolution or less timeslices"  ,QMessageBox.Ok)
+            #return
       
       
         import shutil
