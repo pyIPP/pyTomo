@@ -321,6 +321,7 @@ def generate_aniso_matrix(coord, atan2,rho,weight, derivation):
 
 def generate_aniso_imgesson(coord, rho, BdMat, in_out_frac, danis):
     
+    #use matrix from Imgesson's mathematic paper
 
     Psi = rho**2
     in_out_frac = 1
@@ -423,7 +424,7 @@ def generate_aniso_imgesson(coord, rho, BdMat, in_out_frac, danis):
 
 
     #---producing the diffusion matrix---
-    xmeshgrid,_ = meshgrid(xmesh,ymesh)
+    xmeshgrid,ymeshgrid = meshgrid(xmesh,ymesh)
     
     # we can define diffusion coefficient different for different parts of the plasma 
     # the original method caused to strong smoothing in the core 
@@ -499,14 +500,48 @@ def generate_aniso_imgesson(coord, rho, BdMat, in_out_frac, danis):
     cyy= spdiags(cyy*deltax*deltay,0,npix, npix)
     cxy= spdiags(cxy*deltax*deltay,0,npix, npix)
     
-
-    #supress radiationin in far SOL
-    Wout = spdiags( 100*maximum(0, rho.flatten('F')-1.1)**2 , 0, npix, npix,format='csr')
-
+    #regularisation matrix
     B = cx*Dx+cy*Dy+cxx*Dxx+cyy*Dyy+2*cxy*Dxy 
 
+
+
+
+    #supress radiation in in far SOL
+    Wout = spdiags( 100*maximum(0, rho.flatten('F')-1.1)**2, 0, npix, npix,format='csr')
+    
+    
+    
+    #supress emission from private flux area
+    
+    #first estimate PFX regions
+    rho_lcfs = 0.999 #a bit less than one
+    
+    import matplotlib._contour as _contour
+    gen = _contour.QuadContourGenerator(xmeshgrid,ymeshgrid, rho,bool_(rho*0), False, 0)
+
+    nlist = gen.create_contour(rho_lcfs)
+    #output differes for variosu matplotlib versions
+    if len(nlist) > 0 and isinstance(nlist[0], list):
+        nlist = nlist[0]
+        
+    #find longest - it will be separatrix
+    sep = []
+    for c in nlist:
+        if len(c) > len(sep):
+            sep = c
+    
+    #find upper an lower Z limit for core plasma
+    Z_up = sep[:,1].max()
+    Z_low = sep[:,1].min()
+    
+    pfx_region = (rho < 1) &((ymesh > Z_up) | (ymesh < Z_low))[:,None]
+    pfx = (1-rho.copy())**3
+    pfx[~pfx_region] = 0
+   
+    Wpfx = spdiags( 1000*pfx.flatten('F'), 0, npix, npix,format='csr')
+   
  
-    return B,Wout 
+    return B,Wout+ Wpfx
 
 
 

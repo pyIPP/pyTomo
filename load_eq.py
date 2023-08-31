@@ -15,7 +15,7 @@ def main():
     eqm = map_equ.equ_map(MDSconn)   
     mag_exp = 'DIIID'
     mag_ed = 0
-
+ 
 
     eq_diags = ((mag_diag,mag_exp,mag_ed),('EFIT01','DIIID',0),('EFITRT1','DIIID',0))
 
@@ -60,7 +60,10 @@ def main():
         pass
     
     path = '/local-scratch/'+os.environ.get('USER')+'/'
-    os.mkdir(path)
+    try:
+        os.mkdir(path)
+    except:
+        pass
     savez_compressed(path+'/MagField_fast_%d.npz'%shot,diag=mag_diag,exp=mag_exp,ed=mag_ed,**output)
 
 

@@ -39,12 +39,14 @@ def geom_mat_setting(tokamak,nx, ny, virt_chord, path=None):
     ver = '' if tokamak.geometry_version is None else str(tokamak.geometry_version)
     name = path+'Geom_matrix_%dx%d-%d-%1.2f-%1.2f-%1.2f-%.2f_%s_%s.npz'\
         %(nx,ny,virt_chord,xmin,xmax,ymin,ymin,str(tokamak.nl),ver)
-
+  
     try:
-        skip 
+         
         
-        #assert tokamak.name!='DIIID' ,  "Don't use cache at DIII-D"
+        assert   (tokamak.name=='DIIID' and tokamak.input_diagn=='BOLO'),  "Use cache for DIII-D bolometers"
+
         assert config.useCache ,  "Don't use cache"
+        print('Load geometry matrix from: ',path  )
 
         d = load(name, allow_pickle=True,encoding='latin1')
         Tmat = d['T'].item();Xchords = d['X'];Ychords = d['Y'];

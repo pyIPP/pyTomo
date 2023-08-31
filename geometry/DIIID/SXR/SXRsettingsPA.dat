@@ -454,3 +454,13 @@ shot		Rc(RM)	Rc(RP) Gain(RM) Gain(RP) Filt(RM)Filt(RP)
 192653		1e5	1e5	1	1	0	0	! close for bake
 192713		1e5	1e5	1	1	5	5
 193559		1e5	1e5	1	1	0	0	! close for bake
+194000		1e5	1e5	1	1	5	5
+194483		1e5	1e5	1	1	0	0	! close for bake
+194785		500	500	1	1	4	4
+194831		500	500	1	1	0	0	! close for bake
+194850		1e5	1e5	1	1	5	5
+194980		1e5	1e5	10	10	3	3
+194988		1e5	1e5	1	1	5	5	
+195215		500	500	1	1	4	4
+195244		500	500	1	1	0	0	! close for bake
+195857		1e5	1e5	1	1	5	5

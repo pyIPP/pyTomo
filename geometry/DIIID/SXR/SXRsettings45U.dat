@@ -129,3 +129,13 @@ shot	Rc	Gain	Filt
 192653	100k	1	1	! dummy for bake
 192713	100k	1	2
 193559	100k	1	1	! dummy for bake
+194000	100k	1	2
+194483	100k	1	1	! dummy for bake
+194785	1k	1	4
+194831	1k	1	1	! dummy for bake
+194850	100k	1	2
+194980	1k	1	5	
+194988	100k	1	2
+195215	1k	1	4
+195244	1k	1	1	! dummy for bake
+195857	100k	1	2

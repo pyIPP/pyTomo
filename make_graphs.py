@@ -648,6 +648,7 @@ def make_graphs(input_data, plot_svd = False):
             
             #os.remove(output_path+'/_movie_%d_%s.mp4'%(shot,base))
             os.system('ffmpeg   -f lavfi -i color=c=white:s=544x451 -i '+tmp_folder+'/emissivity_'+str(shot)+'_%04d'+base+'.png -filter_complex "[0:v][1:v]overlay=shortest=1,format=yuv420p[out]" -map "[out]" '+movie_name)
+            
 
             #from subprocess import Popen, PIPE, STDOUT
 

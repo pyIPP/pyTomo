@@ -2261,27 +2261,79 @@ def FindNegLocMin(image,lim,neighborhood_size=5):
 
     return active_set
 
+ 
+ 
+ 
+def ForcePositivity(E,W,g,V,D,prod,resid,ndets,BdMat,chi2,tokamak):
+    
+    from scipy.optimize import nnls
+    
+    #find positive solution in the subspace of solutions descrived by basis V
 
-def ForcePositivity(E,V,D,BdMat,w,chi2,nx,ny, tokamak):
+    #minimise |T*g-f|^2+|Dx|^2+  where x > 0
+    #using nonlinear minimizer
+    # not other method was working or it was too slow. 
+
     
-    #it will iteratively modify a projection coeficients in order to find positive 
-    # solution close to the oroginal solution.  However this solution is searched only on the subspace spanned by V!!
-    #originaly base on ideas of Fehler and Imgesson, but improved!
-    #BUG možná by se měla jen iterativně rozšiřovat aktivní sada, ale upravovat jen to základní řešené, ne? 
-    delta_prod_mean = zeros_like(w)
+    for ts, iE in enumerate(E):
     
-    
-    V = asarray(tokamak.Transform*V.T).T
-    #V = asarray(V)
-    #import IPython
-    #IPython.embed()
-    
-    
+        if tokamak.transform_index not in [0,4]:
+            iE = tokamak.Transform*iE
+            BdMat = False
+            
+     
+        lim = iE[iE>0&~BdMat].mean()/3
         
-    for i, iE in enumerate(E):
+        from scipy.optimize import minimize
         
-        active_set = []
-        delta_prod = 0
+        A = (W[ts]/D)*V.T/lim
+        A[BdMat] = 0
+        wdg = W[ts]/D*np.exp(g[ts]/2)
+        args = W[ts], wdg, prod[ts], A
+            
+   
+        def cost_fun( x, w, wdg, p, A):
+            
+            cost = np.sum((w*x-p)**2)+np.sum((x*wdg)**2)
+            img = A.dot(x)
+            neg = img < 0
+            cost += np.sum(img[neg]**2)
+   
+            jac = 2*(w**2*x-p*w+wdg**2*x)
+            jac += 2*dot(A[neg].T,img[neg])
+    
+            return cost, jac
+        
+        out = minimize(cost_fun, prod[ts],jac=True, method='L-BFGS-B', args=args )   
+ 
+        iE = dot(W[ts]*out.x/D, V)
+     
+        #inverse transformation
+        E[ts] = tokamak.Transform.T*iE 
+        chi2[ts] =  (np.sum((prod[ts]-W[ts]*out.x)**2)+resid[ts])/ndets
+        
+        
+    return E, chi2
+        
+        
+        
+        
+def ForcePositivity2(E,W,g,V,D,prod,resid,ndets,BdMat,chi2,tokamak):
+    
+    from scipy.optimize import nnls
+    
+    #find positive solution in the subspace of solutions descrived by basis V
+
+    #minimise |T*g-f|^2+|Dx|^2+  where x > 0
+
+    #formulate the original problem in V basis
+    #it is a trivial least squares problem which can be calculated analytically because 
+    #A is double diagonal
+     
+    for ts, iE in enumerate(E):
+    
+        active_set = set()
+
         if tokamak.transform_index not in [0,4]:
             iE = tokamak.Transform*iE
             BdMat = False
@@ -2289,68 +2341,81 @@ def ForcePositivity(E,V,D,BdMat,w,chi2,nx,ny, tokamak):
         iE[BdMat] = 0
         lim = iE[iE>0].mean()/20
 
-        #import IPython
-        #IPython.embed()
-        
-        for k in range(10):
-            image = iE.reshape(ny,nx,order='F')
 
-            
-    
-            update_active_set =  FindNegLocMin(image,lim)
-      
-            
-            if all(in1d(update_active_set, active_set)): break  #BUG 
-
-            
-            active_set = int_(unique(r_[active_set,update_active_set])) #.5ms
-                
-            active_set = array(active_set,ndmin=1)
-     
-            if len(active_set) > V.shape[0]: #no positive solution can be found
-                break
-                
-           
-            
-            if size( active_set) ==  0:
-                break
-
-            #import IPython
-            #IPython.embed()
-            VT = V[:,active_set]
-            #print all(~BdMat[active_set])
-            #VT[:,BdMat[active_set]] = 0
- 
-            
-            #import IPython
-            #IPython.embed()
-            #find smallest perturbation in prod (i.e. U.T*data), such that 
-            #Emean[active_set]  will be matched (and than set to zero)
-            
-            #t = time.time()
-            #faster than a pinv function for a full rank matrices!!
-            q,r = qr((VT*(w/D)[:,None]), mode='economic', check_finite=True)
-            iA = dot(pinv(r), q.T).T
-            #t2 = time.time()
-
-            #iA = pinv((VT*(w/D)[:,None]).T, check_finite=False) #10ms  SLOWEST!!! use QR?
-            #print time.time()-t2, t2-t, len(active_set)
-            
-            x0 = dot(iA,iE[active_set])
-            #improve solution such that A*x>= b & min(||x||**2)
-            #the active set points must by higher equal to zero
-            #z1 = nnls(iA, x0 )[0]          #6ms    SLOW!!!
-
-            try:
-                z1 = nnls(iA, x0 )[0]          #6ms    SLOW!!!
-            except: #too many iterations in NNLS
-                z1 = active_set*0
-                
-            delta_prod = x0-dot(iA,z1) 
-            #norm of delta_prod is smaller than x0 and still Emean[active_set] >=0
- 
+        D1 = np.diag(W[ts])
+        D2 = np.diag(W[ts]/D*np.exp(g[ts]/2))
+        A = np.vstack((D1,D2))
+        y = np.hstack((prod[ts], 0*prod[ts]))
+        p = prod[ts]
    
+        #repeat in 10 interations
+        for k in range(5):
+            image = iE.reshape(ny,nx,order='F')
+ 
+            update_active_set =  FindNegLocMin(image,lim)#[0]
+            min_vals = iE[update_active_set]
+            update_active_set = set(update_active_set)
 
+            #if there is too many constrains, use only the most negative, dont use more than 50% of free dimensions
+            nconst = len(update_active_set|active_set) 
+            if nconst > len(prod[ts])//2:
+                nconst = len(prod[ts])//2 - len(active_set)
+                update_active_set = set(array(list(update_active_set))[argsort(min_vals)][:nconst])
+     
+            if len(update_active_set - active_set) == 0: 
+                break  
+            
+            active_set|=update_active_set
+            
+        
+            
+            B = (W[ts] / D) * V.T[list(active_set)]
+
+            U,S,V_ = np.linalg.svd(B)  #must be full SVD!
+            
+            n = len(active_set)
+            pinvB = dot(U/S[None],V_[:n]).T
+            perpB = V_[n:].T
+            
+            invB = np.hstack((perpB, pinvB))
+            
+            #rotate the problem in the space of negative points
+            A_ = np.dot(A,invB)
+            
+            #https://en.wikipedia.org/wiki/Constrained_least_squares
+            X1,X2 = A_[:,:-n], A_[:,-n:]
+
+            #TODO better way to calculate np.linalg.pinv(X1)? 
+            invX1 = np.linalg.pinv(X1)
+            
+            #ortonormal projector on space perpediculer to A1 - inequality constrained space
+            P = np.eye(len(X1)) - np.dot(X1, invX1)
+            
+            
+            #constrained projection in the rotated space
+            beta2 = nnls(np.dot(P, X2),  np.dot(P,  y))[0]
+            #beta2 = np.linalg.lstsq(np.dot(P, X2),  np.dot(P,  y))[0]
+            
+            #unconstrained projection in the rotated space
+            beta1 = np.dot(invX1,  y - np.dot(X2, beta2))
+            
+            beta = np.hstack((beta1, beta2))
+            
+            
+            #map back to the original projection space
+            p = np.dot(invB, beta)
+            
+         
+           # print(np.sum((prod[ts]-W[ts]*p)**2)/ np.sum(((1-W[ts])*prod[ts])**2), len(active_set))
+            
+            
+            iE = dot(W[ts]*p/D, V)
+            if tokamak.transform_index not in [0,4]:
+                iE = tokamak.Transform*iE
+            
+            iE[BdMat] = 0
+            continue
+            
             #vmin  = iE.min()
             #vmax  = iE.max()
             #print( i, k, -sum(image[image<lim]) )
@@ -2368,60 +2433,47 @@ def ForcePositivity(E,V,D,BdMat,w,chi2,nx,ny, tokamak):
 
             #show()
             
-            #image2 = copy(iE.reshape(ny,nx,order='F'))
+            image2 = copy(iE.reshape(ny,nx,order='F'))
             #corr = dot(single(w*delta_prod/D), V) #.5ms
             
-            #image2.ravel(order='F')[active_set] = nan
-            #figure()
+            image2.ravel(order='F')[list(active_set)] = nan
+            figure()
             #suptitle(str(i)+'  '+str(k))
-            #subplot(121)
-            #imshow( image2.reshape(ny,nx,order='F'),origin='lower', interpolation='nearest', vmin=iE.min(), vmax=0)
-            #colorbar()
-            #contour(image2,0,colors='w',origin='lower');
-            #subplot(122)
+            subplot(121)
+            imshow( image2.reshape(ny,nx,order='F'),origin='lower', interpolation='nearest', vmin=iE.min(), vmax=None)
+            colorbar()
+            contour(image2,0,colors='w',origin='lower');
+            subplot(122)
+            imshow( image.reshape(ny,nx,order='F'),origin='lower', interpolation='nearest', vmin=iE.min(), vmax=None)
+            colorbar()
+            contour(image,0,colors='w',origin='lower');
+
+
+            show()
+
+
 
             #imshow( corr.reshape(ny,nx,order='F'),origin='lower', interpolation='nearest',  vmin=iE.min(), vmax=iE.max())
             #colorbar()
             #contour(image,0,colors='w',origin='lower');
     
 
-         
             
-            iE-= dot(single(w*delta_prod/D), V) #.5ms
-            iE[BdMat] = 0
+
      
-        iE[(iE>-lim*2)&(iE<0)] = 0  #delete this almost zero poinsts
+        #iE[(iE>-lim*2)&(iE<0)] = 0  #delete this almost zero poinsts
 
         #inverse transformation
-        E[i] = tokamak.Transform.T*iE 
+        E[ts] = tokamak.Transform.T*iE 
 
 
-        chi2[i] = hypot(chi2[i],linalg.norm(delta_prod)/3)
+        chi2[ts] =  (np.sum((prod[ts]-W[ts]*p)**2)+resid[ts])/ndets
         
+    return E, chi2
         
-    #if E.min()/E.max()< -0.2:
-
-    
-        #image2 = copy(image)
-        
-        #image2.ravel(order='F')[active_set] = nan
-        #title(str(i)+'  '+str(k)+' final!!')
-        #imshow( image2.reshape(ny,nx,order='F'),origin='lower', interpolation='nearest')
-        #colorbar()
-        ##contour(image,0,colors='w',origin='lower')
-        #show()
-        #import IPython
-        #IPython.embed()
             
-        #;figure()
-        #imshow( V.sum(0).reshape(ny,nx,order='F'),origin='lower', interpolation='nearest');show()
-        
 
-    return E,chi2
-    
-    
-
-
+         
 
 def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMat,
                       error_scale,LastCycle, lam_method,positive_constrain,
@@ -3441,29 +3493,34 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
         if not sparse.issparse(V):
             V = array(V,copy=False)
             
-                
+        W = np.zeros_like(prod)
         for ts,(p,r) in enumerate(zip(prod,resid)):
-            w = w_i(g[ts])
+            W[ts] = w_i(g[ts])
             chi2[ts] = CHI2(g[ts],p,r)
             #slowest step 
             if sparse.issparse(V):
-                E[ts] = V.T.dot((w*p/D).astype(dtype))
+                E[ts] = V.T.dot((W[ts]*p/D).astype(dtype))
             else:
-                dot((w*p/D).astype(dtype), V,out=E[ts])
+                dot((W[ts]*p/D).astype(dtype), V,out=E[ts])
             p = transpose(R)*(R*p)  #for QR decomposition
-            retro[ts,~wrong_dets] = dot(asarray(U),w*p)
+            retro[ts,~wrong_dets] = dot(asarray(U),W[ts]*p)
             
 
-        Leverage = einsum('ij,ij,j->i', U,U,w_i( median(g))  )        
+        #Leverage = einsum('ij,ij,j->i', U,U,w_i( median(g))  )        
 
-        p = sum(w_i( median(g)))
-        n = ndets
-        er =  mean((retro-S.T)**2,0)
+        #p = sum(w_i( median(g)))
+        #n = ndets
+        #er =  mean((retro-S.T)**2,0)
         #s2 = sum(e**2)/n
         #NOTE it is just inspired by Cook's Distance!! 
-        rel_err = er/mean(er)
+        #rel_err = er/mean(er)
         #CookDistance[~wrong_dets] = rel_err[~wrong_dets]*(Leverage/(1-Leverage))
         #CookDistance[wrong_dets] = infty
+        
+        
+
+        
+        
         
         
         
@@ -3472,7 +3529,8 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
         #import IPython
         #IPython.embed()
         if positive_constrain :
-            E,chi2 = ForcePositivity(E,V,D,BdMat,w,chi2,nx,ny,tokamak)
+            E,chi2 = ForcePositivity(E,W,g,V,D,prod,resid,ndets, BdMat,chi2,tokamak)
+            #E,chi2 = ForcePositivity_old(E,V,D,BdMat,w,chi2,nx,ny, tokamak)
             #print retro.shape, L.shape, E.shape
             retro = asarray(L*E.T).T  #retrofit was affected
             #print retro.shape, L.shape, E.shape

@@ -157,10 +157,7 @@ def tomography(inputs, tokamak, progress = None):
         except:
             pass                
 
-        
-    debug( 'mean error  %.4f'%(median(error[isfinite(error)]/(1e-10+data[isfinite(error)]))))
-    debug( 'mean error  %.4f'%(median(error[isfinite(error)])/median(data[isfinite(error)])))
-
+ 
 
     
     #  ================== PRESOLVE CYCLE ========================
