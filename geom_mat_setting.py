@@ -32,12 +32,12 @@ def geom_mat_setting(tokamak,nx, ny, virt_chord, path=None):
     ymin = tokamak.ymin
     ymax = tokamak.ymax
     
-    if path is None:
-        path = tokamak.geometry_path
-        
-        
+
+ 
+    
+   
     ver = '' if tokamak.geometry_version is None else str(tokamak.geometry_version)
-    name = path+'Geom_matrix_%dx%d-%d-%1.2f-%1.2f-%1.2f-%.2f_%s_%s.npz'\
+    name = 'Geom_matrix_%dx%d-%d-%1.2f-%1.2f-%1.2f-%.2f_%s_%s.npz'\
         %(nx,ny,virt_chord,xmin,xmax,ymin,ymin,str(tokamak.nl),ver)
   
     try:
@@ -46,9 +46,20 @@ def geom_mat_setting(tokamak,nx, ny, virt_chord, path=None):
         assert   (tokamak.name=='DIIID' and tokamak.input_diagn=='BOLO'),  "Use cache for DIII-D bolometers"
 
         assert config.useCache ,  "Don't use cache"
+        
+        if path is None:
+            path = tokamak.geometry_path_program
+        
+        
+        try:
+            path = tokamak.geometry_path_program
+            d = load(path+name, allow_pickle=True,encoding='latin1')
+        except:
+            path = tokamak.geometry_path
+            d = load(path+name, allow_pickle=True,encoding='latin1')
+
         print('Load geometry matrix from: ',path  )
 
-        d = load(name, allow_pickle=True,encoding='latin1')
         Tmat = d['T'].item();Xchords = d['X'];Ychords = d['Y'];
 
     except Exception as e:
@@ -79,7 +90,7 @@ def geom_mat_setting(tokamak,nx, ny, virt_chord, path=None):
         except:
             BdMat= None
 
-        savez_compressed(name, T=Tmat,X=Xchords, Y=Ychords, xgrid = tokamak.xgrid,
+        savez_compressed(path+name, T=Tmat,X=Xchords, Y=Ychords, xgrid = tokamak.xgrid,
                   ygrid = tokamak.ygrid, BdMat = BdMat)
 
 
