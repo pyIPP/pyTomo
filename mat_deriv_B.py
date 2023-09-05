@@ -538,7 +538,7 @@ def generate_aniso_imgesson(coord, rho, BdMat, in_out_frac, danis):
     pfx = (1-rho.copy())**3
     pfx[~pfx_region] = 0
    
-    Wpfx = spdiags( 1000*pfx.flatten('F'), 0, npix, npix,format='csr')
+    Wpfx = spdiags( 10000*pfx.flatten('F'), 0, npix, npix,format='csr')
    
  
     return B,Wout+ Wpfx
