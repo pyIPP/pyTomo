@@ -1702,6 +1702,7 @@ class MainThread(QThread):
     
     def __init__(self, parent):
         QThread.__init__(self, parent)
+        self.setObjectName('PyTOMO') 
         self.progress = IterateProgress(self,parent.progressBar)
         self.parent = parent
     def prepare(self,setting, tokamak):
