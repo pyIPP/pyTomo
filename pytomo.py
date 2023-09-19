@@ -213,7 +213,7 @@ s
         
         if os.path.exists('/fusion/projects/codes/pytomo'):
             tok_name = 'D3D'
-            n_cpu = 6
+            n_cpu = 4
         elif os.path.exists('/afs/ipp-garching.mpg.de/'):
             tok_name = 'AUG'
         elif os.path.exists('/p/'):
