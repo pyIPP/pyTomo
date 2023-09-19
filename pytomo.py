@@ -207,11 +207,13 @@ s
     if not os.path.exists(os.path.join(local_path,'geometry')):
         os.mkdir(os.path.join(local_path,'geometry'))
         
-        
+    from multiprocessing import cpu_count
+    n_cpu = cpu_count() 
     if not os.path.isfile(local_path+cfg_file+'.cfg'):
         
-        if os.path.exists('/fusion/projects/codes/pyspecview'):
+        if os.path.exists('/fusion/projects/codes/pytomo'):
             tok_name = 'D3D'
+            n_cpu = 6
         elif os.path.exists('/afs/ipp-garching.mpg.de/'):
             tok_name = 'AUG'
         elif os.path.exists('/p/'):
@@ -230,8 +232,7 @@ s
     inputs['local_path']  = local_path
     inputs['output_path'] = os.path.expanduser(os.path.expandvars(os.path.normpath(inputs['output_path'])))+os.sep
     inputs['tmp_folder']  = os.path.expanduser(os.path.expandvars(os.path.normpath(inputs['tmp_folder'])))+os.sep
-    from multiprocessing import cpu_count
-    inputs.setdefault('n_cpu', cpu_count())
+    inputs.setdefault('n_cpu', n_cpu)
     config.wrong_dets_pref = inputs['wrong_dets']
     if 'useCache' in inputs:
         config.useCache = inputs['useCache']

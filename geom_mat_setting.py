@@ -32,10 +32,7 @@ def geom_mat_setting(tokamak,nx, ny, virt_chord, path=None):
     ymin = tokamak.ymin
     ymax = tokamak.ymax
     
-
  
-    
-   
     ver = '' if tokamak.geometry_version is None else str(tokamak.geometry_version)
     name = 'Geom_matrix_%dx%d-%d-%1.2f-%1.2f-%1.2f-%.2f_%s_%s.npz'\
         %(nx,ny,virt_chord,xmin,xmax,ymin,ymin,str(tokamak.nl),ver)
@@ -47,9 +44,7 @@ def geom_mat_setting(tokamak,nx, ny, virt_chord, path=None):
 
         assert config.useCache ,  "Don't use cache"
         
-        if path is None:
-            path = tokamak.geometry_path_program
-        
+   
         
         try:
             path = tokamak.geometry_path_program
@@ -89,7 +84,7 @@ def geom_mat_setting(tokamak,nx, ny, virt_chord, path=None):
             BdMat = get_bd_mat(tokamak, nx, ny, time=(tokamak.min_tvec+tokamak.max_tvec)/2)    # nx can be differnet of tokamk.nx !!!
         except:
             BdMat= None
-
+        path = tokamak.geometry_path
         savez_compressed(path+name, T=Tmat,X=Xchords, Y=Ychords, xgrid = tokamak.xgrid,
                   ygrid = tokamak.ygrid, BdMat = BdMat)
 
