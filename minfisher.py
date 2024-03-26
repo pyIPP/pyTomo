@@ -34,7 +34,7 @@ except:
 
 
 
-def  minfisher(data, error,tvec,Tmat,dets, normData, G0, lam0, Tok, danis, boundary, regularization,ifishmax,
+def  minfisher(data, error,tvec,Tmat,dets, normData, G0, lam0, Tok, reg_params, boundary, regularization, ifishmax,
                 postprocessing = False, progress=0):
   
 
@@ -121,7 +121,7 @@ def  minfisher(data, error,tvec,Tmat,dets, normData, G0, lam0, Tok, danis, bound
  
 
     Bmat,BdMat,bnd,Ts, fs,err,tvec, G0 = prepare_inputs(Tok,data, error, dets,
-                    tvec, Tmat, normData, G0, danis,boundary, regularization, 
+                    tvec, Tmat, normData, G0, reg_params, boundary, regularization,
                     reconstruct, postprocessing)
 
 
@@ -132,6 +132,7 @@ def  minfisher(data, error,tvec,Tmat,dets, normData, G0, lam0, Tok, danis, bound
     TT = Ts.T*Ts
     
     Ts = Ts.tocsr()
+    danis = reg_params['danis']
 
 
     debug('Matrix of geometry - density %2.1f %%  tsteps: %i'  %(TT.nnz*100./npix**2, tsteps))

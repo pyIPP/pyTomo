@@ -691,11 +691,15 @@ def main_cycle(input):
     step,data,error,tvec, Tmat,dets,  normData, G0,lam0,  numSteps, \
             _postprocessing, inputs, tokamak, solver, _ifishmax,time_0,postprocessing = input
 
-    danis = inputs['danis']
+
     boundary = inputs['boundary']
     regularization = inputs['regularization']
     
-
+    reg_params = {}
+    reg_params['danis'] =  inputs['danis']
+    reg_params['pfx_weight'] = inputs.get('pfx_weight', 4)
+    reg_params['sol_weight'] = inputs.get('sol_weight', 2)
+    print('reg_params', reg_params)
     data = data.T
     error = error.T
 
@@ -711,12 +715,12 @@ def main_cycle(input):
     if solver in [0,1]:  #direct inversion
         from minfisher import minfisher
         tvec, g,retro, chi2, lam0,bnd,SigmaGsample = minfisher(data, error,tvec,Tmat,dets,
-                        normData, G0,lam0, tokamak, danis, boundary,
+                        normData, G0,lam0, tokamak, reg_params, boundary,
                         regularization,_ifishmax, _postprocessing)
     elif solver in [2,3,4,5,6]: #SVD,SVD2, QR, GEV,GSVD solver
         from linear_methods import linear_methods
         tvec, g , chi2, lam0,retro,bnd,SigmaGsample  =  linear_methods(tokamak,inputs,
-                data, error, tvec, Tmat,dets, normData, G0,  danis, boundary,regularization,
+                data, error, tvec, Tmat,dets, normData, G0,  reg_params, boundary,regularization,
                 solver,  True,_ifishmax, _postprocessing)
     elif solver in [7,]: # no solver - return phantom. Useful for testing of the postprocessing methods
         if (G0.shape[-1] == 1 and  len(tvec)!= 1) or G0.ndim == 1:

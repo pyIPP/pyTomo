@@ -1255,8 +1255,10 @@ def matplotlib_image(params):
     
     try:
         import matplotlib._cntr as cntr
-    except:   #slower option from new matplolib      
-        import matplotlib._contour as _contour
+    except:   #slower option from new matplolib
+
+        #import matplotlib._contour as _contour
+        from contourpy import contour_generator
 
     
     enable_output=   plot_details['enable_output']
@@ -1518,16 +1520,17 @@ def matplotlib_image(params):
                     R2D = plot_details["ICRH_position"]['R2D'][:,ind][::-1]
                     rho = linspace(0,1,mag_field.shape[2])
                     B_Bc = interp(rho, rhoR2D,R2D)/mag_field[0,:,:,i]
-                            
-                    try: 
-                        countour = cntr.Cntr(mag_field[0,:,:,i],mag_field[1,:,:,i],B_Bc )
-                        nlist = countour.trace(level0=1,level1=1,nchunk=0)
 
-                    except: #slower option from new matplolib 
+                    try: 
+                        #countour = cntr.Cntr(mag_field[0,:,:,i],mag_field[1,:,:,i],B_Bc )
+                        #nlist = countour.trace(level0=1,level1=1,nchunk=0)
                         gen = _contour.QuadContourGenerator(mag_field[0,:,:,i],mag_field[1,:,:,i],B_Bc, False, 0)
                         nlist = gen.create_contour(1)
+                        lines = nlist[:len(nlist)//2]
+                    except:
+                        lines = contour_generator(mag_field[0,:,:,i],mag_field[1,:,:,i],B_Bc)
 
-                    lines = nlist[:len(nlist)//2]
+
                     lines = vstack(lines)
                     lines = lines[argsort(lines[:,1])]
                     v_line.set_data( lines[:,0], lines[:,1])
@@ -1956,15 +1959,16 @@ def postprocessing_plot(input_data):
         
 
 
-        
+
 
     if inputs['post_proces_equi']:
         
         try:
-            import matplotlib._cntr as cntr
-        except: #slower option        
+            #import matplotlib._cntr as cntr
             import matplotlib._contour as _contour
-            
+        except: #slower option        
+           # import matplotlib._contour as _contor
+            from contourpy import contour_generator
         magx, magy = results['magx'].T,results['magy'].T
 
         R,Z = meshgrid(tokamak.xgrid+tokamak.dx/2,tokamak.ygrid+tokamak.dy/2)
@@ -1979,7 +1983,7 @@ def postprocessing_plot(input_data):
         fun = lambda x:(x)
 
         n_mag = magx.shape[1]
-        
+
      
         
         for it in trange(tsteps,desc='Computing emiss. contours: '): 
@@ -1991,22 +1995,28 @@ def postprocessing_plot(input_data):
 
             levels = interp(fun(r_a_eq),r_a, profile[it])
 
+
             #contour searching routine from matplotlib     
             try: 
-                c = cntr.Cntr(R,Z, gres[:,:,it])
-            except: #slower option  
+
+                #c = cntr.Cntr(R,Z, gres[:,:,it])
                 gen = _contour.QuadContourGenerator(R,Z, gres[:,:,it],bool_(Z*0), False, 0)
+
+            except:
+                gen = contour_generator(R,Z, gres[:,:,it])
+
+
  
 
             rho_contours = []
             for i,lev in enumerate(levels):
-                try:
-                    nlist = c.trace(level0=lev, level1=lev, nchunk=0)
-                    nlist = nlist[:len(nlist)/2]
-                except: #slower option  
-                    nlist = gen.create_contour(lev)
+                #try:
+                 #   nlist = c.trace(level0=lev, level1=lev, nchunk=0)
+                #    nlist = nlist[:len(nlist)/2]
+               # except: #slower option
+                lines = gen.create_contour(lev)
 
-                lines = nlist[:len(nlist)//2]
+                #lines = nlist[:len(nlist)//2]
                 if len(lines) == 0:
                     lines = [empty((0,2)),]
                 line = []
@@ -2474,7 +2484,7 @@ def plot3Dprofile(G, tokamak):
 
     show()
     
-    
+
     import IPython
     IPython.embed()
 

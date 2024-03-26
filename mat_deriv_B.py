@@ -13,7 +13,7 @@ class coord():
 
 
 
-def mat_deriv_B(Tok, tvec, regularization,danis, nx=None, ny=None):
+def mat_deriv_B(Tok, tvec, regularization,reg_params, nx=None, ny=None):
     """
     Prepare  matrix of derivation for unisotropic smoothing. Load magnetic field, prepare angles and determine directions of derivations. The result can be 1. or 2. derivation.
 
@@ -23,7 +23,7 @@ def mat_deriv_B(Tok, tvec, regularization,danis, nx=None, ny=None):
     :var array magx,magy: Coordinater of magnetic field contours
     :var array atan2: Arctan of magnetic lines, "main result", slowest step
     :var spmatrix Bper, Bpar: Matrices of derivation
-    :var danis - anisotropic ratio  - used here only by Imgesson smoothing matrix
+    :var dict reg_params  parameters of the regularisation methods
     :param int nx,ny: horizontal, verticaůl resolution
 
     """
@@ -53,6 +53,7 @@ def mat_deriv_B(Tok, tvec, regularization,danis, nx=None, ny=None):
     diag_mat = diam, diar, dial, diao, diau
     
     Bmat = None
+    danis = reg_params['danis']
     
 
     if regularization in (-1,1,3,6):
@@ -101,7 +102,6 @@ def mat_deriv_B(Tok, tvec, regularization,danis, nx=None, ny=None):
         Bmat = [eye(npix, npix)]
         
     if regularization  == 7:
-        in_out_frac = 1 #BUG NOT FINISHED
 
         rhop,magx, magy = Tok.mag_equilibrium(tvec, return_mean = True,surf_slice=slice(-1,None),rho=1)
 
@@ -111,7 +111,7 @@ def mat_deriv_B(Tok, tvec, regularization,danis, nx=None, ny=None):
         BdMat = blur_image(BdMat.reshape(Tok.ny, Tok.nx,order='F'),Tok.nx/50.)
         BdMat = BdMat.flatten('F')
 
-        Bmat = generate_aniso_imgesson(coord, rho, BdMat, in_out_frac, danis)
+        Bmat = generate_aniso_imgesson(coord, rho, BdMat, **reg_params)
         
 
     
@@ -319,12 +319,11 @@ def generate_aniso_matrix(coord, atan2,rho,weight, derivation):
 
 
 
-def generate_aniso_imgesson(coord, rho, BdMat, in_out_frac, danis):
+def generate_aniso_imgesson(coord, rho, BdMat,  danis, in_out_frac = 1, pfx_weight = 4, sol_weight = 2, far_sol_psin = 1.05):
     
     #use matrix from Imgesson's mathematic paper
 
     Psi = rho**2
-    in_out_frac = 1
     Dparin  = sqrt(danis)*sigmoid( in_out_frac)*10
     Dparout = sqrt(danis)*sigmoid(-in_out_frac)*2
     Dperpin = 1/sqrt(danis)*sigmoid( in_out_frac)*10
@@ -507,7 +506,7 @@ def generate_aniso_imgesson(coord, rho, BdMat, in_out_frac, danis):
 
 
     #supress radiation in in far SOL
-    Wout = spdiags( 100*maximum(0, rho.flatten('F')-1.1)**2, 0, npix, npix,format='csr')
+    Wout = spdiags( 10**sol_weight *maximum(0, PsiN.flatten('F')-1.05)**2, 0, npix, npix,format='csr')
     
     
     
@@ -516,8 +515,12 @@ def generate_aniso_imgesson(coord, rho, BdMat, in_out_frac, danis):
     #first estimate PFX regions
     rho_lcfs = 0.999 #a bit less than one
     
-    import matplotlib._contour as _contour
-    gen = _contour.QuadContourGenerator(xmeshgrid,ymeshgrid, rho,bool_(rho*0), False, 0)
+    try:
+        import matplotlib._contour as _contour
+        gen = _contour.QuadContourGenerator(xmeshgrid,ymeshgrid, rho,bool_(rho*0), False, 0)
+    except:
+        from contourpy import contour_generator
+        gen = contour_generator(xmeshgrid,ymeshgrid, rho)
 
     nlist = gen.create_contour(rho_lcfs)
     #output differes for variosu matplotlib versions
@@ -538,9 +541,8 @@ def generate_aniso_imgesson(coord, rho, BdMat, in_out_frac, danis):
     pfx = (1-rho.copy())**3
     pfx[~pfx_region] = 0
    
-    Wpfx = spdiags( 10000*pfx.flatten('F'), 0, npix, npix,format='csr')
-   
- 
+    Wpfx = spdiags( 10**pfx_weight*pfx.flatten('F'), 0, npix, npix,format='csr')
+
     return B,Wout+ Wpfx
 
 

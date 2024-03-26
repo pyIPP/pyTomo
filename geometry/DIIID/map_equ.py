@@ -619,11 +619,14 @@ class equ_map:
         rho_in = self.rho2rho(rhoin, t_in=t_in, \
                  coord_in=coord_in, coord_out='Psi', extrapolate=True )
         
-        #try:
+        try:
             #import matplotlib._cntr as cntr
         #except: #slower option        
-        import matplotlib._contour as _contour
- 
+            import matplotlib._contour as _contour
+        except:
+            from contourpy import contour_generator
+
+
         nr = len(self.Rmesh)
         nz = len(self.Zmesh)
 
@@ -642,8 +645,12 @@ class equ_map:
             #try: 
             #c = cntr.Cntr(R, Z, self.pfm[:nr, :nz, i].T)
             #except: #slower option  
-            gen = _contour.QuadContourGenerator(R, Z, self.pfm[:nr, :nz, i].T,np.bool_(Z*0), False, 0)
- 
+            try:
+                gen = _contour.QuadContourGenerator(R, Z, self.pfm[:nr, :nz, i].T,np.bool_(Z*0), False, 0)
+            except:
+                gen = contour_generator(R, Z, self.pfm[:nr, :nz, i].T)
+
+
             Rs_t = []
             zs_t = []
 

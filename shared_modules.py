@@ -23,24 +23,19 @@ from matplotlib.pylab import *
 
 from scipy.interpolate import RectBivariateSpline
 
-def prepare_inputs(Tok, data, error_all,dets, tvec, Tmat, normData, G0, danis,boundary,
-                   regularization, reconstruct, postprocessing):    
+def prepare_inputs(Tok, data, error_all, dets, tvec, Tmat, normData, G0, reg_params,boundary,regularization):
     
     """
      This algorithm identify boundaries and create virtual sensors on boundary,
      prepare matrices of derivation, rescale and renormalize all its (Tmat, data, error)
 
 
-    :param class tok: ``Class`` of  tokamak with all important data.
+    :param class Tok: ``Class`` of  tokamak with all important data.
     :var double boundary:    If non-zero allow smoothing with boundary => The reconstruction 
             will be zero on the boundary,  Set the pressure forcing reconstruction to be zero on boundary. Precision of the virtual senzors (boundary) is min(sigma)/X.
     :param int regularization: Apriory smoothing used for minimalization
-    :param bool reconstruct: Perform tomographic reconstruction
-    :param bool postprocessing: Perform postprocessing --  entropy, smoothness
-    :var int rgmin:  Small constant
     :var int noemiss:  Array nonzero outside of tokamak
-    :var double danis:    Ratio of anisotropic matrices, B = n*Bperp+1/n*Bpar  => The smaller 
-            number the more will reconstruction follow the field For MFI is recommended 0.2, for MDIFF < 0.1
+    :var dict reg_params:  dictionary with regularisation parameters
     :param object progress: link to QObject that move with the progressbar, do not work with multiprocessing
     :var spmatrix diam,diar,dial,diao,diau: Sparse matrices of derivation (elementar directions)
 
@@ -121,8 +116,7 @@ def prepare_inputs(Tok, data, error_all,dets, tvec, Tmat, normData, G0, danis,bo
     
 
     from mat_deriv_B import mat_deriv_B
-
-    Bmat, diag_mat = mat_deriv_B(Tok, tvec,regularization, danis)
+    Bmat, diag_mat = mat_deriv_B(Tok, tvec,regularization, reg_params)
     error = single(error)
 
 
@@ -1054,9 +1048,7 @@ class fitEllipse:
         return np.array([res1, res2])
     
     
-    
-    
-
+ 
  
  
 from scipy.interpolate import interp1d

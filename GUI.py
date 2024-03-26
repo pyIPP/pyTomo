@@ -889,7 +889,7 @@ class MainWindow(QMainWindow):
         self.chooseRatioSolver.setToolTip('Find a relative calibration of the cameras minimizing residuum')
         self.chooseLamSolver.setToolTip('Method to find optimal regularization parameter')
         self.chooseTransform.setToolTip('Select orthogonal transformation applied on the solved matrices')
-        self.Allowboundary.setToolTip('The reconstruction will be zero on the boundary')
+        self.Allowboundary.setToolTip('The reconstruction will be zero outside the boundary')
         self.chooseRegularization.setToolTip('Isotropic (rectangular) smoothing prefers smooth in X and Y direction\nAnisotropic smoothing prefers smooth in magnetic field direction\nMDIFF versions use second derivation instead of first\nif no magnetic data availible, falling back to the isotropic version\nFor anisotropic smoothing is better to use higher resolution >=50')
         self.PlotAll.setToolTip('Export every timeslice in separated plot\nIt can take very long time')
         self.enableOutput.setToolTip('Make a high quality pdf plots, it is slow!!!')
@@ -979,7 +979,7 @@ class MainWindow(QMainWindow):
 
 
         self.setCentralWidget(self.centralwidget)
-        self.resize(self.setting['screen_width']/1.5, self.setting['screen_height']/1.5)
+        self.resize(int(self.setting['screen_width']/1.5), int(self.setting['screen_height']/1.5))
         self.setCenter()
 
         self.setValues()
@@ -1687,7 +1687,7 @@ class MainWindow(QMainWindow):
         except:
             QMessageBox.warning(self,"Import Error", "Can't find Cholesky decomposition for sparse matrices (module scikit.sparse) !!! \n Falling back to slower version" ,QMessageBox.Ok)
 
-        self.resize(self.setting['screen_width']/1.5, self.setting['screen_height']/1.5)
+        self.resize(int(self.setting['screen_width']/1.5), int(self.setting['screen_height']/1.5))
 
 
 class MainThread(QThread):

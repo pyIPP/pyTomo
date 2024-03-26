@@ -519,7 +519,7 @@ class AxZoom():
         if ax is None:
             # Occurs when a region not in an axis is clicked...
             return
-        if event.button is 2:
+        if event.button == 2:
             # On right click, zoom the selected axes
             if not self.zoomed:
                 for axis in event.canvas.figure.axes:

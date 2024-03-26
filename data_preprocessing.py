@@ -875,12 +875,12 @@ class SVDFilter():
                     return 
                 update_single_plot(tmin,tmax,ax0._N)
                 
-            elif hasattr(event,'button') and event.button is 3:
+            elif hasattr(event,'button') and event.button == 3:
                 self.AxZoom2.on_click(event)
             #elif hasattr(event,'button') and event.button is 1 and event.inaxes in [ax1,ax2,ax3]:
                 #N = int(event.xdata)
                 
-            elif hasattr(event,'button') and event.button is 2 and event.inaxes in [ax1,ax2,ax3]:
+            elif hasattr(event,'button') and event.button == 2 and event.inaxes in [ax1,ax2,ax3]:
                 tmin,tmax = event.inaxes.get_ylim()
                 N = int(event.xdata)
 

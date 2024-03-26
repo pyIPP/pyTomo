@@ -16,7 +16,7 @@ import os,sys
 #dd = dd.shotfile()
 
 
-
+#https://github.com/ORNL-Fusion/DESCUR
 from .descur import DESCUR
 D = DESCUR()
 
