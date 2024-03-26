@@ -699,7 +699,6 @@ def main_cycle(input):
     reg_params['danis'] =  inputs['danis']
     reg_params['pfx_weight'] = inputs.get('pfx_weight', 4)
     reg_params['sol_weight'] = inputs.get('sol_weight', 2)
-    print('reg_params', reg_params)
     data = data.T
     error = error.T
 
