@@ -21,10 +21,10 @@ import matplotlib.cm as cm
 from matplotlib.figure import Figure
 from matplotlib import rcParams,colorbar
 from matplotlib.backends.backend_agg import FigureCanvas as FigureCanvas
+from IPython import embed  
 
 
-
-try:
+try: 
     from multiprocessing import Process, Pool, cpu_count
     import threading
     threading._DummyThread._Thread__stop = lambda x:40
@@ -182,7 +182,8 @@ def Asymmetry2dplot(tokamak,tvec,rho,G0,GS,GC,plot_up_down_asym,rho_icrh=None,re
 
     
 def CalcAsymmetry(tmp):
-    os.nice(20)
+    if os.name != 'nt':
+        os.nice(20)
 
 
 
@@ -224,8 +225,9 @@ def CalcAsymmetry(tmp):
     
     #NOTE correction of the method in order to make it consistent
     #with sin/cos decomposition
-    corr = 1.1
-  
+    #corr = 1.1
+    corr = 1
+
     
     if make_plot:
 
@@ -365,7 +367,7 @@ def CalcAsymmetry(tmp):
 
             try:
                 data = load('./asymmetry/asymmetry_emiss_%d_.npz'%shot)#BUG
-                
+   
                 
                 Bremsstrahlung = interp1d(data['tvec'],data['Bremsstrahlung'],axis=0,bounds_error=False,assume_sorted=True)(tvec)
                 W_Radiation = interp1d(data['tvec'],data['W_Radiation'],axis=0,bounds_error=False,assume_sorted=True)(tvec)
@@ -551,10 +553,10 @@ def CalcAsymmetry(tmp):
                 it1 = BRdata['tvec'].searchsorted((tvec[max(0,jt-1)]+t)/2)
                 it2 = BRdata['tvec'].searchsorted((tvec[min(len(tvec)-1,jt+1)]+t)/2)+1
 
-                x = r_[-BRdata['rho'][::-1], BRdata['rho']]
-                y = r_[nanmean(BRdata['BR'][it1:it2,::-1],0),  nanmean(BRdata['BR'][it1:it2],0)]
-                y_up = r_[nanmean(BRdata['BR_low'][it1:it2,::-1],0),  nanmean(BRdata['BR_low'][it1:it2],0)]
-                y_down = r_[nanmean(BRdata['BR_high'][it1:it2,::-1],0),  nanmean(BRdata['BR_high'][it1:it2],0)]
+                #x = r_[-BRdata['rho'][::-1], BRdata['rho']]
+                #y = r_[nanmean(BRdata['BR'][it1:it2,::-1],0),  nanmean(BRdata['BR'][it1:it2],0)]
+                #y_up = r_[nanmean(BRdata['BR_low'][it1:it2,::-1],0),  nanmean(BRdata['BR_low'][it1:it2],0)]
+                #y_down = r_[nanmean(BRdata['BR_high'][it1:it2,::-1],0),  nanmean(BRdata['BR_high'][it1:it2],0)]
                 
                 x = r_[-BRdata['rho'][::-1], BRdata['rho']]
                 y = r_[BRdata['BR'][it,::-1],  BRdata['BR'][it]]

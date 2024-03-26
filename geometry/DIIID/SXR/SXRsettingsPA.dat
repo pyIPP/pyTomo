@@ -33,7 +33,7 @@ Filter 3 - Low Te SXR (1 mm x 3 mm slit in 1.3 mm thick tantalum with 12 um Be f
 Filter 4 - visible light (1 mm x 3 mm slit in 25 um thick moly foil with 1 mm fused silica filter, 36 degrees)
 Filter 5 - Hi Te SXR (1 mm x 3 mm slit in 25 um thick moly foil with 125 um Be filter, 0 degrees) - default setting
 
-****** Settings for 2014 - 2019 ******
+****** Settings for 2014 - 2022 ******
 Filter 0 - closed (162 degrees)
 Filter 1 - disruption prad (200 um pinhole in 50 um thick SS foil with no filter, 144 degrees)
 Filter 2 - ELM prad (300 um x 2 mm slit in 25 um thick moly foil with no filter, 108 degrees)
@@ -342,7 +342,6 @@ shot		Rc(RM)	Rc(RP) Gain(RM) Gain(RP) Filt(RM)Filt(RP)
 175915		1e5	1e5	1	1	5	5
 176373		1e5	1e5	10	10	5	5
 176405		1e5	1e5	1	1	1	1
-176439		1e5	1e5	1	1	5	5       !it was wrong!!
 176625		1e5	1e5	1	1	0	0	! closed for bake
 176678		1e5	1e5	1	1	5	5
 176819		500	500	1	1	4	4
@@ -374,3 +373,94 @@ shot		Rc(RM)	Rc(RP) Gain(RM) Gain(RP) Filt(RM)Filt(RP)
 180203          1e5     1e5     10      10      5       5       ! default filter settings restored by Jim
 180205          1e5     1e5     1       10      5       5       
 180235		1e5	1e5	1	1	3	3
+180312		1e5	1e5	1	1	5	5
+180571		1e5	1e5	1	1	0	0	! closed for bake
+180649		1e5	1e5	1	1	5	5	
+180185		1e5	1e5	1	1	0	0	! closed for bake
+182576		1e5	1e5	1	1	5	5
+182715		1e5	1e5	1	1	3	3	! change to low Te for LBO experiment
+182780		1e5	1e5	1	1	5	5
+183107		500	500	1	1	4	4
+183107		500	500	1	1	0	0	! close for bake
+183140		1e5	500	1	10	3	2	! custom settings for Tomas LBO
+183146		1e5	1e5	1	1	3	2	! Tomas changing gain of RP1
+183258		500	500	1	1	4	4
+183287		1e5	1e5	1	1	5	5
+183351		500	500	1	1	4	4
+183663		500	500	1	1	0	0	! close for bake
+183484  	1e5	1e5	1	1	5	5
+183787		1e5	1e5	1	1	0	0	! close for bake
+184063		1e5	1e5	1	1	5	5
+184400		500	500	1	1	4	4
+184423		1e5	1e5	1	1	5	5
+184598		1e5	1e5	10	10	3	3
+184649		1e5	1e5	1	1	0	0	! close for bake
+184765		1e5	1e5	1	1	5	5
+184787		1e5	1e5	1	1	3	3
+184820		1e5	1e5	1	1	5	5
+184974		500	500	1	1	4	4
+184980		1e5	1e5	1	1	3	3
+185020		1e5	1e5	10	10	3	3
+185044		1e5	1e5	1	1	5	5
+185267		500	500	1	1	4	4
+185285		1e5	1e5	1	1	5	5
+185431		500	500	1	1	4	4
+185482		1e5	1e5	1	1	5	5
+185574		500	500	1	1	1	1
+185935		1e5	1e5	1	1	5	5
+186163		1e5	1e5	10	10	3	3
+186179		1e5	1e5	1	1	5	5
+186262		500	500	1	1	4	4
+186275		1e5	1e5	1	1	5	5
+186306		1e5	1e5	1	1	0	0	! close for bake
+186579		500	500	1	1	4	4
+186589		1e5	1e5	1	1	5	5
+186771		1e5	1e5	1	1	0	0	! close for bake
+186886		1e5	1e5	1	1	5	5
+188100		1e5	1e5	1	1	0	0	! close for install and startup
+188752		1e5	1e5	1	1	5	5
+189000		1e5	1e5	1	1	3	2	! Tomas W transport experiment
+189004		1e5	1e5	10	1	3	2
+189006		1e5	1e5	1	2	3	2
+189033		1e5	1e5	1	1	5	5
+189078		1e5	1e5	1	1	0	0	! close for bake
+189163		1e5	1e5	1	1	5	5
+189168		500	500	1	1	2	2	
+189173		500	500	1	1	4	4
+189178		1e5	1e5	1	1	5	5
+189780		1e5	1e5	1	1	0	0	! close for bake
+189866		1e5	1e5	1	1	5	5
+190135		500	500	1	1	4	4
+190151		1e5	1e5	1	1	5	5
+190338		500	500	1	1	4	4
+190351		1e5	1e5	1	1	5	5
+190933		500	500	1	1	4	4
+190952		1e5	1e5	1	1	5	5
+191085		1e5	1e5	1	1	0	0	! close for boronization
+191353		1e5	1e5	10	10	3	3
+191370		1e5	1e5	1	1	5	5
+191540		1e5	1e5	1	1	3	3
+191557		1e5	1e5	10	10	3	3
+191572		1e5	1e5	1	1	0	0	! close for boronization
+191773		1e5	1e5	1	1	5	5
+191903		1e5	1e5	10	10	3	3
+191913		1e5	1e5	1	1	0	0	! close for bake
+191958		1e5	1e5	1	1	5	5
+192192		1e5	1e5	10	10	3	3
+192202		1e5	1e5	1	1	5	5
+192363		1e5	1e5	10	10	3	3
+192366		1e5	1e5	1	10	3	3	
+192374		1e5	1e5	1	1	5	5
+192653		1e5	1e5	1	1	0	0	! close for bake
+192713		1e5	1e5	1	1	5	5
+193559		1e5	1e5	1	1	0	0	! close for bake
+194000		1e5	1e5	1	1	5	5
+194483		1e5	1e5	1	1	0	0	! close for bake
+194785		500	500	1	1	4	4
+194831		500	500	1	1	0	0	! close for bake
+194850		1e5	1e5	1	1	5	5
+194980		1e5	1e5	10	10	3	3
+194988		1e5	1e5	1	1	5	5	
+195215		500	500	1	1	4	4
+195244		500	500	1	1	0	0	! close for bake
+195857		1e5	1e5	1	1	5	5

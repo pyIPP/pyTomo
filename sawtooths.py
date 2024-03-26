@@ -158,10 +158,9 @@ def sawtooths_detection(input_data):
         emiss[i]   = mean(map_prof,0)
 
     #calculate a detection signal 
-    u,s,v = fsvd(emiss,2)
+    u,s,v = fsvd(emiss[:,rhop < 0.6],2)
  
     sig = u[:,1]/(u[:,0]+1e-7)/mean(u[:,1]/(u[:,0]+1e-7))
-   
 
     dt = (tvec[-1]-tvec[0])/len(tvec)
  

@@ -62,7 +62,7 @@ class COMPASS(Tokamak):
 	    self.index = 17
 	    
 	self.tsteps = len(self.tvec)
-	self.ports = loadtxt(self.geometry_path + '/ports.txt')
+	self.ports = loadtxt(self.geometry_path + 'ports.txt')
 	    
 	if not only_prepare:
 	    self.prepare_tokamak()

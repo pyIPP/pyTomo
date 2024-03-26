@@ -67,8 +67,7 @@ class QR_sparse:  # it is much faster than to evaluate it directly
         return self.A*self.ir
 
 
-def generalized_abel_transform(tokamak,tvec,N_r,N_a,name,cos_com=True,sin_com=True):
-
+def generalized_abel_transform(tokamak,tvec,N_r,N_a,cos_com,sin_com):
     
     extrapolate = 1.01
     M = get_rho_field_mat(tokamak, mean(tvec), extrapolate=extrapolate)
@@ -87,7 +86,6 @@ def generalized_abel_transform(tokamak,tvec,N_r,N_a,name,cos_com=True,sin_com=Tr
     M[M==M.max()] = M[M!=M.max()].max()
 
     # interpolate on abel pixels
- 
     M /= amax(M)
     c = 1.3
     M = tan(M*c)/tan(c)
@@ -132,15 +130,14 @@ def generalized_abel_transform(tokamak,tvec,N_r,N_a,name,cos_com=True,sin_com=Tr
         if sin_com:Transform_N.append(sparse.spdiags(sin((n+1)*theta.T),(0,),npix, npix)*Transform)
         if cos_com:Transform_N.append(sparse.spdiags(cos((n+1)*theta.T),(0,),npix, npix)*Transform)
  
-
     Transform = sparse.hstack(Transform_N)
   
     try:
         from spqr.spqr import qr_sparse_r 
         r,e = qr_sparse_r(Transform)
-    except Exception as e :
+    except Exception as E :
         debug( 'Warning sparseQR is not working! dense QR will be used')
-        debug(str(e))
+        debug(str(E))
         if sparse.issparse(Transform):
             Transform = Transform.todense()
         r, = qr(Transform,overwrite_a=True,mode='r',check_finite=False)
@@ -155,7 +152,7 @@ def generalized_abel_transform(tokamak,tvec,N_r,N_a,name,cos_com=True,sin_com=Tr
 
 
 
-def global_basis_transform(tokamak, tvec, N_r,N_a, basis,cos_com=True,sin_com=True):
+def global_basis_transform(basis,tokamak, tvec, N_r,N_a,cos_com,sin_com):
 
     from zernike import zernike, bessel, polynom
     from annulus import get_bd_mat

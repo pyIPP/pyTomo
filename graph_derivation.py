@@ -21,7 +21,7 @@ def graph_derivation(time, tok, smoothing_matrix=None):
 
 
     if smoothing_matrix is None:
-        Bmat, diag_mat = mat_deriv_B(tok, time,3 ,4)
+        Bmat, diag_mat = mat_deriv_B(tok, time, 3 ,{'danis': 4})
         B = Bmat[1] #paralel matrix 
     else:
         B = smoothing_matrix
