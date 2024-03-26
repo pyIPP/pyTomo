@@ -1254,7 +1254,9 @@ def matplotlib_image(params):
         os.nice(3)
     
     try:
-        import matplotlib._cntr as cntr
+       #  import matplotlib._cntr as cntr
+        import matplotlib._contour as _contour
+
     except:   #slower option from new matplolib
 
         #import matplotlib._contour as _contour

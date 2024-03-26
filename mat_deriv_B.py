@@ -506,7 +506,7 @@ def generate_aniso_imgesson(coord, rho, BdMat,  danis, in_out_frac = 1, pfx_weig
 
 
     #supress radiation in in far SOL
-    Wout = spdiags( 10**sol_weight *maximum(0, PsiN.flatten('F')-1.05)**2, 0, npix, npix,format='csr')
+    Wout = spdiags( 10**sol_weight *maximum(0, Psi.flatten('F')-1.05)**2, 0, npix, npix,format='csr')
     
     
     
