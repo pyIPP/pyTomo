@@ -338,7 +338,7 @@ def main():
         pytomo  or pytomo [ options ] -G [shot] => start GUI
 
     If an option is not defined, program will use inputs from previous run or default options.
-    For more information read the source code or contact me at tomas.odstrcil@ipp.mpg.de''')
+    For more information read the source code or contact me at odstrcilt@fusion.gat.com''')
 
 
     parser.add_argument('shot', metavar='PULSE', help='Number of pulse', type=int, default=inputs['shot'])

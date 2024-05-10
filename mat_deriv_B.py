@@ -53,7 +53,7 @@ def mat_deriv_B(Tok, tvec, regularization,reg_params, nx=None, ny=None):
     diag_mat = diam, diar, dial, diao, diau
     
     Bmat = None
-    danis = reg_params['danis']
+    danis = reg_params.get('danis',4)
     
 
     if regularization in (-1,1,3,6):

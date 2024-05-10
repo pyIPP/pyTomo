@@ -199,15 +199,17 @@ def preview(fig, inputs, tokamak, plot_2D = True, show_prew= False):
         
     else:  
         if len(tvec) == 1:
-            #TODO remove in future
-            try:
+            """
+            try:#TODO remove in future
                 ax.errorbar(arange(len(data[:,0]))[ind_correct]+1, data[ind_correct,0]/fact
                         ,yerr=error[ind_correct,0]/fact,fmt='-xb',lw=.5, pickradius=2)
                 ax.plot(arange(len(data[:,0]))[~ind_correct]+1, data[~ind_correct,0]/fact,'or', picker=2)
-            except:
-                ax.errorbar(arange(len(data[:,0]))[ind_correct]+1, data[ind_correct,0]/fact
-                        ,yerr=error[ind_correct,0]/fact,fmt='-xb',lw=.5, pickradius=2)
-                ax.plot(arange(len(data[:,0]))[~ind_correct]+1, data[~ind_correct,0]/fact,'or', picker=2)       
+            except: """
+            ax.errorbar(arange(len(data[:,0]))[ind_correct]+1, data[ind_correct,0]/fact
+                    ,yerr=error[ind_correct,0]/fact,fmt='-xb',lw=.5,   picker=True)
+            ax.plot(arange(len(data[:,0]))[~ind_correct]+1, data[~ind_correct,0]/fact,'or' , picker=True)    
+            ax.xaxis.set_pickradius(5)
+            ax.yaxis.set_pickradius(5.)   
                 
             ax.set_title('Input data, time: %g %s' % (tvec, tokamak.t_name),fontsize=font_size)
 
