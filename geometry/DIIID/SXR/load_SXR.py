@@ -1623,8 +1623,8 @@ class loader_SXR():
                      #catch_path = self.geometry_path+'/data/%d_%s.npz'%(self.shot, suffix)
             #new preamplifiers in the 2024 campaign
             if self.shot > 198650: 
-	        data[:,self.cam_ind['195R1']] *= -1
-		data[:,self.cam_ind['45R1']] *= -1
+                data[:,self.cam_ind['195R1']] *= -1
+                data[:,self.cam_ind['45R1']] *= -1
 
     
  
