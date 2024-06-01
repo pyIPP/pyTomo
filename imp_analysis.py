@@ -3,7 +3,7 @@
 from numpy import *
 from scipy.interpolate import RectBivariateSpline, interp1d
 from matplotlib.colors import LogNorm,NoNorm
-import os, sys
+import os, sys, copy
 from matplotlib.ticker import MaxNLocator,NullFormatter
 from matplotlib.transforms import Bbox
 from scipy.stats.mstats import mquantiles
@@ -359,10 +359,12 @@ def imp_analysis( input_data):
         vmax = 1
         levels=linspace(0,vmax,15)
 
+    cmap = copy.copy(plt.cm.get_cmap("jet"))
+    cmap.set_over('brown')
+    cmap.set_under('black')    
         
-    CM = ax[0].contourf(tvec, rho, cw.T,levels, vmin=0,vmax=vmax, extend='both',cmap='jet')
-    CM.cmap.set_over('brown')
-    CM.cmap.set_under('black')
+    CM = ax[0].contourf(tvec, rho, cw.T,levels, vmin=0,vmax=vmax, extend='both',cmap=cmap)
+
     from matplotlib import colorbar
 
     cax,kw = colorbar.make_axes(ax[0])
@@ -380,8 +382,9 @@ def imp_analysis( input_data):
     vmax = nanmax(fsa_emiss,1)
     vmax = mquantiles(vmax,0.95)[0]
     levels=linspace(0,vmax,15)
-    CM = ax[1].contourf(tvec, rho, fsa_emiss.T*fact,levels*fact, vmin=0,vmax=vmax*fact, extend='max',cmap='jet')
-    CM.cmap.set_over('brown')
+    #cmap = copy.copy(plt.cm.get_cmap("jet"))
+    #cmap.set_over('brown')
+    CM = ax[1].contourf(tvec, rho, fsa_emiss.T*fact,levels*fact, vmin=0,vmax=vmax*fact, extend='max',cmap=cmap)
     cax,kw = colorbar.make_axes(ax[1])
     cb = fig.colorbar(CM, cax=cax, **kw)
     tick_locator = MaxNLocator(nbins=4)   
@@ -394,8 +397,7 @@ def imp_analysis( input_data):
     vmax = nanmax(W,1)
     vmax = mquantiles(vmax[isfinite(vmax)],0.95)[0]
     levels=linspace(0,vmax,15)
-    CM = ax[2].contourf(tvec, rho, W.T*fact,levels*fact, vmin=0,vmax=vmax*fact, extend='max',cmap='jet')
-    CM.cmap.set_over('brown')
+    CM = ax[2].contourf(tvec, rho, W.T*fact,levels*fact, vmin=0,vmax=vmax*fact, extend='max',cmap=cmap)
     cax,kw = colorbar.make_axes(ax[2])
     cb = fig.colorbar(CM, cax=cax, **kw)
     tick_locator = MaxNLocator(nbins=4)   
