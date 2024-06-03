@@ -358,8 +358,8 @@ def imp_analysis( input_data):
     except:
         vmax = 1
         levels=linspace(0,vmax,15)
-
-    cmap = copy.copy(plt.cm.get_cmap("jet"))
+    import copy as cp
+    cmap = cp.copy(plt.cm.get_cmap("jet"))
     cmap.set_over('brown')
     cmap.set_under('black')    
         
