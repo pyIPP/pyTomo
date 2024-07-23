@@ -173,8 +173,9 @@ def preview(fig, inputs, tokamak, plot_2D = True, show_prew= False):
                         ,interpolation='nearest', origin='lower', pickradius=1)
         except:
             im = ax.imshow(data.T/fact,cmap = my_cmap_,extent=extent,vmin=0,vmax=vmax/fact
-                ,interpolation='nearest', origin='lower', picker=1)  
-        
+                ,interpolation='nearest', origin='lower', picker=True)  
+            ax.xaxis.set_pickradius(1)
+            ax.yaxis.set_pickradius(1)  
         ax.axis('tight')
 
         ax.set_title('Input data, number of time steps: %i' % tsteps,fontsize=font_size)

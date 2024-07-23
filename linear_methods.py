@@ -113,7 +113,7 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
     
 
         if Tok.transform_index == 0 and boundary > 0:
-            H =  H + sparse.spdiags(BdMat*sinh(maximum(0,boundary)), 0, nx*ny, nx*ny,format='csc')
+            H =  H + sparse.spdiags(BdMat*sinh(maximum(0,boundary))/100, 0, nx*ny, nx*ny,format='csc')
        
        
        

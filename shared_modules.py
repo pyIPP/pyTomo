@@ -247,7 +247,8 @@ def make_postprocessing(output,Tok, G,data, error,retro, tvec, dets,SigmaGsample
     
     
     tsteps = len(tvec)
-
+    
+    
     G = G.reshape(Tok.ny, Tok.nx, tsteps, order='F')
     chi2_real = mean(resid**2,1)
     
@@ -257,11 +258,23 @@ def make_postprocessing(output,Tok, G,data, error,retro, tvec, dets,SigmaGsample
     output['power'] = einsum('ijk,j ->k',G, dV)
     
     rho,magr,magz=Tok.mag_equilibrium(tvec.mean(0),surf_slice=[-1,],rho=1)
-    coords = hstack((magr,magz))[:,:,0]
-
-    BdMat = get_bd_mat(Tok,Tok.nx, Tok.ny,boundary=coords)
+    sep_coords = hstack((magr,magz))[:,:,0]
+ 
+    BdMat = get_bd_mat(Tok,Tok.nx, Tok.ny,boundary=sep_coords)
     BdMat = BdMat.reshape(Tok.ny, Tok.nx, order='F')
-    output['power_div'] = einsum('ijk,j ->k',G*BdMat[:,:,None], dV)
+    
+    if Tok.name == 'DIIID':
+        #detect the main radiation X-point     
+        bottom_rad = G[:Tok.ny//4][BdMat[:Tok.ny//4]].sum()
+        top_rad = G[-Tok.ny//4:][BdMat[-Tok.ny//4:]].sum()
+     
+        X_point_size = 0.2 #20cm, like the value from GAPROFILES tomography
+        if  bottom_rad > top_rad:
+            z_lim = magz.min()+X_point_size
+            BdMat |= Tok.ygrid[:,None] < z_lim
+
+    output['power_div'] = einsum('ijk,j ->k', G * BdMat[:,:,None], dV)
+ 
 
     position = zeros((tsteps,2))
 
