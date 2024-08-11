@@ -18,8 +18,7 @@ import time
 
 global loader
 global loader2
-
-#BUG xtomo ignuruje ten čas začátku a konce!!
+ 
  
 class DIIID(Tokamak):
     """
@@ -91,7 +90,7 @@ sqrt(max(data))
         self.program_path =  input_parameters['program_path']
         self.geometry_path_program = os.path.join(self.program_path,*path)
         path = os.path.join(self.local_path,*path)
-
+      
         if not os.path.exists(path):
              os.makedirs(path)
 
@@ -153,19 +152,21 @@ sqrt(max(data))
         Tokamak.__init__(self, input_parameters, input_diagn, coord,
                          name, norm, sigma, min_error, path,t_name)
 
-
-        try:
-            import threading
-            P = threading.Thread(target=self.connect_mdsplus )
-            P.start()
-            P.join(timeout=2)
-            if self.MDSconn is None:
-                raise TimeoutError
-            print('MDSplus connected')
-        except TimeoutError:
-            print('MDS connection with server "%s" was not established'%self.mds_server) 
-            self.MDSconn = None
-   
+        #if self.mds_plus is string, connect to it, else assume that a MDS connection was provided
+        if isinstance(self.mds_plus,str):
+            try:
+                import threading
+                P = threading.Thread(target=self.connect_mdsplus )
+                P.start()
+                P.join(timeout=2)
+                if self.MDSconn is None:
+                    raise TimeoutError
+                print('MDSplus connected')
+            except TimeoutError:
+                print('MDS connection with server "%s" was not established'%self.mds_server) 
+                self.MDSconn = None
+        else:
+            self.MDSconn = self.mds_plus
 
         if input_diagn == 'SXR':
             self.SXR(fast_data,toroidal=False)
@@ -388,7 +389,7 @@ sqrt(max(data))
             
             if os.name == 'nt': #for windows!
                 os.system("""ssh  odstrcilt@cybele.gat.com -p 2039 " ssh omega 'module load intel; python /fusion/projects/codes/pytomo/load_eq.py %d %s'" """%(self.shot, self.mag_diag))
-                os.system('scp omega:~/eq_tomo/MagField_fast_%d.npz   \\Users\\odstrcil\\tomography\\geometry\\DIIID\\equilibrium\\'%self.shot)
+                os.system('scp omega:/local-scratch/odstrcilt/MagField_fast_%d.npz   \\Users\\odstrcil\\tomography\\geometry\\DIIID\\equilibrium\\'%self.shot)
                 
             else:
           
