@@ -12,8 +12,12 @@ from scipy import integrate
 
 def get_gc(shot, mds_server):
     ##shape of the vessel
-    import MDSplus as mds
-    MDSconn = mds.Connection(mds_server )
+    if isinstance(mds_server, str):
+        import MDSplus as mds
+        MDSconn = mds.Connection(mds_server )
+    else:
+        MDSconn = mds_server
+        
     eqm = equ_map(MDSconn)
     eqm.Open(shot)
     
