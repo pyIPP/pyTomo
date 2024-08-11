@@ -152,8 +152,8 @@ sqrt(max(data))
         Tokamak.__init__(self, input_parameters, input_diagn, coord,
                          name, norm, sigma, min_error, path,t_name)
 
-        #if self.mds_plus is string, connect to it, else assume that a MDS connection was provided
-        if isinstance(self.mds_plus,str):
+        #if self.mds_server is string, connect to it, else assume that a MDS connection was provided
+        if isinstance(self.mds_server,str):
             try:
                 import threading
                 P = threading.Thread(target=self.connect_mdsplus )
@@ -166,7 +166,7 @@ sqrt(max(data))
                 print('MDS connection with server "%s" was not established'%self.mds_server) 
                 self.MDSconn = None
         else:
-            self.MDSconn = self.mds_plus
+            self.MDSconn = self.mds_server
 
         if input_diagn == 'SXR':
             self.SXR(fast_data,toroidal=False)
