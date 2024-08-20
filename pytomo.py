@@ -89,8 +89,8 @@ params = {
         'legend.scatterpoints':3,
         'legend.edgecolor':'inherit'}
             
-
-
+ 
+  
 
 matplotlib.rcParams.update(params)
 
@@ -275,6 +275,33 @@ def usage():
     sys.exit(1)
 
 
+class pytomo_class:
+    def __init__(self, inputs):
+        
+ 
+     
+        from prepare_data import loaddata
+
+        self.inputs = loadSetting( )
+        self.inputs.update(inputs)
+
+        #should not be needed!?
+        self.inputs['tmp_folder']  = os.path.expanduser(os.path.expandvars(self.inputs['tmp_folder' ]))
+        self.inputs['output_path'] = os.path.expanduser(os.path.expandvars(self.inputs['output_path']))
+
+
+    def run(self):
+        tok = loaddata(self.inputs, useCache=False, prepare_tokamak = False)
+         
+        tok.prepare_tokamak()
+         
+
+        inputs, tokamak, progress, output = tomography(self.inputs, tok)
+
+        return output
+    
+ 
+        
 
 def main():
     """

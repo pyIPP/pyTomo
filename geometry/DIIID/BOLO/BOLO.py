@@ -3,7 +3,9 @@
  
     
 
-import os,sys
+  
+
+import os,sys 
 from collections import OrderedDict
 from numpy import *
 from matplotlib.pyplot import *
@@ -140,7 +142,7 @@ def smooth(x,window_len=11,window='hanning'):
 
 
     s=r_[x[window_len-1:0:-1],x,x[-2:-window_len-1:-1]]
-    #print(len(s))
+   
     if window == 'flat': #moving average
         w=numpy.ones(window_len,'d')
     else:
@@ -149,7 +151,7 @@ def smooth(x,window_len=11,window='hanning'):
     y=convolve(w/w.sum(),s,mode='valid')
     return y
 
-
+"""
 def mds_load(params):
     (mds_server,   TDI, tree, shot) = params
     print(TDI)
@@ -181,7 +183,7 @@ def mds_par_load(mds_server,   TDI, tree, shot,  numTasks):
     
     return  output
 
-
+"""
 
 def richardson_lucy(tmp):
     """\
@@ -753,7 +755,7 @@ class loader_BOLO():
             #plot(tvec[tvec>7],f(tvec[tvec>7], *popt))
             #show()
             
-          
+           
 
 
         
@@ -991,6 +993,7 @@ class loader_BOLO():
     def get_data(self,tmin=-infty,tmax=infty):
         
         
+        
         imin,imax = self.tvec.searchsorted((tmin, tmax))
         imax += 1
         
@@ -1015,17 +1018,57 @@ class loader_BOLO():
 
         #kappa =  self.MDSconn.get( "\\BOLOM::TOP.PRAD_01.PRAD:KAPPA").data()  #factors to calculate total radiated power 
 
-        data[:,0] =0
+        #data[:,0] =0
      
         self.MDSconn.closeTree(self.tree,self.shot)
 
-        data_err += std(data[self.tvec < 0],0)*2
-        data_err += 0.1*mean(data,1)[:,None]
-
+        #data_err += std(data[self.tvec < 0],0)*2
+        #data_err += 0.1*mean(data,1)[:,None]
+        
+        
+        shot_data = data[(self.tvec > 0)&(self.tvec < 5)]
+        #data_err += np.median(np.abs(np.diff(shot_data[::10],axis=0)),0)/2
+        
+         
+        
+        import matplotlib.pylab as plt
+        from scipy.signal import butter, sosfiltfilt
+        sos = butter(4, 0.01, output='sos')
+        data_smooth = sosfiltfilt(sos, shot_data, axis=0)
+        
+        data_err += np.std((shot_data-data_smooth), 0)
+        
+        
+       # for i in range(len(data)):
+        #    plt.title(i)
+       #     plt.errorbar(self.tvec, data[:,i], data_err[:,i])
+        #    plt.plot(self.tvec[(self.tvec > 0)&(self.tvec < 5)], data_smooth[:,i])
+        #    plt.show()
+ 
+ 
         
         self.cache = data,data_err
         
-    
+        
+        
+        likely_invalid = (np.mean((shot_data),0) <  data_err[0] * 3) | (data_err[0]  == 0)
+        #np.mean(np.abs(np.diff(shot_data[::10],axis=0)),0)*2 
+        
+        #plt.plot(np.mean((shot_data),0))
+        #plt.plot( data_err[0] * 3)
+       # plt.plot(np.median(np.abs(np.diff(shot_data[::10],0)),0), '--'  )
+        #plt.plot(  np.mean(np.abs(np.diff(shot_data[::10],axis=0)),0)   , '--'  )
+       # plt.show()
+        
+       # print(np.where(likely_invalid))
+        
+        import config
+        config.wrong_dets_pref = np.where(likely_invalid)[0]
+        
+        #print(config.wrong_dets_pref)
+       # data_err[:,likely_invalid] = np.inf
+ 
+        
         return self.tvec[imin:imax],data[imin:imax],data_err[imin:imax]
 
     

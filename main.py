@@ -3,7 +3,7 @@
 import sys
 from numpy import *
 #from  matplotlib.pyplot import *
-from scipy import sparse
+from scipy import sparse 
 from numpy import linalg
 import time
 from scipy.interpolate import RectBivariateSpline, interp1d
@@ -14,14 +14,14 @@ import socket
 from scipy.sparse import spdiags, eye
 from copy import deepcopy, copy
 import gc
-import multiprocessing
+import multiprocessing 
 from prepare_data import * 
 from shared_modules import debug
-import config
+import  config
 from shared_modules import make_postprocessing
 from asymmetries import CalcAsymNew
 
-
+    
 
 try:
     from multiprocessing import Process, Pool
@@ -303,6 +303,10 @@ def tomography(inputs, tokamak, progress = None):
         #MDSplus object is not pickable
         if hasattr(tokamak, 'MDSconn' ):
             del tokamak.MDSconn
+        if hasattr(tokamak, 'mds_server' ):
+            del tokamak.mds_server
+        mds_server = inputs.pop('mds_server', None)
+             
             
         postprocessing = True
         sequence = array([(i,data[:,ii],error[:,ii],tvec[ii],Tmat,dets, normData[ii], 
@@ -316,11 +320,9 @@ def tomography(inputs, tokamak, progress = None):
         try:
             from PyQt5.QtCore import currentThread
         except:
-            try:
-                from PyQt4.QtCore import currentThread
-            except:
-                currentThread = None
-       
+            currentThread = None
+        #from IPython import embed
+        #embed()
         try:
             from tqdm import tqdm
             if not progress is None: progress.setNumSubSteps(len(sequence))
@@ -344,6 +346,7 @@ def tomography(inputs, tokamak, progress = None):
         
         sys.stdout.write("\r MAIN SOLVE DONE\n")
         if not progress is None: progress.iterateStep()
+        inputs['mds_server'] = mds_server
 
 
         if numSteps == 1:

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from numpy import *
 #from matplotlib.pyplot import *
-from scipy.io import loadmat
+from scipy.io import loadmat 
 import os
 import warnings
 import time
@@ -20,8 +20,8 @@ import gc
 from shared_modules import in1d, debug
 from matplotlib import colors
 import config
-#from matplotlib.ticker import  MaxNLocator
-
+#from matplotlib.ticker import  MaxNLocator 
+ 
 
 def loaddata(inputs, useCache = True, prepare_tokamak = False):
     """
@@ -98,7 +98,7 @@ def loaddata(inputs, useCache = True, prepare_tokamak = False):
     return tok_
 
 
-
+   
 
 
 def preview(fig, inputs, tokamak, plot_2D = True, show_prew= False):
@@ -114,24 +114,21 @@ def preview(fig, inputs, tokamak, plot_2D = True, show_prew= False):
 
     
    
-
-    #for a in list(vars(tokamak).keys()):
-        #exec(a+" = tokamak."+a)
-    #for a in inputs:                    #Loads all prepared data
-        #exec(a+" = inputs['"+a+"']")
-        
-   
     data, error, tvec, dets, Tmat, normData = tokamak.prepare_data(inputs['tmin'],
-                inputs['tmax'], inputs['data_smooth'], inputs['data_undersampling'], inputs['error_scale'],tokamak.prune_dets,False)
+                inputs['tmax'], inputs['data_smooth'], inputs['data_undersampling'],
+                 inputs['error_scale'],tokamak.prune_dets,False)
     
+  
     tsteps = sum((tvec >= inputs['tmin']) & (tvec <= inputs['tmax']))
     data_undersampling_tmp = max(inputs['data_undersampling'], int(tsteps/500.0))
     
     
     inputs['tsteps'] = tsteps
-
-
-    ind_correct = tokamak.get_correct_dets(data)
+ 
+    wrong_dets = where( all(~isfinite(error), 0) )[0]
+ 
+ 
+    ind_correct = tokamak.get_correct_dets(data, wrong_dets = wrong_dets)
     data = copy(data)
     nch = data.shape[0]
     
