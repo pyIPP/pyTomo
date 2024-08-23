@@ -129,25 +129,33 @@ class MOM2RZ:
 
 
 
-def Descur_fit_core(xxx_todo_changeme):
+def Descur_fit_core(args):
 
-    (t_fract, i, rho, R_contour, Z_contour, R0, Z0,n_fourier) = xxx_todo_changeme
-    sys.stdout.write("\r calculate Fourier coefficients: %3.0f %%    N: %d        " %(t_fract*100,i))
-    sys.stdout.flush()  
+    t_fract, i, rho, R_contour, Z_contour, R0, Z0,n_fourier = args
+
     n_rho = len(rho)
     
-    #for nr, (cr,cz) in enumerate(zip(R_contour.T, Z_contour.T)):
-        #plot(cr,cz)
+    try:
+        sys.stdout.write("\r calculate Fourier coefficients: %3.0f %%    N: %d        " %(t_fract*100,i))
+        sys.stdout.flush()  
+        moments_all= empty((n_rho, n_fourier,4))
+        for nr, (cr,cz) in enumerate(zip(R_contour.T, Z_contour.T)):
+            #don't use to high order in the core - regularization
+            n_fourier_ = 2+int(ceil((nr+1)/float(n_rho)*(n_fourier-2)))
+            moments_all[nr,:n_fourier_,:] =  D.descur_fit(cr-R0,cz-Z0,n_fourier_)
+            moments_all[nr,n_fourier_:,:] = 0
 
-
-    moments_all= empty((n_rho, n_fourier,4))
-    for nr, (cr,cz) in enumerate(zip(R_contour.T, Z_contour.T)):
-        #don't use to high order in the core - regularization
-        n_fourier_ = 2+int(ceil((nr+1)/float(n_rho)*(n_fourier-2)))
-        moments_all[nr,:n_fourier_,:] =  D.descur_fit(cr-R0,cz-Z0,n_fourier_)
-        moments_all[nr,n_fourier_:,:] = 0
-
-        
+    except OSError:
+        print('Warning: DESCUR failes, running backup option')
+        #this method is faster, but less efficients, it needs more coefficients!
+        n_fourier *= 2
+        moments_all= empty((n_rho, n_fourier,4))
+        for nr, (cr,cz) in enumerate(zip(R_contour.T, Z_contour.T)):
+            #don't use to high order in the core - regularization
+            n_fourier_ = 2+int(ceil((nr+1)/float(n_rho)*(n_fourier-2)))
+            moments_all[nr,:n_fourier_,:] =  D.descur_fit_fast(cr-R0,cz-Z0,n_fourier_)
+            moments_all[nr,n_fourier_:,:] = 0
+                    
 
     rcos = moments_all[:,:,0]
     rsin = moments_all[:,:,1]
@@ -268,7 +276,7 @@ def help_fun(tmp):
 
 
 class Equlibrium:
-    def __init__(self,MDS_plus, eqm,shot,  diag='EQI',exp='AUGD', ed=0):
+    def __init__(self,MDS_plus=None, eqm=None,shot=None,  diag='EQI',exp='AUGD', ed=0):
         self.eqm = eqm
         self.shot = shot
         self.diag = diag
@@ -281,11 +289,7 @@ class Equlibrium:
         
         
     def getTranspEquilibrium(self):
-        #import IPython
-        #IPython.embed()
-        
-         #self.diag
-        #self.eqm.sf.
+  
         self.MDS_plus.openTree('TRANSP', int(self.diag[3:]))
         
         #load TRANSP shotfile
@@ -295,17 +299,14 @@ class Equlibrium:
 
         ntim,n_rho=RMC00.shape
         tvec = self.MDS_plus.get('dim_of('+tra_path+'RMC00,1)').data()
-        #import IPython
-        #IPython.embed()
-        
-        #tvec=cdf.variables['TIME3'][:]
+
+  
         rho_p = self.MDS_plus.get(tra_path+'PLFLX').data()
         rho_p = sqrt(rho_p/rho_p[:,(-1,)])
         rho_t = self.MDS_plus.get(tra_path+'XB').data()[0]
  
     
-        #R0 = cdf.variables['RAXIS'][:]/100
-        #Z0 = cdf.variables['YAXIS'][:]/100
+
         R0 = self.MDS_plus.get(tra_path+'RAXIS').data()/100
         Z0 = self.MDS_plus.get(tra_path+'YAXIS').data()/100
 
@@ -341,16 +342,11 @@ class Equlibrium:
 
         zcos[:,:,0]-= Z0[:,None]
         rcos[:,:,0]-= R0[:,None]
-        #from matplotlib.pyplot import *
 
-        #coeffs = []
         npoly = 8
-        #(473, 41, 10, 4)
-
+       
         coeffs = zeros((ntim,npoly+1,nmom , 4))
         for it in range(ntim):
-            
-            #f,ax = subplots(2,2)
             for i in range(nmom):
                 coeffs[it,:,i,0] =  np.polyfit(r_[0,rho_p[it]], r_[0,rcos[it,:,i]] ,npoly)
                 coeffs[it,:,i,1] =  np.polyfit(r_[0,rho_p[it]], r_[0,zcos[it,:,i]] ,npoly)
@@ -361,169 +357,7 @@ class Equlibrium:
         coeffs[:,-1,0,0]+= R0 
         coeffs[:,-1,0,1]+= Z0  
 
-
-
-        #def surf_polyval(rho,theta, p_rcos,p_zcos,p_rsin,p_zsin):
-            ##evaluate equilibrium polynom
-            #nmom = size(p_rcos,-1)
-            #rho = atleast_1d(rho)
-
-            #P = double(dstack((p_rcos,p_zcos,p_rsin,p_zsin)))
-            #moments = zeros((nmom, 4, size(rho)))
-                
-            ##horner scheme
-            #for p in P:
-                #moments *= rho[None,None]
-                #moments += p[:,:,None]
-            
-
-            #angle = outer(arange(nmom),theta )
-            #C = cos(angle)
-            #S = sin(angle)
-            #r_plot = tensordot(moments[:,0].T,C,axes=([-1,0])) #rcos
-            #r_plot+= tensordot(moments[:,2].T,S,axes=([-1,0])) #rsin
-            #z_plot = tensordot(moments[:,1].T,C,axes=([-1,0])) #zcos
-            #z_plot+= tensordot(moments[:,3].T,S,axes=([-1,0])) #zsin
-        
-            
-            #return r_plot.T, z_plot.T
-
-
-        #p_rcos,p_zcos,p_rsin,p_zsin = coeffs.T
-        #R,Z = surf_polyval(rho_p[it], linspace(0,2*pi, 300), p_rcos.T[0],p_zcos.T[0],p_rsin.T[0],p_zsin.T[0])
-
-
-        #import IPython
-        #IPython.embed()  
-        
-            #rc = array([np.polyval( coeffs[it,:,i,0] ,linspace(0,1,41) ) for i in range(nmom)]).T
-            #zc = array([np.polyval( coeffs[it,:,i,1] ,linspace(0,1,41) ) for i in range(nmom)]).T
-            #rs = array([np.polyval( coeffs[it,:,i,2] ,linspace(0,1,41) ) for i in range(nmom)]).T
-            #zs = array([np.polyval( coeffs[it,:,i,3] ,linspace(0,1,41) ) for i in range(nmom)]).T
-
-            #theta = linspace(0,2*pi, 300)
-            #angle = np.outer(np.arange(nmom),theta)
-            #cos = np.cos(angle)
-            #sin = np.sin(angle)
-            #r_plot = np.tensordot(rc,cos,axes=([-1,0]))
-            #r_plot+= np.tensordot(rs,sin,axes=([-1,0]))
-            #z_plot = np.tensordot(zc,cos,axes=([-1,0]))
-            #z_plot+= np.tensordot(zs,sin,axes=([-1,0]))
-
-            #plot(r_plot,z_plot)
-            #show()  
-                      
-                #import IPython
-                #IPython.embed()  
-                
-           
-                #rc = np.polyval( coeffs[it,:,i,0] ,linspace(0,1,1000) )
-                #ax[0,0].plot(rho_p[it] , (rcos[it,:,i]) )
-                #ax[0,0].plot(linspace(0,1,1000) ,rc,'--' )
-                
-                #rc = np.polyval( coeffs[it,:,i,1] ,linspace(0,1,1000) )
-                #ax[0,1].plot(rho_p[it] , (zcos[it,:,i]) )
-                #ax[0,1].plot(linspace(0,1,1000) ,rc,'--' )
-                
-                
-                #rc = np.polyval( coeffs[it,:,i,2] ,linspace(0,1,1000) )
-                #ax[1,0].plot(rho_p[it] , (rsin[it,:,i]) )
-                #ax[1,0].plot(linspace(0,1,1000) ,rc,'--' )
-                
-                #rc = np.polyval( coeffs[it,:,i,3] ,linspace(0,1,1000) )
-                #ax[1,1].plot(rho_p[it] , (zsin[it,:,i]) )
-                #ax[1,1].plot(linspace(0,1,1000) ,rc,'--' )
-                
-                
-                
-                
-            #show()
-                
-                
-            
-            ##BUG sometimes, very rarelly it can failure if rho_p is deviating from straight line in the core!!! 
-            ##during core ECRH current drive!
-            
-            
-            
-            
-            #mom_poly = MOM2RZ(rho_p[it],rcos[it],rsin[it],zcos[it],zsin[it],order=10,R0=R0[it],Z0=Z0[it],regularization=0.0)
-            #coeff = dstack((mom_poly.p_rcos, mom_poly.p_zcos, mom_poly.p_rsin, mom_poly.p_zsin ))
-            #coeffs.append(coeff)
-            
-            #rc, rs, zc, zs = mom_poly.polyval(linspace(0,1,1000))
-            
-            #for i in range(10):
-                ##i = 6
-                #i = 2
-                #import IPython
-                #IPython.embed() 
-                
-                #for i in range(10):
-                    #plot(rho_p[it]**(i+1), rcos[it,:,i]/rho_p[it]**(2-i%2) ,'--')
-                    #title(i)
-                    #show()
-                
-                #i = 4
-                #rcpoly = np.polyfit(r_[0,rho_p[it]], r_[0,rcos[it,:,i]] ,10)
-                ##rcpoly = r_[rcpoly, (0,)*(2-i%2)]
-                #rc = np.polyval(rcpoly,linspace(0,1,1000) )
-                #plot(rho_p[it] , (rcos[it,:,i]) )
-                #plot(linspace(0,1,1000) ,rc )
-                #show()
-                
-                
-                
-                
-
-                #i = 9
-
-                #rcpoly = np.polyfit(rho_p[it]  ,rcos[it, :,i]/rho_p[it]**(2-i%2),7)
-                #rcpoly = r_[rcpoly, (0,)*(2-i%2)]
-                #rc = np.polyval(rcpoly,linspace(0,1,1000) )
-                
-                #plot(rho_p[it] ,rcos[it, :,i])
-                #plot(linspace(0,1,1000),rc )
-                #show()
-
-                ##plot(rho_p[it]**(i+1),rcos[it, :,i]/rho_p[it]**(2-i%2))
-                ##plot(linspace(0,1,1000)**(i+1),np.polyval(rcpoly,linspace(0,1,1000)**(i+1)))
-                ##show()
-
-                
-                #plot(linspace(0,1,1000)**(i+1) ,rc/linspace(0,1,1000) )
-                #plot(rho_p[it]**(i+1), rcos[it,:,i]/rho_p[it]  ,'--')
-                #title(i)
-                #show()
-                
-                
-                
-            #R,Z = mom_poly(rho_p[it], linspace(0,2*pi, 300))
-            #plot(R.T,Z.T)
-            #show()
-            
-            #theta = linspace(0,2*pi, 300)
-            #angle = np.outer(np.arange(nmom),theta)
-            #cos = np.cos(angle)
-            #sin = np.sin(angle)
-            #r_plot = np.tensordot(rcos[it],cos,axes=([-1,0]))
-            #r_plot+= np.tensordot(rsin[it],sin,axes=([-1,0]))
-            #z_plot = np.tensordot(zcos[it],cos,axes=([-1,0]))
-            #z_plot+= np.tensordot(zsin[it],sin,axes=([-1,0]))
-
-            #plot(r_plot,z_plot)
-            #show()
-             
-          
-            #if not all(isfinite(coeff)):
-                #raise Exception('Something failered in equilibrium fitting')
-
-            
-        #import IPython
-        #IPython.embed()  
-        #coeffs = array(list(coeffs))
-
-        #tvec = tvec_surf
+ 
         Rmag_ = zeros_like(tvec)
         Zmag_ = zeros_like(tvec)
         ahor_ = ones_like(tvec)
@@ -652,10 +486,10 @@ class Equlibrium:
             return
         
         
-        self.eqm.read_ssq()
-        self.eqm._read_scalars()
-        self.eqm._read_profiles()
-        self.eqm._read_pfm()
+        #self.eqm.read_ssq()
+        #self.eqm._read_scalars()
+        #self.eqm._read_profiles()
+        #self.eqm._read_pfm()
 
         if os.name != 'nt':
             os.nice(3)
@@ -668,25 +502,26 @@ class Equlibrium:
         
         #corrupted_eq = abs(self.eqm.PFxx[3]) > 1000
         
-        ncpu = cpu_count()
-        pool = Pool(ncpu)
+
         
         #print( self.eqm.t_eq)
+        corrupted_eq = np.zeros_like(self.eqm.t_eq, dtype='bool')
+        if self.eqm.ssq['ERROR'] is not None:
+            corrupted_eq |=  abs(self.eqm.ssq['Zmag']-0)>0.3
+            corrupted_eq |=  abs(self.eqm.ssq['Rmag']-self.eqm.R0)>0.3
+            corrupted_eq |= self.eqm.ssq['chi2'] > median(self.eqm.ssq['chi2'])*2
+            corrupted_eq |= self.eqm.ssq['ERROR'] > median(self.eqm.ssq['ERROR'])*5
         
-        corrupted_eq  =  abs(self.eqm.ssq['Zmag']-0)>0.3
-        corrupted_eq |=  abs(self.eqm.ssq['Rmag']-self.eqm.R0)>0.3
-        corrupted_eq |= self.eqm.ssq['chi2'] > median(self.eqm.ssq['chi2'])*2
-        corrupted_eq |= self.eqm.ssq['ERROR'] > median(self.eqm.ssq['ERROR'])*5
-        
-        #corrupted_eq[0] = True  #first timepoint was often broken
+      
         t_eq = self.eqm.t_eq[~corrupted_eq]
         nti = len(t_eq)
-
+        
+        ncpu = cpu_count()
         t_sequence = array_split(t_eq, min(ncpu,nti))
 
         print('Find flux contours from %.3f to %.3fs'%(t_eq[0],t_eq[-1]))
         t1 = time()
-        args = [(self.eqm,  rho, theta, t) for t in t_sequence]
+        
         
         #self.eqm.rhoTheta2rz(rho, theta,t_eq[0], n_line=100)
         
@@ -696,13 +531,17 @@ class Equlibrium:
 
     #if config.DEBUG:
         try: 
-            assert  config.DEBUG
-            out = pool.map(help_fun,args )
-        except:
-            out = list(map(help_fun,args ))
+            assert  not config.DEBUG and not  config.no_multiprocessing
         
-        #else:
-        R_cont,z_cont = hstack(out)
+            args = [(self.eqm,  rho, theta, t) for t in t_sequence]
+            pool = Pool(ncpu)
+            out = pool.map(help_fun,args )
+            R_cont,z_cont = hstack(out)
+        except:
+             R_cont,z_cont = self.eqm.rhoTheta2rz(rho, theta,t_eq, n_line=100)
+         
+     
+        
         print('PSI contours: %.1f s'%( time()-t1))
         
   
@@ -784,18 +623,18 @@ class Equlibrium:
         #args[96] = args[97] 
 
         print('\n fitting contours  fit:')
-        if config.DEBUG:
+        if config.DEBUG or config.no_multiprocessing:
             coeffs = list(map(Descur_fit_core,args  ))
 
         else:
             #coeffs = [ Descur_fit_core(a) for a in args ]
             coeffs = pool.map(Descur_fit_core,args  )
-
-            
+            pool.close()
+            pool.join()
+                
         print('\nContouts fit: %.1f s'%(time()-t1))
 
-        pool.close()
-        pool.join()
+
         
         coeffs = array(list(coeffs))
         

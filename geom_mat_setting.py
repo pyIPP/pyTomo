@@ -40,17 +40,16 @@ def geom_mat_setting(tokamak,nx, ny, virt_chord, path=None):
     try:
          
         
-        assert   (tokamak.name=='DIIID' and tokamak.input_diagn=='BOLO'),  "Use cache for DIII-D bolometers"
-
-        assert config.useCache ,  "Don't use cache"
-        
-   
+        assert config.useCache or (tokamak.name=='DIIID' and tokamak.input_diagn=='BOLO'),  "Use cache for DIII-D bolometers or Don't use cache"
+ 
         
         try:
             path = tokamak.geometry_path_program
+            print(path,name)
             d = load(path+name, allow_pickle=True,encoding='latin1')
         except:
             path = tokamak.geometry_path
+            print(path,name)
             d = load(path+name, allow_pickle=True,encoding='latin1')
 
         print('Load geometry matrix from: ',path  )

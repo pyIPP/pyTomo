@@ -378,7 +378,7 @@ class Tokamak(object):
         if not hasattr(self, 'magx'):
             try:
                 assert  preferCache, 'Load regulary data'   #  (self.name == "JET" and self.local_network)
-                #if os.path.exists( mag_path ) :
+                
                 d = load( mag_path )
                 
 

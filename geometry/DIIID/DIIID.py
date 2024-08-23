@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#AUTOR: Tomas Odstrcil  tomas.odstrcil@ipp.mpg.de
+#AUTOR: Tomas Odstrcil  odstrcilt@fusion.gat.com
 
 from numpy import *
 import sys,os
@@ -82,7 +82,9 @@ sqrt(max(data))
         if input_diagn.endswith('fast'):
             fast_data = True
             input_diagn = input_diagn[:-5]
-
+        
+        #PFM matrix dictionary can be provided as input 
+        self.PFM = input_parameters.get('PFM',None)
 
         path = ['geometry',name,input_diagn,'']
 
@@ -90,6 +92,8 @@ sqrt(max(data))
         self.program_path =  input_parameters['program_path']
         self.geometry_path_program = os.path.join(self.program_path,*path)
         path = os.path.join(self.local_path,*path)
+        
+        self.load_power = input_parameters.get('load_power', True)
       
         if not os.path.exists(path):
              os.makedirs(path)
@@ -200,10 +204,10 @@ sqrt(max(data))
         if input_diagn == 'SXR':
             self.load_others()
         self.load_LBO()
-        #print('load_LBO')
+
        
         self.load_mag_equilibrium()
-        #print('load_mag_equilibrium')
+
     
     
     #@killer_call(timeout=4)E
@@ -287,18 +291,22 @@ sqrt(max(data))
         self.sample_freq = len(self.tvec)/(self.tvec[-1]-self.tvec[0])
     
         
-        self.total_rad = loader.powers
+        if self.load_power:
+            self.total_rad = loader.get_total_rad()
+            
         self.use_pfm = True
 
 
     def init_equ(self):
+        # initialise equ_map from cached or loaded data
         from . import map_equ
         eqm = map_equ.equ_map(None)
-        eqm.pfm   = self.PFM['pfm']
-        eqm.t_eq  = self.PFM['pfm_tvec']
-        eqm.Rmesh = self.PFM['pfm_R']
-        eqm.Zmesh = self.PFM['pfm_Z']
-        eqm.eq_open=True  
+        
+        for k, v in self.PFM.items():
+            setattr(eqm,k,v )
+        eqm.ssq = {'ERROR':None, 'Rmag': eqm.Rmag, 'Zmag': eqm.Zmag,} 
+        eqm.eq_open=True 
+        
         return eqm
 
     def get_psi(self, tvec,xgridc, ygridc):
@@ -394,31 +402,41 @@ sqrt(max(data))
             else:
           
                 print('No cached equilibrum file ' )
- 
-                from . import map_equ
-                if not hasattr(self,'eqm'):
-                    eqm = map_equ.equ_map(self.MDSconn)   
                 
 
+                
+                
                 
                 eq_diags = ((self.mag_diag,self.mag_exp,self.mag_ed),('EFIT01','DIIID',0),('EFITRT1','DIIID',0) )
                 
                 stat = False
                 
-                for diag,mag_exp,mag_ed  in eq_diags:
-                    stat = eqm.Open(self.shot, diag=diag, exp=mag_exp, ed=mag_ed)
-                   
-                    if stat and size(eqm.t_eq) >2 : break
-                    warning('Warning: equlibrium for shot:%d diag:%s  exp:%s  ed:%d  was not found!! other will be used'%(self.shot,diag,mag_exp,mag_ed))
+                if self.PFM is None:
+                    from . import map_equ
+                    if not hasattr(self,'eqm'):
+                        eqm = map_equ.equ_map(self.MDSconn)   
+                        
+                    for diag,mag_exp,mag_ed  in eq_diags:
+                        stat = eqm.Open(self.shot, diag=diag, exp=mag_exp, ed=mag_ed)
+                       
+                        if stat and size(eqm.t_eq) >2 : break
+                        warning('Warning: equlibrium for shot:%d diag:%s  exp:%s  ed:%d  was not found!! other will be used'%(self.shot,diag,mag_exp,mag_ed))
 
-                if not stat:
-                    raise Exception('equlibrium for shot:%d diag:%s  exp:%s  ed:%d  was not found!! use another one'%(self.shot,self.mag_diag,self.mag_exp,self.mag_ed))
+                    if not stat:
+                        raise Exception('equlibrium for shot:%d diag:%s  exp:%s  ed:%d  was not found!! use another one'%(self.shot,self.mag_diag,self.mag_exp,self.mag_ed))
+                    mag_diag = self.mag_diag
+                    from .mag_equ import  Equlibrium
 
+                    EQU = Equlibrium(self.MDSconn, eqm, self.shot, mag_diag,self.mag_exp,self.mag_ed)
+                else:
+                    eqm = self.init_equ()
+             
+                    from .mag_equ import  Equlibrium
 
-                mag_diag = self.mag_diag
-                from .mag_equ import  Equlibrium
-
-                EQU = Equlibrium(self.MDSconn,eqm, self.shot, mag_diag,self.mag_exp,self.mag_ed)
+                    EQU = Equlibrium(eqm = eqm) 
+                    mag_diag = 'EFIT'
+                
+    
                 
                 if 'TRA' in mag_diag:
                     output = EQU.getTranspEquilibrium()
@@ -440,13 +458,13 @@ sqrt(max(data))
                     pfm_tvec = eqm.t_eq
                     pfm_R = eqm.Rmesh
                     pfm_Z = eqm.Zmesh
-                    self.PFM = {'pfm':pfm,'pfm_tvec':pfm_tvec,'pfm_R':pfm_R,'pfm_Z':pfm_Z}
+                    self.PFM = {'pfm':pfm,'t_eq':pfm_tvec,'Rmesh':pfm_R,'Zmesh':pfm_Z}
                     output.update(self.PFM)
                 except:
                     pass
                     
-                    
-                savez_compressed(eq_path,diag=mag_diag,exp=self.mag_exp,
+                if config.useCache:
+                    savez_compressed(eq_path,diag=mag_diag,exp=self.mag_exp,
                                 ed=self.mag_ed,**output)
 
 
@@ -466,8 +484,10 @@ sqrt(max(data))
             'Zmag':data['Zmag'],'ahor':data['ahor'],'bver':data['bver']}
             
             if 'pfm' in data:
-                self.PFM = {'pfm':data['pfm'],'pfm_tvec':data['pfm_tvec'],'pfm_R':data['pfm_R'],'pfm_Z':data['pfm_Z']}
- 
+                try:
+                    self.PFM = {'pfm':data['pfm'],'t_eq':data['pfm_tvec'],'Rmesh':data['pfm_R'],'Zmesh':data['pfm_Z']}
+                except:
+                    self.PFM = {'pfm':data['pfm'],'t_eq':data['t_eq'],    'Rmesh':data['Rmesh'],'Zmesh':data['Zmesh']}
 
         self.mag_dt = amax(diff(self.mag_axis['tvec']))
         self.mag_axis['Rmag'] = copy(self.surf_coeff[:,-1,0,0])
@@ -612,20 +632,20 @@ sqrt(max(data))
         
              
         #apply shift from the config file
-        input_parameters = read_config(self.local_path+'/tomography.cfg')
-        self.magfield_shift_core = input_parameters['magfield_shift_core']
-        self.magfield_shift_lcfs = input_parameters['magfield_shift_lcfs']
+        #input_parameters = read_config(self.local_path+'/tomography.cfg')
+       # self.magfield_shift_core = input_parameters['magfield_shift_core']
+       # self.magfield_shift_lcfs = input_parameters['magfield_shift_lcfs']
       
-        if hasattr( config, 'magfield_shift') and  config.magfield_shift != (0,0):
-            self.magfield_shift_core = config.magfield_shift
-            print('config shift')
-        else:
-            self.magfield_shift_core = input_parameters['magfield_shift_core']
+       # if hasattr( config, 'magfield_shift') and  config.magfield_shift != (0,0):
+        #    self.magfield_shift_core = config.magfield_shift
+        #    print('config shift')
+        #else:
+        #    self.magfield_shift_core = input_parameters['magfield_shift_core']
     
         #shift only the center, not the separatrix            
-        surf_coeff[:,-1,0,:2] += self.magfield_shift_core
-        surf_coeff[:,-2,0,:2] -= self.magfield_shift_core
-        surf_coeff[:,-2,0,:2] += self.magfield_shift_lcfs
+        #surf_coeff[:,-1,0,:2] += self.magfield_shift_core
+        #s#urf_coeff[:,-2,0,:2] -= self.magfield_shift_core
+       # surf_coeff[:,-2,0,:2] += self.magfield_shift_lcfs
 
 
 
@@ -756,9 +776,9 @@ sqrt(max(data))
                 assert any(LBOQSWCH&LBOSHUTT), 'no LBO'
 
                 lbo_times = tvec[where((diff(double(LBOQSWCH&LBOSHUTT)) > 0 ))]/1e3
-
-
-                savetxt(lbo_path, lbo_times,fmt='%3.5f' )
+                
+                if config.useCache:
+                    savetxt(lbo_path, lbo_times,fmt='%3.5f' )
                 self.impur_inject_t = lbo_times
 
 
@@ -768,7 +788,8 @@ sqrt(max(data))
             except:
                 #raise
                 self.impur_inject_t = None
-                savetxt(lbo_path, (nan,))
+                if config.useCache:
+                    savetxt(lbo_path, (nan,))
             
 
     def load_others(self):

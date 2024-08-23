@@ -44,7 +44,7 @@ class equ_map:
         self.eq_open = False
         self.debug = debug
         self.sf = connect
-
+        self.orientation = 1
         
     def Open(self, shot, diag='EFIT01', exp='DIII-D',ed=0):
 
@@ -285,7 +285,11 @@ class equ_map:
 # Trivial case
         if coord_out == coord_in: 
             return rho
-
+        if coord_in=='rho_pol' and coord_out=='Psi_N': 
+            return rho**2
+        if coord_out=='rho_pol' and coord_in=='Psi_N': 
+            return rho**0.5
+            
         self._read_scalars()
         self._read_profiles()
         
@@ -318,7 +322,7 @@ class equ_map:
                                 t_in=self.t_eq[unique_idx],coord_in='Psi')
             label_out = np.zeros_like(self.pf)
             label_out[:,unique_idx] = (R[:, 0] - R[:, 1]).T**2/4
-        else:
+    
             raise Exception('unsupported output coordinate')
 
         PFL  = self.orientation*self.pf
@@ -339,7 +343,7 @@ class equ_map:
 
             sep_out, mag_out = np.interp([PSIX[i], PSI0[i]], PFL[sort_wh,i], label_out[sort_wh,i])
             sep_in , mag_in  = np.interp([PSIX[i], PSI0[i]], PFL[sort_wh,i], label_in[sort_wh,i])
-
+            
             if (abs(sep_out - mag_out) < 1e-4) or (abs(sep_in - mag_in) < 1e-4) or np.isnan(sep_in*sep_out): #corrupted timepoint
                 #print 'corrupted'
                 continue
@@ -347,7 +351,8 @@ class equ_map:
 # Normalize between 0 and 1
             rho_out = (label_out[sort_wh,i] - mag_out)/(sep_out - mag_out)
             rho_in  = (label_in [sort_wh,i] - mag_in )/(sep_in  - mag_in )
-
+            
+    
             rho_out[(rho_out > 1) | (rho_out < 0)] = 0  #remove rounding errors
             rho_in[ (rho_in  > 1) | (rho_in  < 0)] = 0
 
@@ -365,18 +370,14 @@ class equ_map:
             ratio = rho_out[sortind]/rho_in[sortind]
             rho_in = np.r_[0, rho_in[sortind]]
             ratio = np.r_[ratio[0], ratio]
-            
+      
 
             s = UnivariateSpline(rho_in, ratio, w=w, k=4, s=5e-3,ext=3)  #BUG s = 5e-3 can be sometimes too much, sometimes not enought :( 
             
 
 
             jt = idx == i
-            #print  np.where(jt)[0]
-            #if 826 in np.where(jt)[0]:
-                #import IPython 
-                #IPython.embed()
-
+    
             rho_ = np.copy(rho[jt])
 
             r0_in,r0_out = 1,1
@@ -576,11 +577,10 @@ class equ_map:
             index = ((coords.T - offset) / scaling).T
             Psi[jt] =  map_coordinates(self.pfm[:, :, i], index,
                                 mode='nearest',order=2, prefilter=True)
-   
+ 
         rho_out = self.rho2rho(Psi, t_in=t_in, extrapolate=extrapolate, coord_in='Psi',
                               coord_out=coord_out)
-        
- 
+       
         return rho_out
 
 
@@ -946,7 +946,8 @@ class equ_map:
 
         rho_line = self.rz2rho(line_r, line_z, self.t_eq[unique_idx],
                                coord_out=coord_in , extrapolate=True)
-  
+        
+       
         R = np.empty((nt_in, ntheta) + rho.shape[1:], dtype='single')
         z = np.empty((nt_in, ntheta) + rho.shape[1:], dtype='single')
     
@@ -966,7 +967,7 @@ class equ_map:
        
                 monotonicity = np.cumprod(np.ediff1d(rho_line[i, k],1)>0)==1  #troubles with IDE
                 imax = np.argmax(rho_line[i, k, monotonicity])
-   
+           
                 rspl = InterpolatedUnivariateSpline(rho_line[i, k, :imax+1],
                                                     line_r[i, k, :imax+1], k=2)
                 
@@ -1111,7 +1112,7 @@ if __name__ == "__main__":
     rho = np.linspace(0,2,101)
     
     R,Z = eqm.rho2rz( rho, t, all_lines=True)
-    print(len(R))
+
     for r,z,c in zip(R,Z,color):
         for rc,zc in zip(r,z):
             plt.plot(rc,zc,c)

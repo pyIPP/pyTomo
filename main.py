@@ -275,7 +275,6 @@ def tomography(inputs, tokamak, progress = None):
 
         import multiprocessing
         inputs['main_run'] = True #flag that this is the main run
-        
         if inputs['solid_parallel'] or tokamak.npix < 1000:    #faster, but unbreakable, without progressbar, for nx*ny<1000 is parallel processing too slow
             numTasks = 1
             debug( 'Uses solid parallel solve => Cancel button will not work')
@@ -283,7 +282,7 @@ def tomography(inputs, tokamak, progress = None):
             numTasks = int(ceil(numSteps/(inputs['n_cpu']*4.)))
         numTasks = min(100,numTasks) #small speed improvement for very large number of blocks
         
-        if config.DEBUG:
+        if config.DEBUG or config.no_multiprocessing:
             numTasks = numSteps
 
         ind = [slice(i*tsteps//numSteps,(i+1)*tsteps//numSteps) for i in range(numSteps)]
@@ -314,15 +313,21 @@ def tomography(inputs, tokamak, progress = None):
                     inputs['solver'], inputs['ifishmax'], time_0,postprocessing)  for i,ii in enumerate(ind)],copy=False,dtype=object)    
             
         sequence = array_split(sequence, numTasks)
-        pool = multiprocessing.Pool(min(inputs['n_cpu'],numSteps))
-        method =  map if config.DEBUG or numSteps==1 else pool.map        
+   
+        if config.DEBUG or numSteps==1 or config.no_multiprocessing:
+            method =  map 
+            pool = None
+        else:
+            pool = multiprocessing.Pool(min(inputs['n_cpu'],numSteps))
+            method = pool.map  
+            
+                  
         results = []
         try:
             from PyQt5.QtCore import currentThread
         except:
             currentThread = None
-        #from IPython import embed
-        #embed()
+     
         try:
             from tqdm import tqdm
             if not progress is None: progress.setNumSubSteps(len(sequence))
@@ -341,8 +346,9 @@ def tomography(inputs, tokamak, progress = None):
             results.extend(out)
             
         finally:
-            pool.close()
-            pool.join()
+            if pool is not None:
+                pool.close()
+                pool.join()
         
         sys.stdout.write("\r MAIN SOLVE DONE\n")
         if not progress is None: progress.iterateStep()
@@ -563,7 +569,7 @@ def presolve(tokamak, data, error, tvec, Tmat, dets,  normData,
 
 
         out = []
-        if  config.DEBUG == True:
+        if  config.DEBUG:
             out = list(map(main_cycle, sequence))
         else:
             numTasks = 1 if solid_parallel else int(ceil(numSteps/inputs['n_cpu']))

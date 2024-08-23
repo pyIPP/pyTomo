@@ -56,58 +56,12 @@ for tomography and command-line interface. All functions should be fully accesib
 
 
 
-#try:
-import matplotlib   #on JET must  be used Qt4Agg backend
-matplotlib.rcParams['backend'] = 'Qt5Agg'  #choose one of GTK GTKAgg GTKCairo CocoaAgg FltkAgg MacOSX QtAgg Qt4Agg TkAgg WX WXAgg Agg Cairo GDK PS PDF SVG
-##!! with no X use Agg !! 
-matplotlib.rcParams['backend'] = 'Agg'  #choose one of GTK GTKAgg GTKCairo CocoaAgg FltkAgg MacOSX QtAgg Qt4Agg TkAgg WX WXAgg Agg Cairo GDK PS PDF SVG
-
-#if matplotlib.compare_versions(matplotlib.__version__, '1.9.9'):
-# http://matplotlib.org/users/dflt_style_changes.html
-params = { 
-        'axes.labelsize': 'medium',
-        'axes.titlesize': 'medium',
-        'xtick.labelsize' :'medium',
-        'ytick.labelsize': 'medium',
-        'font.size':12,
-        'mathtext.fontset': 'cm',
-        'mathtext.rm': 'serif',
-        'grid.color': 'k',
-        'grid.linestyle': ':',
-        'grid.linewidth': 0.5,
-        'lines.linewidth'   : 1.0,
-        'lines.dashed_pattern' : (6, 6),
-        'lines.dashdot_pattern' : (3, 5, 1, 5),
-        'lines.dotted_pattern' : (1, 3),
-        'lines.scale_dashes': False,
-        'errorbar.capsize':3,
-        'mathtext.fontset': 'cm',
-        'mathtext.rm' : 'serif',
-        'legend.loc':'upper right',
-        'legend.fontsize':'large',
-        'legend.framealpha':None,
-        'legend.scatterpoints':3,
-        'legend.edgecolor':'inherit'}
-            
- 
-  
-
-matplotlib.rcParams.update(params)
-
-
 import sys,os
 from numpy import *
-from scipy import sparse
-from numpy import linalg
 import time
-from scipy.interpolate import RectBivariateSpline
-from scipy.io import loadmat
-import pickle
-import os
 import os.path
 import socket
-from main import *
-from shared_modules import read_config
+import matplotlib
 import config
 from shutil import copyfile
 
@@ -225,7 +179,7 @@ s
         copyfile(cfg_path,os.path.join(local_path,cfg_file+'.cfg'))
         
         print('Config file was copied from '+cfg_path)
-
+    from shared_modules import read_config
     inputs = read_config(local_path+cfg_file+".cfg")
  
     inputs['program_path']= program_path
@@ -280,7 +234,7 @@ class pytomo_class:
         
  
      
-        from prepare_data import loaddata
+        
 
         self.inputs = loadSetting( )
         self.inputs.update(inputs)
@@ -291,14 +245,16 @@ class pytomo_class:
 
 
     def run(self):
+        #matplotlib.rcParams['backend'] = 'Qt5Agg'   
+        from prepare_data import loaddata
         tok = loaddata(self.inputs, useCache=False, prepare_tokamak = False)
          
         tok.prepare_tokamak()
          
-
+        from main import tomography
         inputs, tokamak, progress, output = tomography(self.inputs, tok)
 
-        return output
+        return  tokamak, output
     
  
         
@@ -312,11 +268,51 @@ def main():
 
     """
     import argparse
-    import matplotlib   #on JET must  be used Qt4Agg backend
+    #on JET must  be used Qt4Agg backend
     #matplotlib.rcParams['backend'] = 'Agg'  #choose one of GTK GTKAgg GTKCairo CocoaAgg FltkAgg MacOSX QtAgg Qt4Agg TkAgg WX WXAgg Agg Cairo GDK PS PDF SVG
-    # !! with no X use Agg !! 
+        # !! with no X use Agg !! 
 
- 
+
+    #try:
+    import matplotlib   #on JET must  be used Qt4Agg backend
+    matplotlib.rcParams['backend'] = 'Qt5Agg'  #choose one of GTK GTKAgg GTKCairo CocoaAgg FltkAgg MacOSX QtAgg Qt4Agg TkAgg WX WXAgg Agg Cairo GDK PS PDF SVG
+    ##!! with no X use Agg !! 
+    matplotlib.rcParams['backend'] = 'Agg'  #choose one of GTK GTKAgg GTKCairo CocoaAgg FltkAgg MacOSX QtAgg Qt4Agg TkAgg WX WXAgg Agg Cairo GDK PS PDF SVG
+
+    #if matplotlib.compare_versions(matplotlib.__version__, '1.9.9'):
+    # http://matplotlib.org/users/dflt_style_changes.html
+    params = { 
+            'axes.labelsize': 'medium',
+            'axes.titlesize': 'medium',
+            'xtick.labelsize' :'medium',
+            'ytick.labelsize': 'medium',
+            'font.size':12,
+            'mathtext.fontset': 'cm',
+            'mathtext.rm': 'serif',
+            'grid.color': 'k',
+            'grid.linestyle': ':',
+            'grid.linewidth': 0.5,
+            'lines.linewidth'   : 1.0,
+            'lines.dashed_pattern' : (6, 6),
+            'lines.dashdot_pattern' : (3, 5, 1, 5),
+            'lines.dotted_pattern' : (1, 3),
+            'lines.scale_dashes': False,
+            'errorbar.capsize':3,
+            'mathtext.fontset': 'cm',
+            'mathtext.rm' : 'serif',
+            'legend.loc':'upper right',
+            'legend.fontsize':'large',
+            'legend.framealpha':None,
+            'legend.scatterpoints':3,
+            'legend.edgecolor':'inherit'}
+                
+     
+      
+
+    matplotlib.rcParams.update(params)
+
+    import main 
+    from prepare_data import loaddata
     inputs = loadSetting( )
 
     inputs['tmp_folder']  = os.path.expanduser(os.path.expandvars(inputs['tmp_folder' ]))
@@ -629,7 +625,7 @@ def startCUI(inputs, tok):
     if not os.path.isdir( output_path):
         os.mkdir(output_path)
         
-     
+    from main import tomography
     
     inputs['postprocessing'] |= inputs['impurities']
     

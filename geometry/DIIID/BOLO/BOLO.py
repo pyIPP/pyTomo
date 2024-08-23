@@ -250,7 +250,7 @@ class loader_BOLO():
     sigma = 0.00
     min_error = 0.02
     
-    def __init__(self, shot, geometry_path,MDSconn):
+    def __init__(self, shot, geometry_path, MDSconn):
         
         """
 
@@ -391,17 +391,17 @@ class loader_BOLO():
         #return eqm.rho2rz(rho**2, tvec,'Psi',True)  
         
         
-    #def get_total_rad(self):
+    def get_total_rad(self):
         
         
         #if hasattr(self, 'powers'):
             #return self.powers
         try:
             try:
-                self.powers = list(np.load(geometry_path+'/power_%d.npz'%self.shot, allow_pickle=True)['power'])
+                powers = list(np.load(geometry_path+'/power_%d.npz'%self.shot, allow_pickle=True)['power'])
             except:
                 #try:
-                self.powers = []
+                powers = []
                 print('get_total_rad')
                 signals = 'PRAD_TOT','PRAD_DIVL','PRAD_DIVU'
                 self.MDSconn.openTree(self.tree,self.shot)
@@ -450,7 +450,7 @@ class loader_BOLO():
             pass
         #import IPython
         #IPython.embed()
-        #return self.powers
+        return powers
       
       
       
@@ -1050,17 +1050,20 @@ class loader_BOLO():
         self.cache = data,data_err
         
         
-        
-        likely_invalid = (np.mean((shot_data),0) <  data_err[0] * 3) | (data_err[0]  == 0)
+        mdata = np.mean((shot_data),0)
+        likely_invalid = (mdata <  data_err[0] * 3) | (data_err[0]  <1 )|(mdata < np.median(mdata)/10)
         #np.mean(np.abs(np.diff(shot_data[::10],axis=0)),0)*2 
         
-        #plt.plot(np.mean((shot_data),0))
+        #plt.plot(mdata)
         #plt.plot( data_err[0] * 3)
+        #plt.plot(np.arange(len(mdata))[likely_invalid], mdata[likely_invalid],'o')
+        
        # plt.plot(np.median(np.abs(np.diff(shot_data[::10],0)),0), '--'  )
         #plt.plot(  np.mean(np.abs(np.diff(shot_data[::10],axis=0)),0)   , '--'  )
-       # plt.show()
         
-       # print(np.where(likely_invalid))
+        #plt.show()
+        
+
         
         import config
         config.wrong_dets_pref = np.where(likely_invalid)[0]
