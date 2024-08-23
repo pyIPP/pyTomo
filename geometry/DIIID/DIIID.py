@@ -304,7 +304,8 @@ sqrt(max(data))
         
         for k, v in self.PFM.items():
             setattr(eqm,k,v )
-        eqm.ssq = {'ERROR':None, 'Rmag': eqm.Rmag, 'Zmag': eqm.Zmag,} 
+        if 'Rmag' in self.PFM:
+            eqm.ssq = {'ERROR':None, 'Rmag': eqm.Rmag, 'Zmag': eqm.Zmag,} 
         eqm.eq_open=True 
         
         return eqm
