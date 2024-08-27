@@ -276,7 +276,8 @@ def main():
     #try:
     import matplotlib   #on JET must  be used Qt4Agg backend
     try:
-        matplotlib.rcParams['backend'] = 'Qt5Agg'  #choose one of GTK GTKAgg GTKCairo CocoaAgg FltkAgg MacOSX QtAgg Qt4Agg TkAgg WX WXAgg Agg Cairo GDK PS PDF SVG
+        matplotlib.rcParams['backend'] = 'Agg'
+        #matplotlib.rcParams['backend'] = 'Qt5Agg'  #choose one of GTK GTKAgg GTKCairo CocoaAgg FltkAgg MacOSX QtAgg Qt4Agg TkAgg WX WXAgg Agg Cairo GDK PS PDF SVG
     except Exception as e:
         print(e)
         ##!! with no X use Agg !! 
