@@ -275,9 +275,12 @@ def main():
 
     #try:
     import matplotlib   #on JET must  be used Qt4Agg backend
-    matplotlib.rcParams['backend'] = 'Qt5Agg'  #choose one of GTK GTKAgg GTKCairo CocoaAgg FltkAgg MacOSX QtAgg Qt4Agg TkAgg WX WXAgg Agg Cairo GDK PS PDF SVG
-    ##!! with no X use Agg !! 
-    matplotlib.rcParams['backend'] = 'Agg'  #choose one of GTK GTKAgg GTKCairo CocoaAgg FltkAgg MacOSX QtAgg Qt4Agg TkAgg WX WXAgg Agg Cairo GDK PS PDF SVG
+    try:
+        matplotlib.rcParams['backend'] = 'Qt5Agg'  #choose one of GTK GTKAgg GTKCairo CocoaAgg FltkAgg MacOSX QtAgg Qt4Agg TkAgg WX WXAgg Agg Cairo GDK PS PDF SVG
+    except Exception as e:
+        print(e)
+        ##!! with no X use Agg !! 
+        matplotlib.rcParams['backend'] = 'Agg'  #choose one of GTK GTKAgg GTKCairo CocoaAgg FltkAgg MacOSX QtAgg Qt4Agg TkAgg WX WXAgg Agg Cairo GDK PS PDF SVG
 
     #if matplotlib.compare_versions(matplotlib.__version__, '1.9.9'):
     # http://matplotlib.org/users/dflt_style_changes.html
