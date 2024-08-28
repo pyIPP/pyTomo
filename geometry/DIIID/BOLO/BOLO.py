@@ -1033,10 +1033,11 @@ class loader_BOLO():
         
         import matplotlib.pylab as plt
         from scipy.signal import butter, sosfiltfilt
-        sos = butter(4, 0.01, output='sos')
+        sos = butter(4, 0.02, output='sos')
         data_smooth = sosfiltfilt(sos, shot_data, axis=0)
         
-        data_err += np.std((shot_data-data_smooth), 0)
+        #Mean absolute deviation
+        data_err += 1.22*np.mean(np.abs((shot_data-data_smooth)), 0)
         
         
        # for i in range(len(data)):
@@ -1064,10 +1065,11 @@ class loader_BOLO():
         #plt.show()
         
 
-        
-        import config
-        config.wrong_dets_pref = np.where(likely_invalid)[0]
-        
+        try:
+            import config
+            config.wrong_dets_pref = np.where(likely_invalid)[0]
+        except:
+            pass
         #print(config.wrong_dets_pref)
        # data_err[:,likely_invalid] = np.inf
  
@@ -1177,12 +1179,12 @@ def main():
     import os
     import os,sys
     #, shot, geometry_path,MDSconn
-    c = mds.Connection('localhost' )
+    c = mds.Connection('atlas.gat.com' )
 
-    bolo = loader_BOLO(189876,'/home/tomas/tomography/geometry/DIIID/BOLO/',c )
+    bolo = loader_BOLO(200380,'/home/tomas/tomography/geometry/DIIID/BOLO/',c )
     T = time.time()
-    bolo.get_data_(1.9,3)
-    bolo.get_total_rad(4,6)
+    bolo.get_data(1.9,3)
+   # bolo.get_total_rad(4,6)
 
     print('loaded in ',time.time()-T)
     bolo.load_geom()
