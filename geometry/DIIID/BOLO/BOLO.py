@@ -1006,7 +1006,7 @@ class loader_BOLO():
         ntim = len(self.tvec)
 
         data = zeros((ntim, self.nl),dtype=single)
-        data_err = zeros((ntim, self.nl),dtype=single)
+
         #BOLOM::TOP.RAW:BOL_L23_V
         TDIcall = "\\BOLOM::TOP.PRAD_01.POWER:"
         self.MDSconn.openTree(self.tree,self.shot)
@@ -1025,34 +1025,42 @@ class loader_BOLO():
         #data_err += std(data[self.tvec < 0],0)*2
         #data_err += 0.1*mean(data,1)[:,None]
         
-        
-        shot_data = data[(self.tvec > 0)&(self.tvec < 5)]
+        shot_data = data
+        #shot_data = data[(self.tvec > rmin)&(self.tvec < 5)]
         #data_err += np.median(np.abs(np.diff(shot_data[::10],axis=0)),0)/2
-        
-         
-        
-        import matplotlib.pylab as plt
+
+
+
+
         from scipy.signal import butter, sosfiltfilt
         sos = butter(4, 0.02, output='sos')
         data_smooth = sosfiltfilt(sos, shot_data, axis=0)
-        
+
+        init_err = data[self.tvec<0].std(0)/2
         #Mean absolute deviation
-        data_err += 1.22*np.mean(np.abs((shot_data-data_smooth)), 0)
-        
-        
-       # for i in range(len(data)):
-        #    plt.title(i)
-       #     plt.errorbar(self.tvec, data[:,i], data_err[:,i])
-        #    plt.plot(self.tvec[(self.tvec > 0)&(self.tvec < 5)], data_smooth[:,i])
-        #    plt.show()
- 
+        data_err = 1.22* np.exp(sosfiltfilt(sos,sosfiltfilt(sos, np.log(np.abs(shot_data-data_smooth)+init_err), axis=0), axis=0))
+        data_err += np.abs(data_smooth) * 0.05 #5% calibration error
+        data_err = np.single(data_err)
+        #import matplotlib.pylab as plt
+        #for i in range(len(data)):
+            #plt.title(i)
+            #plt.errorbar(self.tvec, data[:,i], data_err[:,i])
+            #plt.plot(self.tvec, data_smooth[:,i])
+            #plt.show()
+
+        ##embed()
+        #import IPython
+        #IPython.embed()
  
         
         self.cache = data,data_err
         
         
         mdata = np.mean((shot_data),0)
-        likely_invalid = (mdata <  data_err[0] * 3) | (data_err[0]  <1 )|(mdata < np.median(mdata)/10)
+            #likely_invalid = (mdata <  data_err[0] * 3) | (data_err[0]  <1 )|(mdata < np.median(mdata)/10)
+        likely_invalid =  (data_err[0]  <1 ) |(mdata < np.median(mdata)/10)#(mdata <  data_err[0] * 3) |
+
+
         #np.mean(np.abs(np.diff(shot_data[::10],axis=0)),0)*2 
         
         #plt.plot(mdata)
@@ -1072,7 +1080,7 @@ class loader_BOLO():
             pass
         #print(config.wrong_dets_pref)
        # data_err[:,likely_invalid] = np.inf
- 
+        #PRINT()
         
         return self.tvec[imin:imax],data[imin:imax],data_err[imin:imax]
 
