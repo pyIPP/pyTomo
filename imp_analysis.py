@@ -3,7 +3,7 @@
 from numpy import *
 from scipy.interpolate import RectBivariateSpline, interp1d
 from matplotlib.colors import LogNorm,NoNorm
-import os, sys
+import os, sys, copy
 from matplotlib.ticker import MaxNLocator,NullFormatter
 from matplotlib.transforms import Bbox
 from scipy.stats.mstats import mquantiles
@@ -12,6 +12,7 @@ from matplotlib.figure import Figure
 from multiprocessing import Process
 from time import sleep
 from matplotlib.pylab import *    
+from IPython import embed 
 
 
 
@@ -56,6 +57,7 @@ def imp_analysis( input_data):
     geometry_path = tokamak.geometry_path
     tmp_folder = tokamak.tmp_folder
     output_path = input_parameters['output_path']
+    dpi = input_parameters['dpi']
 
     HFS_emiss = zeros((nt,nr),dtype=single)
     LFS_emiss = zeros((nt,nr),dtype=single)
@@ -64,7 +66,7 @@ def imp_analysis( input_data):
     offset = array([tokamak.xmin,tokamak.ymin])#+scaling/2
     
     from scipy.ndimage.interpolation import map_coordinates    
-    
+
     for i in range(nt): 
         coords = c_[LFS_R[i].ravel(),LFS_z[i].ravel()].T
         idx = (coords-offset[:,None])/ scaling[:,None]
@@ -73,58 +75,56 @@ def imp_analysis( input_data):
         idx = (coords-offset[:,None])/ scaling[:,None]
         HFS_emiss[i] = map_coordinates(G[i].T,idx,order=2)
         
-                
+            
+    try:
+        
+        BRdata = load(geometry_path+'Bremsstrahlung_%d.npz'%shot)
+        tvec_data =   double(BRdata['tvec'])
+        rho_data_ = tile(BRdata['rho'], (len(tvec_data), 1))
+        BR_ = double(BRdata['BR'])
+        BR_low_ =double( BRdata['BR_low'])
+        BR_high_ = double(BRdata['BR_high'])
+        BR_high_[isinf(BR_high_)] = amax(BR_high_[isfinite(BR_high_)])
+        W_ =  double(BRdata['W'])
         try:
-            
-            BRdata = load(geometry_path+'/Bremsstrahlung_%d.npz'%shot)
-            tvec_data =   double(BRdata['tvec'])
-            rho_data_ = tile(BRdata['rho'], (len(tvec_data), 1))
-            BR_ = double(BRdata['BR'])
-            BR_low_ =double( BRdata['BR_low'])
-            BR_high_ = double(BRdata['BR_high'])
-            BR_high_[isinf(BR_high_)] = amax(BR_high_[isfinite(BR_high_)])
-            W_ =  double(BRdata['W'])
-            try:
-                W_low_ =   double(BRdata['W_low']) #optimistics guess
-                W_high_ =    double(BRdata['W_high'])
-            except:
-                W_low_ =  W_*.8
-                W_high_ = W_*1.2
-                
-                
-                
+            W_low_ =   double(BRdata['W_low']) #optimistics guess
+            W_high_ =    double(BRdata['W_high'])
         except:
+            W_low_ =  W_*.8
+            W_high_ = W_*1.2
+            
+            
+            
+    except:
 
-            try:
-                data = load('./asymmetry/asymmetry_emiss_%d_.npz'%shot)
-                tvec_data = data['tvec']
-                rho_data_ = data['rho_pol']
+        try:
+            data = load('./asymmetry/asymmetry_emiss_%d_.npz'%shot)
+            tvec_data = data['tvec']
+            rho_data_ = data['rho_pol']
 
-                BR_ = data['Bremsstrahlung']
-                W_ = data['W_Radiation']
+            BR_ = data['Bremsstrahlung']
+            W_ = data['W_Radiation']
+        
+            data_low  = load('./asymmetry/asymmetry_emiss_%d_low.npz'%shot) 
+            data_high = load('./asymmetry/asymmetry_emiss_%d_up.npz'%shot )
             
-                data_low  = load('./asymmetry/asymmetry_emiss_%d_low.npz'%shot) 
-                data_high = load('./asymmetry/asymmetry_emiss_%d_up.npz'%shot )
-                
-                BR_low_ = data_low['Bremsstrahlung']
-                W_low_ = data_low['W_Radiation']
-                BR_high_  = data_high['Bremsstrahlung']
-                W_high_  = data_high['W_Radiation']
+            BR_low_ = data_low['Bremsstrahlung']
+            W_low_ = data_low['W_Radiation']
+            BR_high_  = data_high['Bremsstrahlung']
+            W_high_  = data_high['W_Radiation']
+        
             
-                
-            except:
-                print('no radiation data!!!')
-                return 
+        except:
+            print('no radiation data!!!')
+            return 
+        
             
-            
-
     
     
 
     BR_[isinf(BR_)] = nan
     W_[isinf(W_)] = nan
     
-    zeff = input_parameters['zeff']
         
     BR = zeros((len(tvec), BR_.shape[1]))
     BR_low = zeros((len(tvec), BR_low_.shape[1]))
@@ -137,6 +137,7 @@ def imp_analysis( input_data):
 
     for it,t in enumerate((tvec)):
         ind = slice(tvec_data.searchsorted(t-dt),tvec_data.searchsorted(t+dt)+1)
+        #embed()
         BR[it] = nanmean(BR_[ind],0)
         BR_low[it] = nanmean(BR_low_[ind],0)
         BR_high[it] = nanmean(BR_high_[ind],0)
@@ -145,12 +146,18 @@ def imp_analysis( input_data):
         W_high[it] = nanmean(W_high_[ind],0)
         rho_data[it] = nanmean(rho_data_[ind],0)
 
-    BR*= zeff/1.1
-    BR_low*= zeff/1.1  #default zeff used to calc Bremsstrahlung is 1.1!!
-    BR_high*= zeff/1.1
+    
+    if tokamak.name == 'ASDEX':
+        zeff = input_parameters['zeff']
+        print('Assume Zeff = ', zeff)
+        BR*= zeff/1.1
+        BR_low*= zeff/1.1  #default zeff used to calc Bremsstrahlung is 1.1!!
+        BR_high*= zeff/1.1
+    else:
+        zeff = 1
 
     
-    
+
 
     BR = array([interp(rho,r, p ) for r,p in zip( rho_data, BR)])
     BR_low = array([interp(rho,r, p ) for r,p in zip( rho_data, BR_low)])
@@ -186,6 +193,7 @@ def imp_analysis( input_data):
     ax.append(fig.add_subplot(1,3,1))
     ax.append(fig.add_subplot(1,3,2,sharex=ax[0]))
     ax.append(fig.add_subplot(1,3,3,sharex=ax[0]))
+    ax[0].set_xlim(0,1)
 
     from scipy.signal import order_filter
 
@@ -237,7 +245,6 @@ def imp_analysis( input_data):
     ax[1].yaxis.set_major_locator(MaxNLocator(5))
     
     
-    
     cw_high = (fsa_emiss[0]-BR_low[0])/(W_low[0]+1e-1)
     cw_low  = maximum(0, (fsa_emiss[0]-BR_high[0])/W_high[0])
     cw_low[isnan(cw_low)]
@@ -285,9 +292,9 @@ def imp_analysis( input_data):
                 ind = (fsa_emiss[it]-BR_low[it])/fsa_emiss[it] <.5
                 cw_high = (fsa_emiss[it]-BR_low[it])/(W_low[it]+1e-6)
                 cw_low  = (fsa_emiss[it]-BR_high[it])/(W_high[it]+1e-6)
-  
-                ax[1].set_ylim(0,cw_max[it])
-                
+                if isfinite(cw_max[it]):
+                    ax[1].set_ylim(0,cw_max[it])
+           
                 update_fill_between(cw_err_plot,rho,cw_low,cw_high,0,cw_max[it])
                 cw[it, ind] = nan
                 cw_plot.set_ydata(cw[it])
@@ -303,16 +310,16 @@ def imp_analysis( input_data):
             zeff_plot.set_ydata( Zeff[it])
 
             try:
-                fig.savefig(tmp_folder+'imp_plot_%.4d.png'%it, bbox_inches=Bbox([[1,0.05],[16,5.7]]),transparent='True',dpi=80)
+                fig.savefig(tmp_folder+'imp_plot_%.4d.png'%it, bbox_inches=Bbox([[1,0.05],[16,5.7]]),transparent='True',dpi=dpi)
             except Exception as e:
                 print(e)
                 
 
             if input_parameters['enable_output']:
                 fig.savefig(output_path+'impurities_%.4d_%d.%s'%(it,shot,input_parameters['output_type']),
-                            dpi=80, bbox_inches='tight', transparent=True)
+                            dpi=dpi, bbox_inches='tight', transparent=True)
 
-    
+
     savez_compressed(tmp_folder+'/imp_analysis_%d'%shot, tvec=tvec,rho=rho,
                      BR=single(BR), 
                      W=single(W),
@@ -351,11 +358,13 @@ def imp_analysis( input_data):
     except:
         vmax = 1
         levels=linspace(0,vmax,15)
-
+    import copy as cp
+    cmap = cp.copy(plt.cm.get_cmap("jet"))
+    cmap.set_over('brown')
+    cmap.set_under('black')    
         
-    CM = ax[0].contourf(tvec, rho, cw.T,levels, vmin=0,vmax=vmax, extend='both',cmap='jet')
-    CM.cmap.set_over('brown')
-    CM.cmap.set_under('black')
+    CM = ax[0].contourf(tvec, rho, cw.T,levels, vmin=0,vmax=vmax, extend='both',cmap=cmap)
+
     from matplotlib import colorbar
 
     cax,kw = colorbar.make_axes(ax[0])
@@ -373,8 +382,9 @@ def imp_analysis( input_data):
     vmax = nanmax(fsa_emiss,1)
     vmax = mquantiles(vmax,0.95)[0]
     levels=linspace(0,vmax,15)
-    CM = ax[1].contourf(tvec, rho, fsa_emiss.T*fact,levels*fact, vmin=0,vmax=vmax*fact, extend='max',cmap='jet')
-    CM.cmap.set_over('brown')
+    #cmap = copy.copy(plt.cm.get_cmap("jet"))
+    #cmap.set_over('brown')
+    CM = ax[1].contourf(tvec, rho, fsa_emiss.T*fact,levels*fact, vmin=0,vmax=vmax*fact, extend='max',cmap=cmap)
     cax,kw = colorbar.make_axes(ax[1])
     cb = fig.colorbar(CM, cax=cax, **kw)
     tick_locator = MaxNLocator(nbins=4)   
@@ -387,8 +397,7 @@ def imp_analysis( input_data):
     vmax = nanmax(W,1)
     vmax = mquantiles(vmax[isfinite(vmax)],0.95)[0]
     levels=linspace(0,vmax,15)
-    CM = ax[2].contourf(tvec, rho, W.T*fact,levels*fact, vmin=0,vmax=vmax*fact, extend='max',cmap='jet')
-    CM.cmap.set_over('brown')
+    CM = ax[2].contourf(tvec, rho, W.T*fact,levels*fact, vmin=0,vmax=vmax*fact, extend='max',cmap=cmap)
     cax,kw = colorbar.make_axes(ax[2])
     cb = fig.colorbar(CM, cax=cax, **kw)
     tick_locator = MaxNLocator(nbins=4)   
@@ -397,12 +406,12 @@ def imp_analysis( input_data):
     cb.update_ticks()
     ax[2].set_xlabel('time [s]')
 
-    fig.savefig(tmp_folder+'impurities_2D_%d.png'%shot, dpi=80, bbox_inches='tight', transparent=True)
+    fig.savefig(tmp_folder+'impurities_2D_%d.png'%shot, dpi=dpi, bbox_inches='tight', transparent=True)
 
 
     if input_parameters['enable_output']:
         fig.savefig(output_path+'impurities_2D_%d.%s'%(shot,input_parameters['output_type']),
-                    dpi=80, bbox_inches='tight', transparent=True)
+                    dpi=dpi, bbox_inches='tight', transparent=True)
 
 
 

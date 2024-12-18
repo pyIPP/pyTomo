@@ -97,7 +97,7 @@ def geom_mat_gen_cython(np.ndarray[double, ndim=2] xchord, np.ndarray[double, nd
 
     
     ncpu = cpu_count()
-    pool = Pool(ncpu)
+    pool = Pool(min(ncpu, 6))
     nvirt = len(chord_profile)
     nLOS = nl/nvirt
 

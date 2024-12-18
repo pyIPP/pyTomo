@@ -1,12 +1,13 @@
- #!/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+#AUTOR: Tomas Odstrcil  odstrcilt@fusion.gat.com
+
 from numpy import *
 import sys,os
 from matplotlib.pyplot import *
 from tokamak import Tokamak
 from collections import OrderedDict
 import config
-#AUTOR: Tomas Odstrcil  tomas.odstrcil@ipp.mpg.de
 from shutil import copyfile
 from scipy.interpolate import interp1d
 from shared_modules import read_config, warning, debug
@@ -17,8 +18,7 @@ import time
 
 global loader
 global loader2
-
-#BUG xtomo ignuruje ten čas začátku a konce!!
+ 
  
 class DIIID(Tokamak):
     """
@@ -62,7 +62,6 @@ sqrt(max(data))
 
 
     def __init__(self, input_diagn, input_parameters,  only_prepare = False,load_data_only=False  ):
-        debug('__ninitDIIID')
         """ Initialize new tokamak and set default values.
 
             :param dict input_parameters:   List of selected paramerers
@@ -70,8 +69,7 @@ sqrt(max(data))
             :param array magfield_shift: artificial shift of magnetic field
 
         """
- 
- 
+
         name  = 'DIIID'
 
         self.mds_server = input_parameters['mds_server']
@@ -84,22 +82,24 @@ sqrt(max(data))
         if input_diagn.endswith('fast'):
             fast_data = True
             input_diagn = input_diagn[:-5]
+        
+        #PFM matrix dictionary can be provided as input 
+        self.PFM = input_parameters.get('PFM',None)
 
-
-        path = 'geometry/'+name+'/'+ input_diagn
+        path = ['geometry',name,input_diagn,'']
 
         self.local_path =  input_parameters['local_path']
         self.program_path =  input_parameters['program_path']
-        self.geometry_path_program = self.program_path+path
-        path = self.local_path +path
-
+        self.geometry_path_program = os.path.join(self.program_path,*path)
+        path = os.path.join(self.local_path,*path)
+        
+        self.load_power = input_parameters.get('load_power', True)
+      
         if not os.path.exists(path):
              os.makedirs(path)
 
-        print(input_diagn)
-
-        
         self.shot = input_parameters['shot']
+        sshot = str(self.shot)
 
         coord= [0.95,2.45, -1.38, 1.38]
 
@@ -116,42 +116,61 @@ sqrt(max(data))
 
 
  
-        calib_path = path+'/calibration/'
+        calib_path = os.path.join(path,'calibration','')
         if not os.path.exists(calib_path):  os.mkdir(calib_path)
             
-        wch_path = path+'/wrong_channels/'
+        wch_path = os.path.join(path,'wrong_channels','')
         if not os.path.exists(wch_path):  os.mkdir(wch_path)
             
-        calib_path_orig = self.geometry_path_program+'/calibration/%d.txt'%self.shot
-        if (not os.path.isfile(calib_path+'%d.txt'%self.shot) or not config.useCache) and os.path.isfile(calib_path_orig):
-            if calib_path_orig!= calib_path+'%d.txt'%self.shot:
-                copyfile(calib_path_orig,calib_path+'%d.txt'%self.shot)
-            
-        wch_path_orig = self.geometry_path_program+'/wrong_channels/%d'%self.shot
-        if (not os.path.isfile(wch_path+'%d'%self.shot) or not config.useCache) and os.path.isfile(wch_path_orig):
-            if wch_path_orig!= wch_path+'%d'%self.shot:
-                copyfile(wch_path_orig,wch_path+'%d'%self.shot)
+        calib_path_orig = os.path.join(self.geometry_path_program,'calibration',sshot+'.txt')
+        if (not os.path.isfile(calib_path+sshot+'.txt') or not config.useCache) and os.path.isfile(calib_path_orig):
+            if os.path.normpath(calib_path_orig)!= os.path.normpath(calib_path+sshot+'.txt'):
+                copyfile(calib_path_orig,calib_path+sshot+'.txt')
 
-        if os.path.exists(self.geometry_path_program+'/virt_chord_profile.txt'):
-            if self.geometry_path_program+'/virt_chord_profile.txt'!= path+'/virt_chord_profile.txt':
-                copyfile(self.geometry_path_program+'/virt_chord_profile.txt',path+'/virt_chord_profile.txt')
+        wch_path_orig = os.path.join(self.geometry_path_program,'wrong_channels',sshot)        
+        if (not os.path.isfile(wch_path+sshot) or not config.useCache) and os.path.isfile(wch_path_orig):
+            if os.path.normpath(wch_path_orig)!= os.path.normpath(wch_path+sshot):
+                copyfile(wch_path_orig,wch_path+sshot)
+
+        if os.path.exists(self.geometry_path_program+'virt_chord_profile.txt'):
+            if os.path.normpath(self.geometry_path_program+'virt_chord_profile.txt')!= os.path.normpath(path+'virt_chord_profile.txt'):
+                copyfile(self.geometry_path_program+'virt_chord_profile.txt',path+'virt_chord_profile.txt')
         
-        if os.path.exists(self.geometry_path_program+'/border.txt'):
-            if self.geometry_path_program+'/border.txt'!= path+'/border.txt':
-                copyfile(self.geometry_path_program+'/border.txt',path+'/border.txt')
-        if os.path.exists(self.geometry_path_program+'/border_sas.txt'):
-            if self.geometry_path_program+'/border_sas.txt'!= path+'/border_sas.txt':
-                copyfile(self.geometry_path_program+'/border_sas.txt',path+'/border_sas.txt')
+        if os.path.exists(self.geometry_path_program+'border.txt'):
+            if os.path.normpath(self.geometry_path_program+'border.txt')!= os.path.normpath(path+'border.txt'):
+                copyfile(self.geometry_path_program+'border.txt',path+'border.txt')
+        if os.path.exists(self.geometry_path_program+'border_sas.txt'):
+            if os.path.normpath(self.geometry_path_program+'border_sas.txt')!= os.path.normpath(path+'border_sas.txt'):
+                copyfile(self.geometry_path_program+'border_sas.txt',path+'border_sas.txt')
         
         
         border_file = 'border_sas.txt' if self.shot > 168847 else 'border.txt' 
-        self.vessel_boundary = loadtxt(path+'/'+border_file)
+    
+        self.VesselStructures()
+        #if 'inner boundary' in self.struct_dict:
+            #self.vessel_boundary = array(self.struct_dict['inner boundary']).T
+        #else:
+        self.vessel_boundary = loadtxt(path+border_file)
 
+       
         Tokamak.__init__(self, input_parameters, input_diagn, coord,
                          name, norm, sigma, min_error, path,t_name)
 
-
-
+        #if self.mds_server is string, connect to it, else assume that a MDS connection was provided
+        if isinstance(self.mds_server,str):
+            try:
+                import threading
+                P = threading.Thread(target=self.connect_mdsplus )
+                P.start()
+                P.join(timeout=2)
+                if self.MDSconn is None:
+                    raise TimeoutError
+                print('MDSplus connected')
+            except TimeoutError:
+                print('MDS connection with server "%s" was not established'%self.mds_server) 
+                self.MDSconn = None
+        else:
+            self.MDSconn = self.mds_server
 
         if input_diagn == 'SXR':
             self.SXR(fast_data,toroidal=False)
@@ -163,9 +182,10 @@ sqrt(max(data))
             self.DISRAD()
             self.index = 24
 
-        self.VesselStructures()
+        #print('VesselStructures')
         
         self.load_geom()
+        #print('load_geom')
 
         self.allow_negative = False
 
@@ -184,10 +204,18 @@ sqrt(max(data))
         if input_diagn == 'SXR':
             self.load_others()
         self.load_LBO()
+
+       
         self.load_mag_equilibrium()
 
-        
-        
+    
+    
+    #@killer_call(timeout=4)E
+    def connect_mdsplus(self):
+        import MDSplus as mds
+        self.MDSconn = None
+        self.MDSconn = mds.Connection(self.mds_server ) 
+    
     def SXR(self, fast_data=False,toroidal=False):
         
         
@@ -196,16 +224,11 @@ sqrt(max(data))
         self.sigma = 0.01 #just guess!!
         self.min_error = 0.005#just guess!!
         self.allow_negative = True
+        from .SXR.load_SXR import loader_SXR    
+ 
 
-        from .SXR.load_SXR import loader_SXR
-        try:
-            import MDSplus as mds
-            c = mds.Connection(self.mds_server )
-        except:
-            c = None
-            print('MDS connection with server "%s" was not established'%self.mds_server) 
         global loader
-        loader = loader_SXR(self.shot,self.geometry_path,c, fast_data, toroidal)
+        loader = loader_SXR(self.shot,self.geometry_path,self.MDSconn, fast_data, toroidal)
         
         from copy import deepcopy
         self.detectors_dict = deepcopy(loader.detectors_dict)
@@ -221,7 +244,7 @@ sqrt(max(data))
         if self.input_diagn in ['SXR', 'SXR fast'] :
             global loader2
             try:
-                loader2 = loader_SXR(self.shot,self.geometry_path,c, fast_data,~toroidal)
+                loader2 = loader_SXR(self.shot,self.geometry_path,self.MDSconn, fast_data,~toroidal)
                 for k, i in loader2.detectors_dict.items():
                     self.detectors_dict[k] = i
                 
@@ -254,10 +277,7 @@ sqrt(max(data))
 
         from .BOLO.BOLO import loader_BOLO
         
-        import MDSplus as mds
-        c = mds.Connection(self.mds_server )
-
-        loader = loader_BOLO(self.shot,self.geometry_path,c)
+        loader = loader_BOLO(self.shot,self.geometry_path,self.MDSconn)
         
         self.detectors_dict= loader.detectors_dict
 
@@ -271,18 +291,23 @@ sqrt(max(data))
         self.sample_freq = len(self.tvec)/(self.tvec[-1]-self.tvec[0])
     
         
-        self.total_rad = loader.get_total_rad()
+        if self.load_power:
+            self.total_rad = loader.get_total_rad()
+            
         self.use_pfm = True
 
 
     def init_equ(self):
+        # initialise equ_map from cached or loaded data
         from . import map_equ
         eqm = map_equ.equ_map(None)
-        eqm.pfm   = self.PFM['pfm']
-        eqm.t_eq  = self.PFM['pfm_tvec']
-        eqm.Rmesh = self.PFM['pfm_R']
-        eqm.Zmesh = self.PFM['pfm_Z']
-        eqm.eq_open=True  
+        
+        for k, v in self.PFM.items():
+            setattr(eqm,k,v )
+        if 'Rmag' in self.PFM:
+            eqm.ssq = {'ERROR':None, 'Rmag': eqm.Rmag, 'Zmag': eqm.Zmag,} 
+        eqm.eq_open=True 
+        
         return eqm
 
     def get_psi(self, tvec,xgridc, ygridc):
@@ -362,18 +387,97 @@ sqrt(max(data))
         
          #BUG!!!!  eqm do not support TRANSP CDF files with equlibrium
          
-        eq_path = self.local_path +'/geometry/DIIID/equilibrium/'
+        eq_path = os.path.join(self.local_path,'geometry','DIIID','equilibrium','')
 
         if not os.path.exists(eq_path):
             os.mkdir(eq_path)
 
         eq_path += 'MagField_fast_%d.npz'%self.shot
 
-        try:
+        if not os.path.isfile(eq_path):
+            
+            if os.name == 'nt': #for windows!
+                os.system("""ssh  odstrcilt@cybele.gat.com -p 2039 " ssh omega 'module load intel; python /fusion/projects/codes/pytomo/load_eq.py %d %s'" """%(self.shot, self.mag_diag))
+                os.system('scp omega:/local-scratch/odstrcilt/MagField_fast_%d.npz   \\Users\\odstrcil\\tomography\\geometry\\DIIID\\equilibrium\\'%self.shot)
+                
+            else:
+          
+                print('No cached equilibrum file ' )
+                
+
+                
+                
+                
+                eq_diags = ((self.mag_diag,self.mag_exp,self.mag_ed),('EFIT01','DIIID',0),('EFITRT1','DIIID',0) )
+                
+                stat = False
+                
+                if self.PFM is None:
+                    from . import map_equ
+                    if not hasattr(self,'eqm'):
+                        eqm = map_equ.equ_map(self.MDSconn)   
+                        
+                    for diag,mag_exp,mag_ed  in eq_diags:
+                        stat = eqm.Open(self.shot, diag=diag, exp=mag_exp, ed=mag_ed)
+                       
+                        if stat and size(eqm.t_eq) >2 : break
+                        warning('Warning: equlibrium for shot:%d diag:%s  exp:%s  ed:%d  was not found!! other will be used'%(self.shot,diag,mag_exp,mag_ed))
+
+                    if not stat:
+                        raise Exception('equlibrium for shot:%d diag:%s  exp:%s  ed:%d  was not found!! use another one'%(self.shot,self.mag_diag,self.mag_exp,self.mag_ed))
+                    mag_diag = self.mag_diag
+                    from .mag_equ import  Equlibrium
+
+                    EQU = Equlibrium(self.MDSconn, eqm, self.shot, mag_diag,self.mag_exp,self.mag_ed)
+                else:
+                    eqm = self.init_equ()
+             
+                    from .mag_equ import  Equlibrium
+
+                    EQU = Equlibrium(eqm = eqm) 
+                    mag_diag = 'EFIT'
+                
+    
+                
+                if 'TRA' in mag_diag:
+                    output = EQU.getTranspEquilibrium()
+                else:
+                    output = EQU.getStandartEquilibrium()
+                output[mag_diag] = mag_diag
+
+                
+                self.tsurf = output['tsurf']
+                self.surf_coeff = output['surf_coeff']
+                self.mag_axis = output
+                self.mag_axis['tvec'] = output['tvec_fast']
+            
+                try:
+                        
+                    pfm = copy(eqm.pfm)
+                    pfm-= eqm.psi0
+                    pfm/= (eqm.psix-eqm.psi0)
+                    pfm_tvec = eqm.t_eq
+                    pfm_R = eqm.Rmesh
+                    pfm_Z = eqm.Zmesh
+                    self.PFM = {'pfm':pfm,'t_eq':pfm_tvec,'Rmesh':pfm_R,'Zmesh':pfm_Z}
+                    output.update(self.PFM)
+                except:
+                    pass
+                    
+                if config.useCache:
+                    savez_compressed(eq_path,diag=mag_diag,exp=self.mag_exp,
+                                ed=self.mag_ed,**output)
+
+
+                self.MDSconn.closeAllTrees()
+
+      
+        if os.path.isfile(eq_path) and not hasattr(self, 'surf_coeff'):
             data = load(eq_path,allow_pickle=True)
             self.tsurf = data['tsurf']
             self.surf_coeff = data['surf_coeff']
             mag_diag = data['diag'].item()
+            if isinstance(mag_diag,bytes): mag_diag = mag_diag.decode('utf-8')
             if mag_diag != self.mag_diag and not (self.mag_diag == 'EQI' and mag_diag == 'EQH'):
                 warning('Warning: requested equilibrium differs from the stored: %s vs %s'%(mag_diag, self.mag_diag))
 
@@ -381,71 +485,10 @@ sqrt(max(data))
             'Zmag':data['Zmag'],'ahor':data['ahor'],'bver':data['bver']}
             
             if 'pfm' in data:
-                self.PFM = {'pfm':data['pfm'],'pfm_tvec':data['pfm_tvec'],'pfm_R':data['pfm_R'],'pfm_Z':data['pfm_Z']}
-
-        
-        except Exception as e:
-            print('eqerr', e)
-            import MDSplus as mds
-            MDSconn = mds.Connection(self.mds_server )
-
-            from . import map_equ
-            if not hasattr(self,'eqm'):
-                self.eqm = map_equ.equ_map(MDSconn)   
-            
-
-            
-            eq_diags = ((self.mag_diag,self.mag_exp,self.mag_ed),('EFIT01','DIIID',0),('EFITRT1','DIIID',0) )
-            
-            stat = False
-            
-            for diag,mag_exp,mag_ed  in eq_diags:
-                stat = self.eqm.Open(self.shot, diag=diag, exp=mag_exp, ed=mag_ed)
-                #print size(self.eqm.t_eq)
-                if stat and size(self.eqm.t_eq) >2 : break
-                warning('Warning: equlibrium for shot:%d diag:%s  exp:%s  ed:%d  was not found!! other will be used'%(self.shot,diag,mag_exp,mag_ed))
-
-            if not stat:
-                raise Exception('equlibrium for shot:%d diag:%s  exp:%s  ed:%d  was not found!! use another one'%(self.shot,self.mag_diag,self.mag_exp,self.mag_ed))
-
-
-            mag_diag = self.mag_diag
-            from .mag_equ import  Equlibrium
-
-            EQU = Equlibrium(MDSconn,self.eqm, self.shot, mag_diag,self.mag_exp,self.mag_ed)
-            
-            if 'TRA' in mag_diag:
-                output = EQU.getTranspEquilibrium()
-            else:
-                output = EQU.getStandartEquilibrium()
-            output[mag_diag] = mag_diag
-
-            
-            self.tsurf = output['tsurf']
-            self.surf_coeff = output['surf_coeff']
-            self.mag_axis = output
-            self.mag_axis['tvec'] = output['tvec_fast']
-          
-            try:
-                    
-                pfm = copy(self.eqm.pfm)
-                pfm-= self.eqm.psi0
-                pfm/= (self.eqm.psix-self.eqm.psi0)
-                pfm_tvec = self.eqm.t_eq
-                pfm_R = self.eqm.Rmesh
-                pfm_Z = self.eqm.Zmesh
-                self.PFM = {'pfm':pfm,'pfm_tvec':pfm_tvec,'pfm_R':pfm_R,'pfm_Z':pfm_Z}
-                output.update(self.PFM)
-            except:
-                pass
-                
-                
-            savez_compressed(eq_path,diag=mag_diag,exp=self.mag_exp,
-                             ed=self.mag_ed,**output)
-
-
-            MDSconn.closeAllTrees()
-
+                try:
+                    self.PFM = {'pfm':data['pfm'],'t_eq':data['pfm_tvec'],'Rmesh':data['pfm_R'],'Zmesh':data['pfm_Z']}
+                except:
+                    self.PFM = {'pfm':data['pfm'],'t_eq':data['t_eq'],    'Rmesh':data['Rmesh'],'Zmesh':data['Zmesh']}
 
         self.mag_dt = amax(diff(self.mag_axis['tvec']))
         self.mag_axis['Rmag'] = copy(self.surf_coeff[:,-1,0,0])
@@ -458,10 +501,12 @@ sqrt(max(data))
     def VesselStructures(self):
         self.struct_dict = {}
         
-        from .map_equ import get_gc
-        comp_r,comp_z = get_gc(self.shot)
-        self.struct_dict['inner boundary'] = comp_r['vessel'],comp_z['vessel']
-        
+        try:
+            from .map_equ import get_gc
+            comp_r,comp_z = get_gc(self.shot, self.mds_server)
+            self.struct_dict['inner boundary'] = comp_r['vessel'],comp_z['vessel']
+        except:
+            pass
         
 
 
@@ -588,20 +633,20 @@ sqrt(max(data))
         
              
         #apply shift from the config file
-        input_parameters = read_config(self.local_path+'/tomography.cfg')
-        self.magfield_shift_core = input_parameters['magfield_shift_core']
-        self.magfield_shift_lcfs = input_parameters['magfield_shift_lcfs']
+        #input_parameters = read_config(self.local_path+'/tomography.cfg')
+       # self.magfield_shift_core = input_parameters['magfield_shift_core']
+       # self.magfield_shift_lcfs = input_parameters['magfield_shift_lcfs']
       
-        if hasattr( config, 'magfield_shift') and  config.magfield_shift != (0,0):
-            self.magfield_shift_core = config.magfield_shift
-            print('config shift')
-        else:
-            self.magfield_shift_core = input_parameters['magfield_shift_core']
+       # if hasattr( config, 'magfield_shift') and  config.magfield_shift != (0,0):
+        #    self.magfield_shift_core = config.magfield_shift
+        #    print('config shift')
+        #else:
+        #    self.magfield_shift_core = input_parameters['magfield_shift_core']
     
         #shift only the center, not the separatrix            
-        surf_coeff[:,-1,0,:2] += self.magfield_shift_core
-        surf_coeff[:,-2,0,:2] -= self.magfield_shift_core
-        surf_coeff[:,-2,0,:2] += self.magfield_shift_lcfs
+        #surf_coeff[:,-1,0,:2] += self.magfield_shift_core
+        #s#urf_coeff[:,-2,0,:2] -= self.magfield_shift_core
+       # surf_coeff[:,-2,0,:2] += self.magfield_shift_lcfs
 
 
 
@@ -668,7 +713,7 @@ sqrt(max(data))
         c = 2.9979e8
         q = 1.6022e-19
         
-        filter_dict = loadtxt(self.geometry_path+'/radiation/adas414_adf35_Be125_Si300.dat')
+        filter_dict = loadtxt(os.path.join(self.geometry_path,'radiation','adas414_adf35_Be125_Si300.dat'))
         # Energy in eV
         energy = filter_dict[::-1,0]
         # Filter response on energy(ascending) and wavelength(descending) grid
@@ -692,7 +737,7 @@ sqrt(max(data))
         
     def load_LBO(self):
 
-        lbo_path = self.local_path +"/geometry/DIIID/LBO/"
+        lbo_path = os.path.join(self.local_path,'geometry','DIIID','LBO','')
         
         if not os.path.exists(lbo_path):
             os.mkdir(lbo_path)
@@ -706,54 +751,61 @@ sqrt(max(data))
                 self.impur_inject_t = None
         except Exception as e:
             
-            
+
             try:
-   
-    
-    
-                import MDSplus as mds
-                MDSconn = mds.Connection(self.mds_server )
-                            
-                #LBOSYNC  = MDSconn.get('PTDATA("LBOSYNC", %d) '%self.shot).data()
-                LBOSHUTT = MDSconn.get('_x = PTDATA("LBOSHUTT", %d)'%self.shot).data()
-                LBOQSWCH = MDSconn.get('_x = PTDATA("LBOQSWCH", %d)'%self.shot).data()
-                assert len(LBOSHUTT) != 1, 'no lbo data'
+       
 
-                tvec = MDSconn.get('dim_of(_x)').data()
-                
+                if self.shot<180289:   # suggested by Tomas, 9/24/19
+                        #LBOSYNC  = self.MDSconn.get('PTDATA("LBOSYNC", %d) '%self.shot).data()
+                        LBOSHUTT = self.MDSconn.get('_x = PTDATA("LBOSHUTT", %d)'%self.shot).data()
+                        LBOQSWCH = self.MDSconn.get('_x = PTDATA("LBOQSWCH", %d)'%self.shot).data()
+                        assert len(LBOSHUTT) != 1, 'no lbo data'
+
+                        tvec = self.MDSconn.get('dim_of(_x)').data()
+                else:
+
+                        self.MDSconn.openTree('lbo', self.shot)
+                        LBOSHUTT = self.MDSconn.get(r'\lbo::TOP.ACQ:INPUT_06').data()
+                        LBOQSWCH = self.MDSconn.get(r'\lbo::TOP.ACQ:INPUT_05').data()
+
+                        tvec = self.MDSconn.get(r'dim_of(\lbo::TOP.ACQ:INPUT_02,0)').data()*1000
+
+
                 LBOQSWCH  = LBOQSWCH >= 1
-                LBOSHUTT  = LBOSHUTT >= 1 #BUG 
-                    
-                assert any(LBOQSWCH&LBOSHUTT), 'no LBO'
-                
-                lbo_times = tvec[where((diff(double(LBOQSWCH&LBOSHUTT)) > 0 ))]/1e3
+                LBOSHUTT  = LBOSHUTT >= 1 #BUG
 
-                savetxt(lbo_path, lbo_times,fmt='%3.5f' )
+                assert any(LBOQSWCH&LBOSHUTT), 'no LBO'
+
+                lbo_times = tvec[where((diff(double(LBOQSWCH&LBOSHUTT)) > 0 ))]/1e3
+                
+                if config.useCache:
+                    savetxt(lbo_path, lbo_times,fmt='%3.5f' )
                 self.impur_inject_t = lbo_times
+
+
                 print('LBO times: '+ str(lbo_times))
-          
-                    
+
+
             except:
                 #raise
                 self.impur_inject_t = None
-                savetxt(lbo_path, (nan,))
-
+                if config.useCache:
+                    savetxt(lbo_path, (nan,))
             
 
     def load_others(self):
         #load centrifugal asymmetry profile and bremsstrahlung level 
         loaded = False
         
-        data_path = self.geometry_path+'/Bremsstrahlung_%d.npz'%self.shot
-
+        data_path = self.geometry_path+'Bremsstrahlung_%d.npz'%self.shot
         if os.path.isfile(data_path) and config.useCache:
             return 
             #pass
         print('Loading radiation data ')
 
         try:
-            
-            kin_data = load( self.geometry_path+'/kin_data_%d.npz'%self.shot)
+
+            kin_data = load( self.geometry_path+'kin_data_%d.npz'%self.shot,allow_pickle=True)
             
             
             ne = kin_data['ne'].item()
@@ -788,80 +840,65 @@ sqrt(max(data))
                 Zeff_tvec = Zeff['tvec']
                 Zeff_err  = Zeff['err']
             else:
-                nimp = kin_data['nimp'].item()
+                nimp = kin_data['nC6'].item()
                 nimp_data = nimp['data']
                 Zeff_rho  = nimp['rho']
                 Zeff_tvec = nimp['tvec']
                 nimp_err  = nimp['err']
                 Zimp = 6  #carbon
                 Zmain = 1  #carbon
-                Zeff_data  = (Zimp**2*nimp - Zimp*Zmain*nimp + Zmain*ne)/ne
+                ne = interp1d(ne_tvec, ne_data,axis=0)(np.clip(Zeff_tvec, ne_tvec[0], ne_tvec[-1]))
+                Zeff_data  = Zimp*(Zimp-Zmain)*nimp_data/ne + Zmain
 
             print('Loaded from kindata')
-
-
-
-            
+ 
             loaded = True
-            print('kinfit')
-        except:
+        except Exception as e:
+            #print(e)
             pass
-   
         
  
         if not loaded:
             try:
                 #assert not loaded, 'already loaded' 
+ 
+                
+                self.MDSconn.openTree('IONS', self.shot)
+                Ti_data = self.MDSconn.get('_x=\\IONS::TOP.PROFILE_FITS.ZIPFIT.ITEMPFIT').data()*1e3
+                Ti_rho  = self.MDSconn.get('dim_of(_x,0)').data()
+                Ti_tvec = self.MDSconn.get('dim_of(_x,1)').data()/1e3
+                Ti_err  = abs(self.MDSconn.get('error_of(_x)').data())*1e3
+                
+                omega_data = self.MDSconn.get('_x=\\IONS::TOP.PROFILE_FITS.ZIPFIT.TROTFIT').data()*1e3
+                omega_rho  = self.MDSconn.get('dim_of(_x,0)').data()
+                omega_tvec = self.MDSconn.get('dim_of(_x,1)').data()/1e3
+                omega_err  = abs(self.MDSconn.get('error_of(_x)').data())*1e3
 
-                
-                try:
-                    import MDSplus as mds
-                    MDSconn = mds.Connection(self.mds_server )
-                except:
-                    
-                    #c = None
-                    print('MDS connection with server "%s" was not established'%self.mds_server) 
-                    return
-                
-
-                
-                
-                MDSconn.openTree('IONS', self.shot)
-                Ti_data = MDSconn.get('_x=\\IONS::TOP.PROFILE_FITS.ZIPFIT.ITEMPFIT').data()*1e3
-                Ti_rho  = MDSconn.get('dim_of(_x,0)').data()
-                Ti_tvec = MDSconn.get('dim_of(_x,1)').data()/1e3
-                Ti_err  = abs(MDSconn.get('error_of(_x)').data())*1e3
-                
-                omega_data = MDSconn.get('_x=\\IONS::TOP.PROFILE_FITS.ZIPFIT.TROTFIT').data()*1e3
-                omega_rho  = MDSconn.get('dim_of(_x,0)').data()
-                omega_tvec = MDSconn.get('dim_of(_x,1)').data()/1e3
-                omega_err  = abs(MDSconn.get('error_of(_x)').data())*1e3
-
-                nimp = MDSconn.get('_x=\\IONS::TOP.PROFILE_FITS.ZIPFIT.ZDENSFIT').data()*1e19
-                Zeff_rho  = MDSconn.get('dim_of(_x,0)').data()
-                Zeff_tvec = MDSconn.get('dim_of(_x,1)').data()/1e3
-                nimp_err  = abs(MDSconn.get('error_of(_x)').data())*1e19
+                nimp = self.MDSconn.get('_x=\\IONS::TOP.PROFILE_FITS.ZIPFIT.ZDENSFIT').data()*1e19
+                Zeff_rho  = self.MDSconn.get('dim_of(_x,0)').data()
+                Zeff_tvec = self.MDSconn.get('dim_of(_x,1)').data()/1e3
+                nimp_err  = abs(self.MDSconn.get('error_of(_x)').data())*1e19
                 Zimp = 6  #carbon
                 Zmain = 1  #carbon
 
-                MDSconn.closeTree('IONS', self.shot)
+                self.MDSconn.closeTree('IONS', self.shot)
                 
-                MDSconn.openTree('ELECTRONS', self.shot)
+                self.MDSconn.openTree('ELECTRONS', self.shot)
 
-                ne_data = MDSconn.get('_x=\\ELECTRONS::TOP.PROFILE_FITS.ZIPFIT.EDENSFIT').data()*1e19
-                ne_rho  = MDSconn.get('dim_of(_x,0)').data()
-                ne_tvec = MDSconn.get('dim_of(_x,1)').data()/1e3
-                ne_err  = abs(MDSconn.get('error_of(_x)').data())*1e19
+                ne_data = self.MDSconn.get('_x=\\ELECTRONS::TOP.PROFILE_FITS.ZIPFIT.EDENSFIT').data()*1e19
+                ne_rho  = self.MDSconn.get('dim_of(_x,0)').data()
+                ne_tvec = self.MDSconn.get('dim_of(_x,1)').data()/1e3
+                ne_err  = abs(self.MDSconn.get('error_of(_x)').data())*1e19
 
-                Te_data = MDSconn.get('_x=\\ELECTRONS::TOP.PROFILE_FITS.ZIPFIT.ETEMPFIT').data()*1e3
-                Te_rho  = MDSconn.get('dim_of(_x,0)').data()
-                Te_tvec = MDSconn.get('dim_of(_x,1)').data()/1e3
-                Te_err  = abs(MDSconn.get('error_of(_x)').data())*1e3
+                Te_data = self.MDSconn.get('_x=\\ELECTRONS::TOP.PROFILE_FITS.ZIPFIT.ETEMPFIT').data()*1e3
+                Te_rho  = self.MDSconn.get('dim_of(_x,0)').data()
+                Te_tvec = self.MDSconn.get('dim_of(_x,1)').data()/1e3
+                Te_err  = abs(self.MDSconn.get('error_of(_x)').data())*1e3
                 
                 ne_ = interp1d(ne_tvec, ne_data, axis=0, bounds_error=False)(Zeff_tvec)
                 Zeff_data  = (Zimp**2*nimp - Zimp*Zmain*nimp + Zmain*ne_)/ne_
 
-                MDSconn.closeTree('ELECTRONS', self.shot)
+                self.MDSconn.closeTree('ELECTRONS', self.shot)
             except Exception as e:
                 print('loading of ZIPFIT failed: '+str(e)) 
                 
@@ -921,7 +958,7 @@ sqrt(max(data))
 
 
         m_i = 2
-        m_z = 183.
+        m_z = 183
         Z_i = 1.
 
 
@@ -931,7 +968,7 @@ sqrt(max(data))
         vtor = omega*R_cxrs#/(2*pi)   
         mach = sqrt(abs(2*m_u/e*vtor**2/(2*Ti)))
 
-        Z_w  = CalcZ(Te)
+        Z_w  = CalcZ(Te,element='W')
 
 
         M02 = (mach**2*m_z/m_i*(1-(m_i/m_z*Z_w*Zeff)*Te/(Ti+Zeff*Te)))/R_cxrs**2*R0**2

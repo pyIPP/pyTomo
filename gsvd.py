@@ -204,8 +204,8 @@ def add_zeros(C,Q):
     USAGE: add_zeros(C,Q)
     '''
     
-    assert C.shape > 1
-    assert Q.shape > 1
+    #assert C.shape > 1, ''
+    #assert Q.shape > 1
     m,p=Q.shape
     n = C.size
     toto = np.zeros_like(Q,dtype=C.dtype)
@@ -370,7 +370,6 @@ def fast_svd(M, k):  # random projection SVD
 
 
 def svd_qr(A, tol = 1e-8, N = None): #rank revealing SVD
-    #TODO otestovat vliv C nebo F poradi c matici A na rychlost vypoctu
     from  scipy.linalg import svd,qr
 
     if size(A,0) < size(A,1):
@@ -379,7 +378,7 @@ def svd_qr(A, tol = 1e-8, N = None): #rank revealing SVD
     else:
         transpose = False
 
-    q,r = qr(A,overwrite_a=False, mode='economic', pivoting=False)  #BUG jde lépe, bez výpočetu Q!!
+    q,r = qr(A,overwrite_a=False, mode='economic', pivoting=False)  #BUG it can be done qithout evaluation of Q!!
     u, s, vt = svd(r,full_matrices = False, overwrite_a = True )
 
   
@@ -407,14 +406,15 @@ def svd_qr(A, tol = 1e-8, N = None): #rank revealing SVD
 def main():
     import numpy as np
     import scipy.sparse as sp
-    npix = 1000
-    k = 100
-    A = np.random.rand(k,npix)
-    #B = np.random.rand(npix,npix)
-    B = sp.spdiags(np.ones(npix),0,npix, npix)
-    B = B-sp.spdiags(np.ones(npix),1,npix, npix)
-    B = B+sp.spdiags(np.ones(npix),-1,npix, npix)
-    B = B.todense()
+    npix = 1000  #number of timepoints
+    k = 100 #number of channels
+    A = np.random.rand(k,npix) #noise
+    B = np.random.rand(k,npix) #noise+signal
+    #B += 
+    #B = sp.spdiags(np.ones(npix),0,npix, npix)
+    #B = B-sp.spdiags(np.ones(npix),1,npix, npix)
+    #B = B+sp.spdiags(np.ones(npix),-1,npix, npix)
+    #B = B.todense()
     
     U,V,X,C,S = gsvd(A,B,economic=True)
     
@@ -422,22 +422,29 @@ def main():
     X.shape
     U.shape
     V.shape
+    #test that A = U*C*X.T
     print(np.linalg.norm(np.dot(np.dot(U,C),X.T)-A),np.linalg.norm(A))
+    #test that B = V*S*X.T
     print(np.linalg.norm(np.dot(np.dot(V,S),X.T)-B),np.linalg.norm(B))
 
     print(np.allclose(np.dot(np.dot(U,C),X.T),A))
     print(np.allclose(np.dot(np.dot(V,S),X.T),B))
+    
+    #test that C**2+S**2 = 1
     print(np.allclose(np.dot(C.T,C)+np.dot(S.T,S),np.eye(B.shape[1])))
 
 
     C = np.diag(C[::-1,::-1])
     S = np.diag(S)[:-k-1:-1]
     
-    #V se nepotřebuje!
+    #V is not needed!!
     X = X[:,-k:]
     
+    #check identities again for rectangular matrixes
     np.linalg.norm(np.dot(np.dot(U,np.diag(C)),X.T)-A),np.linalg.norm(A)
-    np.linalg.norm(np.dot(np.dot(V[:,-k:],np.diag(S)),X.T)-B)
+    np.linalg.norm(np.dot(np.dot(V[:,-k:],np.diag(S)),X.T)-B),np.linalg.norm(B)
+    
+    
 
   
 if __name__ == "__main__":

@@ -5,6 +5,9 @@ import sys
 import os
 import os.path
 
+#scale QT applications for high resolution screens 
+qtscale = float(os.environ.get('QT_SCALE_FACTOR',1))
+
 
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
@@ -21,7 +24,7 @@ sys.path.append('../')
 from make_graphs import *
 from sawtooths import sawtooths_detection
 from imp_analysis import imp_analysis
-
+import traceback
 from prepare_data import *
 from main import tomography
 import pytomo
@@ -45,6 +48,8 @@ Tomáš Odstrčil,(Michal Odstrčil), IPP, 2015
 class MainWindow(QMainWindow):
     def __init__(self, setting, tokamak):
         QMainWindow.__init__(self, None)
+        
+
 
         self.setting = setting
         self.tokamak = tokamak
@@ -55,12 +60,13 @@ class MainWindow(QMainWindow):
 
         self.Expand = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.Fixed  = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+ 
 
         self.main_tab = QTabWidget(self)
         self.main_tab.setTabPosition(QTabWidget.West)
 
-        self.gridLayout.addWidget(self.main_tab, 0, 0, 1,2)
 
+        self.gridLayout.addWidget(self.main_tab, 0, 0, 1,2)
 
         self.tables_dict = {}
         
@@ -407,7 +413,7 @@ class MainWindow(QMainWindow):
                         ]
         
         
-        for item in item_list:
+        for item in item_list: 
             self.chooseTokamak.addItem(item)
 
         self.gridLayout_input.addWidget(self.chooseTokamak, 0, 1)
@@ -883,7 +889,7 @@ class MainWindow(QMainWindow):
         self.chooseRatioSolver.setToolTip('Find a relative calibration of the cameras minimizing residuum')
         self.chooseLamSolver.setToolTip('Method to find optimal regularization parameter')
         self.chooseTransform.setToolTip('Select orthogonal transformation applied on the solved matrices')
-        self.Allowboundary.setToolTip('The reconstruction will be zero on the boundary')
+        self.Allowboundary.setToolTip('The reconstruction will be zero outside the boundary')
         self.chooseRegularization.setToolTip('Isotropic (rectangular) smoothing prefers smooth in X and Y direction\nAnisotropic smoothing prefers smooth in magnetic field direction\nMDIFF versions use second derivation instead of first\nif no magnetic data availible, falling back to the isotropic version\nFor anisotropic smoothing is better to use higher resolution >=50')
         self.PlotAll.setToolTip('Export every timeslice in separated plot\nIt can take very long time')
         self.enableOutput.setToolTip('Make a high quality pdf plots, it is slow!!!')
@@ -973,7 +979,7 @@ class MainWindow(QMainWindow):
 
 
         self.setCentralWidget(self.centralwidget)
-        self.resize(1050, 650)
+        self.resize(int(self.setting['screen_width']/1.5), int(self.setting['screen_height']/1.5))
         self.setCenter()
 
         self.setValues()
@@ -981,7 +987,7 @@ class MainWindow(QMainWindow):
         self.tmin_spin.valueChanged.connect( self.tminChanged)
         self.tmax_spin.valueChanged.connect( self.tmaxChanged)
         
-        
+
 
     def toggle_calb(self, value):
         value = ( value == 0 )
@@ -1089,7 +1095,7 @@ class MainWindow(QMainWindow):
         else:
             path = os.path.normpath(os.path.dirname(sys.argv[0]))
         DirectoryNameOutput = QFileDialog.getExistingDirectory(self, 'Save to Directory', path)
-        if  not DirectoryNameOutput.isNull():
+        if DirectoryNameOutput is not None:
             self.lineEdit_output.setText(str(DirectoryNameOutput))
 
     def regularizationChanged(self, value):
@@ -1435,10 +1441,14 @@ class MainWindow(QMainWindow):
                         self.Picture_advanced_2:'elongation'})
             
             for image, name in list(images.items()):
-                image.setPixmap(QPixmap(self.tmp_folder+'%s_%d.png'%(name,self.shot)))
+                img = QPixmap(self.tmp_folder+'%s_%d.png'%(name,self.shot))
+                img.setDevicePixelRatio(qtscale)
+                image.setPixmap(img)
                 
         if self.sawtooths:
-            self.Picture_Sawtooths.setPixmap(QPixmap(self.tmp_folder+'sawtooths%d.png'%self.shot))
+            image = QPixmap(self.tmp_folder+'sawtooths%d.png'%self.shot)
+            image.setDevicePixelRatio(qtscale)
+            self.Picture_Sawtooths.setPixmap(image)
 
         if self.plot_all and self.reconstruct and tsteps > 1:
             self.slider_Impur.setVisible(True)
@@ -1456,7 +1466,9 @@ class MainWindow(QMainWindow):
 
         if self.plot_poloidal_spectrum:
             prewA = self.tmp_folder+'PoloidalModeNumber.png'
-            self.Picture_polnum_1.setPixmap(QPixmap(prewA))
+            image = QPixmap(prewA)
+            image.setDevicePixelRatio(qtscale)
+            self.Picture_polnum_1.setPixmap(image)
             self.main_tab.setCurrentIndex(5)
      
         self.progressBar.setValue(100)
@@ -1476,8 +1488,13 @@ class MainWindow(QMainWindow):
             prewA = self.tmp_folder+'/brightness_'+name+'_rec_.png'
             prewB = self.tmp_folder+'/emissivity_'+name+'_rec_.png'
 
-        self.Picture_recons_1.setPixmap(QPixmap(prewA))
-        self.Picture_recons_2.setPixmap(QPixmap(prewB))
+
+        pix_map = QPixmap(prewA) 
+        pix_map.setDevicePixelRatio(qtscale)
+        self.Picture_recons_1.setPixmap(pix_map)
+        pix_map = QPixmap(prewB)
+        pix_map.setDevicePixelRatio(qtscale)
+        self.Picture_recons_2.setPixmap(pix_map)
 
     def change_shot(self):
         self.getValues()
@@ -1488,6 +1505,7 @@ class MainWindow(QMainWindow):
         img_path = self.local_path+'/geometry/'+self.tokamak.name+'/overview_plots/overview_%d.png'%self.setting['shot']
         if os.path.isfile(img_path):
             image = QPixmap(img_path)
+            image.setDevicePixelRatio(qtscale)
             rect = QRect(78, 60, 730, 485)
             image = image.copy(rect)
             self.OverviewPlot.setPixmap(image)
@@ -1502,11 +1520,14 @@ class MainWindow(QMainWindow):
             name = '%d_%.4d'%(self.shot,number-1)
             prewA = self.tmp_folder+'/brightness_'+name+'_SVD_.png'
             prewB = self.tmp_folder+'/emissivity_'+name+'_SVD_.png'
-
-            
-        self.Picture_SVD_1.setPixmap(QPixmap(prewA))
-        self.Picture_SVD_2.setPixmap(QPixmap(prewB))
         
+        image = QPixmap(prewA)
+        image.setDevicePixelRatio(qtscale)
+        self.Picture_SVD_1.setPixmap(image)
+        
+        image = QPixmap(prewB)
+        image.setDevicePixelRatio(qtscale)
+        self.Picture_SVD_2.setPixmap(prewB)        
         
     def updatePanels(self,panel_ind):
         #update position in the actual panel
@@ -1536,7 +1557,10 @@ class MainWindow(QMainWindow):
         else:
             prew =  self.tmp_folder+'/asymmetry_plot_%.4d.png'%0
             
-        self.Picture_asymmetry.setPixmap(QPixmap(prew))
+            
+        image = QPixmap(prew)
+        image.setDevicePixelRatio(qtscale)
+        self.Picture_asymmetry.setPixmap(image)
         
         
     def changeImage_Impur(self, number):
@@ -1548,8 +1572,10 @@ class MainWindow(QMainWindow):
             prew =  self.tmp_folder+'/imp_plot_%.4d.png'%(number-1)
         else:
             prew =  self.tmp_folder+'/imp_plot_%.4d.png'%0
-            
-        self.Picture_Impur.setPixmap(QPixmap(prew))
+        
+        image = QPixmap(prew)
+        image.setDevicePixelRatio(qtscale)
+        self.Picture_Impur.setPixmap(image)
         
 
       
@@ -1595,7 +1621,7 @@ class MainWindow(QMainWindow):
         ncpu = 1
         try:
             from multiprocessing import cpu_count
-            ncpu = cpu_count()
+            ncpu = min(8,cpu_count())
         except:
             pass
 
@@ -1603,35 +1629,48 @@ class MainWindow(QMainWindow):
             speed = 100*ncpu
         else:
             speed = 100
+        if self.enableOutput.isChecked():
+            speed /= 10
+            
         
         if (steps > speed) and self.plot_all and self.reconstruct:
             reply = QMessageBox.question(self, 'Message', "Are you sure that you want to plot all "+str(steps)
-                                        +" snapshots? \n It can be quite long...", QMessageBox.Yes, QMessageBox.No)
+                                        +" snapshots? \n It can take quite long...", QMessageBox.Yes, QMessageBox.No)
             if reply == QMessageBox.No:
                 self.progressBar.reset()
                 return
-
-        FreeMemory=int(os.popen("free -m").readlines()[2].split()[3])
+        
+        #try:
+            #FreeMemory=int(os.popen("free -m").readlines()[2].split()[3])
+        #except:
+            #FreeMemory = 1e4
         #if (double(steps)*double(self.nx*self.ny)*16.0  > FreeMemory*1e6 and self.reconstruct) and  not (self.solver == 2 and self.ratiosolver in [0,2]):   #limit of memory usage
             #print('free memory ', FreeMemory*1e6, double(steps)*double(self.nx*self.ny)*16.0)
             #QMessageBox.warning(self,"Setting error", "Array is too big \n Use lower resolution or less timeslices"  ,QMessageBox.Ok)
             #return
+      
+      
+        import shutil
 
 
         try:
             
             debug('clean tmp')
-            print('clean tmp')
-            import shutil
+            #print('BUG no clean tmp')
             shutil.rmtree(setting['tmp_folder'])
         except Exception as e:
             print('cleaning of the TMP folder %s has failured'%setting['tmp_folder'], e)
             print(os.listdir(setting['tmp_folder'] ))
+        
+        
         try:
-            os.makedirs(setting['tmp_folder'])
+            if not os.path.exists(setting['tmp_folder']):
+                os.mkdir(setting['tmp_folder'])
         except Exception as e:
-            pass
-
+            time.sleep(0.1)
+            os.mkdir(setting['tmp_folder'])
+                
+ 
        
         if self.reconstruct:
             self.thread.prepare(self.setting, self.tokamak)
@@ -1648,7 +1687,7 @@ class MainWindow(QMainWindow):
         except:
             QMessageBox.warning(self,"Import Error", "Can't find Cholesky decomposition for sparse matrices (module scikit.sparse) !!! \n Falling back to slower version" ,QMessageBox.Ok)
 
-        self.resize(1050, 650)
+        self.resize(int(self.setting['screen_width']/1.5), int(self.setting['screen_height']/1.5))
 
 
 class MainThread(QThread):
@@ -1663,6 +1702,7 @@ class MainThread(QThread):
     
     def __init__(self, parent):
         QThread.__init__(self, parent)
+        self.setObjectName('PyTOMO') 
         self.progress = IterateProgress(self,parent.progressBar)
         self.parent = parent
     def prepare(self,setting, tokamak):
@@ -1686,14 +1726,12 @@ class MainThread(QThread):
             self.newValue.emit(0)
             
             
-            
-            raise
             return
         except Exception as e:
             print("some error detected"+ str(e))
             self.failed.emit(1)
             self.newValue.emit(0)
-            raise
+            traceback.print_exc()
             return
         
         if hasattr(self,'isInterruptionRequested') and self.isInterruptionRequested():
@@ -1714,11 +1752,14 @@ class MainThread(QThread):
             print("Plotting failed"+ str(e))
             self.failed.emit( 1)
             self.newValue.emit(0)
-            raise
+            traceback.print_exc()
+            return
+        
         
         
         if hasattr(self,'isInterruptionRequested') and self.isInterruptionRequested():
             self.newValue.emit(0)
+            traceback.print_exc()
             return
         
         try:
@@ -1751,7 +1792,8 @@ class MainThread(QThread):
             print("Asymmetry failed"+ str(e))
             self.failed.emit( 1)
             self.newValue.emit(0)
-            raise
+            traceback.print_exc()
+            return
    
         self.output.emit(output_list)
 
@@ -1871,12 +1913,22 @@ def TestData(tomography_object):
     return new_setting, new_tokamak   #!!! a teď není potřeba aby se to načítalo 2x !!!!!!!!!!
 
 def main(setting, tokamak):
+    
+
 
     app = QApplication(sys.argv)
     app.setStyle(QStyleFactory.create("plastique"))
+    new_font = app.font()
+    new_font.setPointSize(  12 )
+    app.setFont( new_font )
+    #setting['screen_width']  = app.desktop().screenGeometry().width()
+    #setting['screen_height'] = app.desktop().screenGeometry().height()
+    setting['screen_width']  = 1920
+    setting['screen_height'] = 1080
 
-    
     myapp = MainWindow(setting, tokamak)
+    #app.resize(1050, 650)
+
     myapp.show()
     app.exec_()
 

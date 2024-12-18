@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 
@@ -16,7 +16,7 @@ import os,sys
 #dd = dd.shotfile()
 
 
-
+#https://github.com/ORNL-Fusion/DESCUR
 from .descur import DESCUR
 D = DESCUR()
 
@@ -45,7 +45,7 @@ class MOM2RZ:
 
         #use n to n+order  polynom order for higher modes ( it will have n zero derivations rho zero)  and zero first derivative
         for i,n in enumerate(r_[1,arange(1,nmom)]):
-            
+
             #regularization is important, else rounding errors can be huge
             self.p_rcos[-n-order_range-1,i],r = self.polyfit_reg(rho,rcos[:,i],order_range+n,regularization)
             self.p_zcos[-n-order_range-1,i],r = self.polyfit_reg(rho,zcos[:,i],order_range+n,regularization)
@@ -59,7 +59,7 @@ class MOM2RZ:
         self.p_zcos[-1,0]+= Z0
 
 
-     
+
     def __call__(self,rho,theta):
         nmom = np.size(self.p_rcos,-1)
 
@@ -88,36 +88,36 @@ class MOM2RZ:
             zcos[:,i] = np.polyval(self.p_zcos[:,i],rho)
             rsin[:,i] = np.polyval(self.p_rsin[:,i],rho)
             zsin[:,i] = np.polyval(self.p_zsin[:,i],rho)
-            
+
         return rcos,rsin,zcos,zsin
 
 
-        
+
     def polyfit_reg(self, x,y,order,regularization=1,weight=1):
         ind = ~any(isnan(y.reshape(len(x),-1)),1)
         x = x[ind]
         y = array(y.T,ndmin=2).T
-        
+
         y = y[ind,...]
-        
+
         y/= x[:,None]**(order.min()-1)
         order-= order.min()-1
-        
+
         N_order = amax(order)+1
 
         if isscalar(order):
             order  = arange(order)
         order = N_order - order-1
-            
+
         lhs = vander(x, N_order)[:,order]
-    
+
         scale = sqrt((lhs*lhs).sum(axis=0))
         lhs /= scale
         rhs = y
         rcond = len(x)*finfo(x.dtype).eps*regularization
 
         c, resids, rank, s = linalg.lstsq(lhs*x[:,None] , rhs*x[:,None], rcond)
-            
+
         c = (c.T/scale).T # broadcast scale coefficients
 
         #C = zeros((N_order,)+y.shape[1:])
@@ -129,32 +129,40 @@ class MOM2RZ:
 
 
 
-def Descur_fit_core(xxx_todo_changeme):
+def Descur_fit_core(args):
 
-    (t_fract, i, rho, R_contour, Z_contour, R0, Z0,n_fourier) = xxx_todo_changeme
-    sys.stdout.write("\r calculate Fourier coefficients: %3.0f %%    N: %d        " %(t_fract*100,i))
-    sys.stdout.flush()  
+    t_fract, i, rho, R_contour, Z_contour, R0, Z0,n_fourier = args
+
     n_rho = len(rho)
-    
-    #for nr, (cr,cz) in enumerate(zip(R_contour.T, Z_contour.T)):
-        #plot(cr,cz)
 
+    try:
+        sys.stdout.write("\r calculate Fourier coefficients: %3.0f %%    N: %d        " %(t_fract*100,i))
+        sys.stdout.flush()
+        moments_all= empty((n_rho, n_fourier,4))
+        for nr, (cr,cz) in enumerate(zip(R_contour.T, Z_contour.T)):
+            #don't use to high order in the core - regularization
+            n_fourier_ = 2+int(ceil((nr+1)/float(n_rho)*(n_fourier-2)))
+            moments_all[nr,:n_fourier_,:] =  D.descur_fit(cr-R0,cz-Z0,n_fourier_)
+            moments_all[nr,n_fourier_:,:] = 0
 
-    moments_all= empty((n_rho, n_fourier,4))
-    for nr, (cr,cz) in enumerate(zip(R_contour.T, Z_contour.T)):
-        #don't use to high order in the core - regularization
-        n_fourier_ = 2+int(ceil((nr+1)/float(n_rho)*(n_fourier-2)))
-        moments_all[nr,:n_fourier_,:] =  D.descur_fit(cr-R0,cz-Z0,n_fourier_)
-        moments_all[nr,n_fourier_:,:] = 0
+    except OSError:
+        #print('Warning: DESCUR failes, running backup option')
+        #this method is faster, but less efficients, it needs more coefficients!
+        n_fourier *= 2
+        moments_all= empty((n_rho, n_fourier,4))
+        for nr, (cr,cz) in enumerate(zip(R_contour.T, Z_contour.T)):
+            #don't use to high order in the core - regularization
+            n_fourier_ = 2+int(ceil((nr+1)/float(n_rho)*(n_fourier-2)))
+            moments_all[nr,:n_fourier_,:] =  D.descur_fit_fast(cr-R0,cz-Z0,n_fourier_)
+            moments_all[nr,n_fourier_:,:] = 0
 
-        
 
     rcos = moments_all[:,:,0]
     rsin = moments_all[:,:,1]
     zcos = moments_all[:,:,2]
     zsin = moments_all[:,:,3]
     poly_order = 20
-    
+
 
     try:
         mom_poly = MOM2RZ(rho,rcos,rsin,zcos,zsin,order=poly_order,R0=R0,Z0=Z0)
@@ -162,25 +170,25 @@ def Descur_fit_core(xxx_todo_changeme):
     except Exception as e:
         print('Descur_fit_core',e)
         coeff = ones((poly_order+1+n_fourier,n_fourier, 4))*nan
-        
 
-    
-    
+
+
+
     return single(coeff)
 
-    
 
 
-#different methods for correctig of the signals perturbated by elms 
+
+#different methods for correctig of the signals perturbated by elms
 def ElmCorrection(tvec_fast, sig_fast, tvec_slow, sig_slow, t_elms, dt_elms,nsmooth=11,mode=None):
     #sig_fast fast is the signal with the correct high frequancy part and wrong low frequency
-    #sig_slow is opposite 
- 
-    
+    #sig_slow is opposite
+
+
     #make a high time resolution signal
     sig = sig_fast-interp(tvec_fast,tvec_slow,interp(tvec_slow,tvec_fast,sig_fast))+interp(tvec_fast,tvec_slow,sig_slow)
     tvec = tvec_fast
-    
+
     if mode== None:
         return tvec,sig
 
@@ -188,74 +196,74 @@ def ElmCorrection(tvec_fast, sig_fast, tvec_slow, sig_slow, t_elms, dt_elms,nsmo
     n_elm  = size(t_elms)
     tvec_elm = vstack((t_elms-3e-4, t_elms,t_elms+ dt_elms, t_elms+ dt_elms+3e-4)).T.ravel()
     elm = vstack((zeros(n_elm),ones(n_elm),ones(n_elm), zeros(n_elm))).T.ravel()
-  
+
     elms_interp = interp1d(tvec_elm, elm,bounds_error = False,fill_value= 0 )(tvec)
     elms_ind = elms_interp != 0
     #just replace ELM region by interpolation
     if mode == 'interpolate':
         sig[elms_ind] = interp1d(tvec[~elms_ind],sig[~elms_ind],bounds_error=False,fill_value=0)(tvec[elms_ind])
         return tvec, sig
-    
+
     #replace low frequency part of fast data by low frequency part of the slow data
     if mode== 'replace': #replace elms by FPG data
         dsig = sig-sig_fast
         dsig = interp1d(tvec[~elms_ind], dsig[~elms_ind],bounds_error = False,fill_value= 0 )(tvec_slow)
-        
+
         dsig = medfilt(dsig,nsmooth)
         dsig = interp1d(tvec_slow, dsig,bounds_error = False,fill_value= 0 )(tvec)
 
         sig = dsig+sig_fast
-        
+
         return  tvec, sig
-    
+
     if mode== 'remove': #remove elms
-        
+
         for t,dt in zip(t_elms,dt_elms) :
             sig_fast[~((tvec_fast<t-dt*0.1)|(tvec_fast>t+dt*1.1))] = nan
             sig_slow[~((tvec_slow<t-dt*0.1)|(tvec_slow>t+dt*1.1))] = nan
-            
-        
-                    
-        
+
+
+
+
         sig_fast[isnan(sig_fast)] = interp(tvec_fast[isnan(sig_fast)],tvec_fast[~isnan(sig_fast)], sig_fast[~isnan(sig_fast)] )
         sig_slow[isnan(sig_slow)] = interp(tvec_slow[isnan(sig_slow)],tvec_slow[~isnan(sig_slow)], sig_slow[~isnan(sig_slow)] )
 
         #sig = interp1d(tvec[~elms_ind], sig[~elms_ind],bounds_error = False,fill_value= 0 )(tvec_slow)
-    
-        
+
+
         dt_elms = median(diff(t_elms))
         if isnan(dt_elms): dt_elms = 0
         n_smooth = int(dt_elms/mean(diff(tvec_slow)))*2+1
         #print 'n_smooth',n_smooth
-        
+
         dsig = medfilt(sig_slow,n_smooth)-medfilt(interp(tvec_slow,tvec_fast, sig_fast ),n_smooth)
-        
-        
+
+
         sig_fast+= interp(tvec_fast, tvec_slow, dsig)
-        
+
         sig = medfilt(sig_fast,5)
 
-        
+
 
         return tvec,sig
 
-    
-    #averadge over the elms 
+
+    #averadge over the elms
     if mode == 'averadge':
         #TODO vylepšit!!!!! moc to průměruje 26061
-        
+
         sig = interp1d(tvec[~elms_ind], sig[~elms_ind],bounds_error = False,fill_value= 0 )(tvec_slow)
         dt_elms = median(diff(t_elms))
         if isnan(dt_elms): dt_elms = 0
         n_smooth = int(dt_elms/mean(diff(tvec_slow)))*2+1
         #print 'n_smooth',n_smooth
-        
+
         sig = medfilt(sig,n_smooth)
 
-        
+
         sig = interp1d(tvec_slow, sig,bounds_error = False,fill_value= 0 )(tvec)
 
-        return tvec, sig 
+        return tvec, sig
 
 
 
@@ -268,44 +276,37 @@ def help_fun(tmp):
 
 
 class Equlibrium:
-    def __init__(self,MDS_plus, eqm,shot,  diag='EQI',exp='AUGD', ed=0):
+    def __init__(self,MDS_plus=None, eqm=None,shot=None,  diag='EQI',exp='AUGD', ed=0):
         self.eqm = eqm
         self.shot = shot
         self.diag = diag
         self.MDS_plus = MDS_plus
 
 
-        
-        
-        
-        
-        
+
+
+
+
+
     def getTranspEquilibrium(self):
-        #import IPython
-        #IPython.embed()
-        
-         #self.diag
-        #self.eqm.sf.
+
         self.MDS_plus.openTree('TRANSP', int(self.diag[3:]))
-        
+
         #load TRANSP shotfile
         tra_path = '\\TRANSP::TOP.TRANSP_OUT:'
-        
+
         RMC00 = self.MDS_plus.get(tra_path+'RMC00').data()
 
         ntim,n_rho=RMC00.shape
         tvec = self.MDS_plus.get('dim_of('+tra_path+'RMC00,1)').data()
-        #import IPython
-        #IPython.embed()
-        
-        #tvec=cdf.variables['TIME3'][:]
+
+
         rho_p = self.MDS_plus.get(tra_path+'PLFLX').data()
         rho_p = sqrt(rho_p/rho_p[:,(-1,)])
         rho_t = self.MDS_plus.get(tra_path+'XB').data()[0]
- 
-    
-        #R0 = cdf.variables['RAXIS'][:]/100
-        #Z0 = cdf.variables['YAXIS'][:]/100
+
+
+
         R0 = self.MDS_plus.get(tra_path+'RAXIS').data()/100
         Z0 = self.MDS_plus.get(tra_path+'YAXIS').data()/100
 
@@ -316,14 +317,14 @@ class Equlibrium:
                 break
             except:
                 pass
-            
-            
+
+
         nmom = min(nmom, 10)
         rcos = zeros((ntim,n_rho, nmom))
         rsin = zeros((ntim,n_rho, nmom))
         zsin = zeros((ntim,n_rho, nmom))
         zcos = zeros((ntim,n_rho, nmom))
-        
+
 
         for jmom in range(nmom):
             rc='RMC%.2d'%jmom
@@ -341,16 +342,11 @@ class Equlibrium:
 
         zcos[:,:,0]-= Z0[:,None]
         rcos[:,:,0]-= R0[:,None]
-        #from matplotlib.pyplot import *
 
-        #coeffs = []
         npoly = 8
-        #(473, 41, 10, 4)
 
         coeffs = zeros((ntim,npoly+1,nmom , 4))
         for it in range(ntim):
-            
-            #f,ax = subplots(2,2)
             for i in range(nmom):
                 coeffs[it,:,i,0] =  np.polyfit(r_[0,rho_p[it]], r_[0,rcos[it,:,i]] ,npoly)
                 coeffs[it,:,i,1] =  np.polyfit(r_[0,rho_p[it]], r_[0,zcos[it,:,i]] ,npoly)
@@ -358,199 +354,37 @@ class Equlibrium:
                 coeffs[it,:,i,3] =  np.polyfit(r_[0,rho_p[it]], r_[0,zsin[it,:,i]] ,npoly)
 
 
-        coeffs[:,-1,0,0]+= R0 
-        coeffs[:,-1,0,1]+= Z0  
+        coeffs[:,-1,0,0]+= R0
+        coeffs[:,-1,0,1]+= Z0
 
 
-
-        #def surf_polyval(rho,theta, p_rcos,p_zcos,p_rsin,p_zsin):
-            ##evaluate equilibrium polynom
-            #nmom = size(p_rcos,-1)
-            #rho = atleast_1d(rho)
-
-            #P = double(dstack((p_rcos,p_zcos,p_rsin,p_zsin)))
-            #moments = zeros((nmom, 4, size(rho)))
-                
-            ##horner scheme
-            #for p in P:
-                #moments *= rho[None,None]
-                #moments += p[:,:,None]
-            
-
-            #angle = outer(arange(nmom),theta )
-            #C = cos(angle)
-            #S = sin(angle)
-            #r_plot = tensordot(moments[:,0].T,C,axes=([-1,0])) #rcos
-            #r_plot+= tensordot(moments[:,2].T,S,axes=([-1,0])) #rsin
-            #z_plot = tensordot(moments[:,1].T,C,axes=([-1,0])) #zcos
-            #z_plot+= tensordot(moments[:,3].T,S,axes=([-1,0])) #zsin
-        
-            
-            #return r_plot.T, z_plot.T
-
-
-        #p_rcos,p_zcos,p_rsin,p_zsin = coeffs.T
-        #R,Z = surf_polyval(rho_p[it], linspace(0,2*pi, 300), p_rcos.T[0],p_zcos.T[0],p_rsin.T[0],p_zsin.T[0])
-
-
-        #import IPython
-        #IPython.embed()  
-        
-            #rc = array([np.polyval( coeffs[it,:,i,0] ,linspace(0,1,41) ) for i in range(nmom)]).T
-            #zc = array([np.polyval( coeffs[it,:,i,1] ,linspace(0,1,41) ) for i in range(nmom)]).T
-            #rs = array([np.polyval( coeffs[it,:,i,2] ,linspace(0,1,41) ) for i in range(nmom)]).T
-            #zs = array([np.polyval( coeffs[it,:,i,3] ,linspace(0,1,41) ) for i in range(nmom)]).T
-
-            #theta = linspace(0,2*pi, 300)
-            #angle = np.outer(np.arange(nmom),theta)
-            #cos = np.cos(angle)
-            #sin = np.sin(angle)
-            #r_plot = np.tensordot(rc,cos,axes=([-1,0]))
-            #r_plot+= np.tensordot(rs,sin,axes=([-1,0]))
-            #z_plot = np.tensordot(zc,cos,axes=([-1,0]))
-            #z_plot+= np.tensordot(zs,sin,axes=([-1,0]))
-
-            #plot(r_plot,z_plot)
-            #show()  
-                      
-                #import IPython
-                #IPython.embed()  
-                
-           
-                #rc = np.polyval( coeffs[it,:,i,0] ,linspace(0,1,1000) )
-                #ax[0,0].plot(rho_p[it] , (rcos[it,:,i]) )
-                #ax[0,0].plot(linspace(0,1,1000) ,rc,'--' )
-                
-                #rc = np.polyval( coeffs[it,:,i,1] ,linspace(0,1,1000) )
-                #ax[0,1].plot(rho_p[it] , (zcos[it,:,i]) )
-                #ax[0,1].plot(linspace(0,1,1000) ,rc,'--' )
-                
-                
-                #rc = np.polyval( coeffs[it,:,i,2] ,linspace(0,1,1000) )
-                #ax[1,0].plot(rho_p[it] , (rsin[it,:,i]) )
-                #ax[1,0].plot(linspace(0,1,1000) ,rc,'--' )
-                
-                #rc = np.polyval( coeffs[it,:,i,3] ,linspace(0,1,1000) )
-                #ax[1,1].plot(rho_p[it] , (zsin[it,:,i]) )
-                #ax[1,1].plot(linspace(0,1,1000) ,rc,'--' )
-                
-                
-                
-                
-            #show()
-                
-                
-            
-            ##BUG sometimes, very rarelly it can failure if rho_p is deviating from straight line in the core!!! 
-            ##during core ECRH current drive!
-            
-            
-            
-            
-            #mom_poly = MOM2RZ(rho_p[it],rcos[it],rsin[it],zcos[it],zsin[it],order=10,R0=R0[it],Z0=Z0[it],regularization=0.0)
-            #coeff = dstack((mom_poly.p_rcos, mom_poly.p_zcos, mom_poly.p_rsin, mom_poly.p_zsin ))
-            #coeffs.append(coeff)
-            
-            #rc, rs, zc, zs = mom_poly.polyval(linspace(0,1,1000))
-            
-            #for i in range(10):
-                ##i = 6
-                #i = 2
-                #import IPython
-                #IPython.embed() 
-                
-                #for i in range(10):
-                    #plot(rho_p[it]**(i+1), rcos[it,:,i]/rho_p[it]**(2-i%2) ,'--')
-                    #title(i)
-                    #show()
-                
-                #i = 4
-                #rcpoly = np.polyfit(r_[0,rho_p[it]], r_[0,rcos[it,:,i]] ,10)
-                ##rcpoly = r_[rcpoly, (0,)*(2-i%2)]
-                #rc = np.polyval(rcpoly,linspace(0,1,1000) )
-                #plot(rho_p[it] , (rcos[it,:,i]) )
-                #plot(linspace(0,1,1000) ,rc )
-                #show()
-                
-                
-                
-                
-
-                #i = 9
-
-                #rcpoly = np.polyfit(rho_p[it]  ,rcos[it, :,i]/rho_p[it]**(2-i%2),7)
-                #rcpoly = r_[rcpoly, (0,)*(2-i%2)]
-                #rc = np.polyval(rcpoly,linspace(0,1,1000) )
-                
-                #plot(rho_p[it] ,rcos[it, :,i])
-                #plot(linspace(0,1,1000),rc )
-                #show()
-
-                ##plot(rho_p[it]**(i+1),rcos[it, :,i]/rho_p[it]**(2-i%2))
-                ##plot(linspace(0,1,1000)**(i+1),np.polyval(rcpoly,linspace(0,1,1000)**(i+1)))
-                ##show()
-
-                
-                #plot(linspace(0,1,1000)**(i+1) ,rc/linspace(0,1,1000) )
-                #plot(rho_p[it]**(i+1), rcos[it,:,i]/rho_p[it]  ,'--')
-                #title(i)
-                #show()
-                
-                
-                
-            #R,Z = mom_poly(rho_p[it], linspace(0,2*pi, 300))
-            #plot(R.T,Z.T)
-            #show()
-            
-            #theta = linspace(0,2*pi, 300)
-            #angle = np.outer(np.arange(nmom),theta)
-            #cos = np.cos(angle)
-            #sin = np.sin(angle)
-            #r_plot = np.tensordot(rcos[it],cos,axes=([-1,0]))
-            #r_plot+= np.tensordot(rsin[it],sin,axes=([-1,0]))
-            #z_plot = np.tensordot(zcos[it],cos,axes=([-1,0]))
-            #z_plot+= np.tensordot(zsin[it],sin,axes=([-1,0]))
-
-            #plot(r_plot,z_plot)
-            #show()
-             
-          
-            #if not all(isfinite(coeff)):
-                #raise Exception('Something failered in equilibrium fitting')
-
-            
-        #import IPython
-        #IPython.embed()  
-        #coeffs = array(list(coeffs))
-
-        #tvec = tvec_surf
         Rmag_ = zeros_like(tvec)
         Zmag_ = zeros_like(tvec)
         ahor_ = ones_like(tvec)
         bver_ = ones_like(tvec)
-        
-        
+
+
         output = {'tsurf':tvec,
-        'surf_coeff':coeffs ,  
-        'tvec_fast':tvec , 
+        'surf_coeff':coeffs ,
+        'tvec_fast':tvec ,
         'Rmag':Rmag_,
         'Zmag':Zmag_,
         'ahor':ahor_,
-        'bver':bver_  
+        'bver':bver_
         }
-        
-        
+
+
         return output
-        
-        
-        
-        
-        
+
+
+
+
+
         from netCDF4 import Dataset
 
         cdf = None
-        paths = 'm/CDF','TRANSP','CDF' 
-        
+        paths = 'm/CDF','TRANSP','CDF'
+
         flag = False
         for i in range(100,0,-1):
             if flag: break
@@ -562,10 +396,10 @@ class Equlibrium:
                     continue
                 flag = True
                 break
-            
-            
 
-        
+
+
+
         if cdf is None:
             raise Exception( 'loading of cdf_file file has failured')
 
@@ -578,7 +412,7 @@ class Equlibrium:
         rho_p = sqrt(rho_p/rho_p[:,(-1,)])
         rho_t = cdf.variables['XB'][:]
 
-    
+
         R0 = cdf.variables['RAXIS'][:]/100
         Z0 = cdf.variables['YAXIS'][:]/100
 
@@ -592,7 +426,7 @@ class Equlibrium:
         rsin = zeros((ntim,n_rho, nmom))
         zsin = zeros((ntim,n_rho, nmom))
         zcos = zeros((ntim,n_rho, nmom))
-        
+
 
         for jmom in range(nmom):
             rc='RMC%.2d'%jmom
@@ -613,100 +447,107 @@ class Equlibrium:
 
         coeffs = []
         for it in range(ntim):
-            #BUG sometimes, very rarelly it can failure if rho_p is deviating from straight line in the core!!! 
+            #BUG sometimes, very rarelly it can failure if rho_p is deviating from straight line in the core!!!
             #during core ECRH current drive!
             mom_poly = MOM2RZ(rho_p[it],rcos[it],rsin[it],zcos[it],zsin[it],order=30,R0=R0[it],Z0=Z0[it],regularization=0.1)
             coeff = dstack((mom_poly.p_rcos, mom_poly.p_zcos, mom_poly.p_rsin, mom_poly.p_zsin ))
             coeffs.append(coeff)
- 
-            
-            
+
+
+
         coeffs = array(list(coeffs))
-   
-            
+
+
         tvec = tvec_surf
         Rmag_ = zeros_like(tvec_surf)
         Zmag_ = zeros_like(tvec_surf)
         ahor_ = ones_like(tvec_surf)
         bver_ = ones_like(tvec_surf)
-        
-        
+
+
         output = {'tsurf':tvec_surf,
-        'surf_coeff':coeff ,  
-        'tvec_fast':tvec , 
+        'surf_coeff':coeff ,
+        'tvec_fast':tvec ,
         'Rmag':Rmag_,
         'Zmag':Zmag_,
         'ahor':ahor_,
-        'bver':bver_  
+        'bver':bver_
         }
-        
-        
+
+
         return output
 
-        
-        
-        
+
+
+
     def getStandartEquilibrium(self):
-    
+
         if not self.eqm.eq_open or len(self.eqm.t_eq) < 2:
             return
-        
-        
-        self.eqm.read_ssq()
-        self.eqm._read_scalars()
-        self.eqm._read_profiles()
-        self.eqm._read_pfm()
 
+        try:
+            self.eqm.read_ssq()
 
-        os.nice(3)
+            self.eqm._read_scalars()
+        #self.eqm._read_profiles()
+        #self.eqm._read_pfm()
+        except:
+            pass
+        if os.name != 'nt':
+            os.nice(3)
         n_rho = 40
         n_theta = 150
         rho = linspace(0.01,0.998,n_rho)
         theta = linspace(0,2*pi,n_theta, endpoint=False)
-        
-        
-        
+
+
+
         #corrupted_eq = abs(self.eqm.PFxx[3]) > 1000
-        
-        ncpu = cpu_count()
-        pool = Pool(ncpu)
-        
+
+
+
         #print( self.eqm.t_eq)
-        
-        corrupted_eq  =  abs(self.eqm.ssq['Zmag']-0)>0.3
-        corrupted_eq |=  abs(self.eqm.ssq['Rmag']-self.eqm.R0)>0.3
-        corrupted_eq |= self.eqm.ssq['chi2'] > median(self.eqm.ssq['chi2'])*2
-        corrupted_eq |= self.eqm.ssq['ERROR'] > median(self.eqm.ssq['ERROR'])*5
-        
-        #corrupted_eq[0] = True  #first timepoint was often broken
+        corrupted_eq = np.zeros_like(self.eqm.t_eq, dtype='bool')
+        if self.eqm.ssq['ERROR'] is not None:
+            corrupted_eq |=  abs(self.eqm.ssq['Zmag']-0)>0.3
+            corrupted_eq |=  abs(self.eqm.ssq['Rmag']-self.eqm.R0)>0.3
+            corrupted_eq |= self.eqm.ssq['chi2'] > median(self.eqm.ssq['chi2'])*2
+            corrupted_eq |= self.eqm.ssq['ERROR'] > median(self.eqm.ssq['ERROR'])*5
+
+
         t_eq = self.eqm.t_eq[~corrupted_eq]
         nti = len(t_eq)
 
+        ncpu = cpu_count()
         t_sequence = array_split(t_eq, min(ncpu,nti))
 
         print('Find flux contours from %.3f to %.3fs'%(t_eq[0],t_eq[-1]))
         t1 = time()
-        args = [(self.eqm,  rho, theta, t) for t in t_sequence]
-        
+
+
         #self.eqm.rhoTheta2rz(rho, theta,t_eq[0], n_line=100)
-        
+
         #exit()
         import config
         #from shared_modules import debug
 
     #if config.DEBUG:
-        try: 
-            assert  config.DEBUG
+        try:
+            assert  not config.DEBUG and not  config.no_multiprocessing
+
+            args = [(self.eqm,  rho, theta, t) for t in t_sequence]
+            pool = Pool(ncpu)
             out = pool.map(help_fun,args )
+            R_cont,z_cont = hstack(out)
         except:
-            out = list(map(help_fun,args ))
-        
-        #else:
-        R_cont,z_cont = hstack(out)
+             R_cont,z_cont = self.eqm.rhoTheta2rz(rho, theta,t_eq, n_line=100)
+
+
+
         print('PSI contours: %.1f s'%( time()-t1))
-        
-  
-        
+
+
+
         #R,Z = self.eqm.rho2rz(linspace(0,1,200), t_eq[96])
         #from matplotlib.pylab import *
         #from shared_modules import inside_convex_hull
@@ -715,35 +556,35 @@ class Equlibrium:
         #from scipy.spatial import ConvexHull
         #points = c_[R_cont[96,:,-1],z_cont[96,:,-1]]
         #hull = ConvexHull(points)
-         
+
         #plt.plot(points[hull.vertices,0], points[hull.vertices,1], 'ro', lw=2)
         #plt.plot(points[:,0], points[:,1], 'bx', lw=2)
 
-        
+
         #inside_convex_hull(c_[R_cont[96,:,-1],z_cont[96,:,-1]], array([1.5,0], ndmin=2)).sum()
         #import IPython
         #IPython.embed()
-        
+
 
         #wrong |= self.eqm.ssq['TERROR'] > median(self.eqm.ssq['TERROR'])*2
 
         #R,Z=self.eqm.rho2rz(rho, t_eq)
-        
+
         #for it in range(10):
             #for r,z in zip(R[it],Z[it]):
                 #plot(r,z)
             #show()
-            
-        
+
+
         #for i in range(len(t_eq)):
             #print i
             #plot(R_cont[i,:,:],z_cont[i,:,:])
             #show()
-        #for i in range(311): 
+        #for i in range(311):
         #i = 0
-        
+
         #plot()
-    
+
         D = hypot(R_cont-R_cont[:,:,(-0,)],z_cont-z_cont[:,:,(-0,)])
         wrong = any(any(diff(D, axis=2)< 0, 2),1)
         wrong |= any(any(isnan(R_cont),1),1)
@@ -765,41 +606,40 @@ class Equlibrium:
 
         #for r,z in zip(R[0], Z[0]): plot(r,z)
         #show()
-            
-            
+
+
 
         R0 = self.eqm.ssq['Rmag'][~corrupted_eq]
         Z0 = self.eqm.ssq['Zmag'][~corrupted_eq]
 
-                
-       
-        
+
+
+
         mom_order = 10
 
         args = [(jt/float(nti),jt,rho,R_cont[jt],z_cont[jt],R0[jt], Z0[jt], mom_order) for jt in arange(nti)]
-        
-        
+
 
         t1 = time()
-        #Descur_fit_core(args[96]) 
-        #args[96] = args[97] 
+        #Descur_fit_core(args[96])
+        #args[96] = args[97]
 
         print('\n fitting contours  fit:')
-        if config.DEBUG:
+        if config.DEBUG or config.no_multiprocessing:
             coeffs = list(map(Descur_fit_core,args  ))
 
         else:
             #coeffs = [ Descur_fit_core(a) for a in args ]
             coeffs = pool.map(Descur_fit_core,args  )
+            pool.close()
+            pool.join()
 
-            
         print('\nContouts fit: %.1f s'%(time()-t1))
 
-        pool.close()
-        pool.join()
-        
+
+
         coeffs = array(list(coeffs))
-        
+
         ind = all(isfinite(coeffs.reshape(nti, -1)),1)
         surf_coeff = coeffs[ind]
         tvec_surf = t_eq[ind]
@@ -810,10 +650,10 @@ class Equlibrium:
         #Zc_slow = self.eqm.ssq['Zmag']#[~corrupted_eq]
         #bver_slow = self.eqm.ssq['bver']#[~corrupted_eq]
         #ahor_slow = self.eqm.ssq['ahor']#[~corrupted_eq]
-        
-      
 
-        
+
+
+
         #if not dd.Open('FPG',self.shot):
             #raise Exception('no FPG!!')
 
@@ -838,13 +678,13 @@ class Equlibrium:
 
         #mode_r = 'remove' if  size(tELM) >1 else 'replace'
 
-        #tvec,Zmag_ = ElmCorrection(tvec_fast, Zc_fast,   tvec_slow, Zc_slow,   
+        #tvec,Zmag_ = ElmCorrection(tvec_fast, Zc_fast,   tvec_slow, Zc_slow,
                                    #tELM, dt_ELM,nsmooth=11,mode='replace')
-        #tvec,Rmag_ = ElmCorrection(tvec_fast, Rc_fast,   tvec_slow, Rc_slow,   
+        #tvec,Rmag_ = ElmCorrection(tvec_fast, Rc_fast,   tvec_slow, Rc_slow,
                                    #tELM, dt_ELM,nsmooth=11,mode=mode_r)
-        #tvec,bver_ = ElmCorrection(tvec_fast, bver_fast, tvec_slow, bver_slow, 
+        #tvec,bver_ = ElmCorrection(tvec_fast, bver_fast, tvec_slow, bver_slow,
                                    #tELM, dt_ELM,nsmooth=11,mode='replace')
-        #tvec,ahor_ = ElmCorrection(tvec_fast, ahor_fast, tvec_slow, ahor_slow, 
+        #tvec,ahor_ = ElmCorrection(tvec_fast, ahor_fast, tvec_slow, ahor_slow,
                                    #tELM, dt_ELM,nsmooth=11,mode='replace')
 
         #bver_slow = interp(tvec_surf,tvec_slow, bver_slow)
@@ -861,17 +701,17 @@ class Equlibrium:
         #surf_coeff[...,1::2] /= bver_slow[:,None,None,None]
 
         #if self.diag != 'EQI':
-            ##remove ELM perturbated timepoints 
+            ##remove ELM perturbated timepoints
             #elm_ind = zeros_like(tvec_surf, dtype=bool)
             #for t,dt in zip(tELM,dt_ELM):
                 #it1 = searchsorted(tvec_surf,t )
                 #it2 = searchsorted(tvec_surf,t+dt )
                 #elm_ind[it1-1: it2]  = True
-                        
-        
+
+
             #tvec_surf = tvec_surf[~elm_ind]
             #surf_coeff = surf_coeff[~elm_ind,...]
-            
+
         ##BUG only slow data are avaible on DIII-`D
         #tvec = tvec_surf
         #Rmag_ = ones_like(Rc_slow)
@@ -880,8 +720,8 @@ class Equlibrium:
         #bver_ = ones_like(bver_slow)
 
         output = {'tsurf':single(tvec_surf),
-                'surf_coeff':single(surf_coeff),  
-                'tvec_fast': single(tvec_surf) , 
+                'surf_coeff':single(surf_coeff),
+                'tvec_fast': single(tvec_surf) ,
                 'Rmag':None,
                 'Zmag':None,
                 'ahor':None,
@@ -889,13 +729,11 @@ class Equlibrium:
               }
 
         return output
-    
- 
 
 
-  
-        
+
+
+
+
 #EQU = Equlibrium(33974,diag='EQH')
 #EQU.getStandartEquilibrium()
-
-

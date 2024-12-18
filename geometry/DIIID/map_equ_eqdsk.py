@@ -10,43 +10,83 @@ import sys,os
 from scipy import integrate
 
 
-def get_gc(shot, mds_server):
+
+def get_gc(nshot=None):
     ##shape of the vessel
-    if isinstance(mds_server, str):
-        import MDSplus as mds
-        MDSconn = mds.Connection(mds_server )
-    else:
-        MDSconn = mds_server
-        
-    eqm = equ_map(MDSconn)
-    eqm.Open(shot)
-    
     try:
-        RLIM, ZLIM = eqm.sf.get(eqm.gEQDSK+'LIM').data().T
+
+        program_path = os.path.abspath(__file__)
+        program_path = program_path[:program_path.rfind('/')]+'/'
+
+        R,Z = loadtxt(program_path+'/d3d_elev_030_parseModified.dat').T
     except:
-        RLIM = eqm.sf.get(eqm.gEQDSK+'RLIM').data()[:NLIM]
-        ZLIM = eqm.sf.get(eqm.gEQDSK+'ZLIM').data()[:NLIM]
-        NLIM = eqm.sf.get(eqm.gEQDSK+'LIMITR').data()
-    
-    comp_r = {'vessel':RLIM}
-    comp_z = {'vessel':ZLIM}
- 
+
+        if nshot < 168847: #just guess of the shot number
+            Z = 0.000,0.964,0.968,1.001,1.019,1.077,1.070,1.096,1.113,1.138,1.147,1.165,1.217,\
+            1.217,1.162,1.162,1.163,1.165,1.166,1.166,1.169,1.172,1.176,1.183,1.183,1.185,\
+            1.188,1.191,1.196,1.202,1.208,1.214,1.221,1.231,1.238,1.244,1.254,1.278,1.290,\
+            1.331,1.347,1.348,1.348,1.348,1.348,1.348,1.348,1.310,1.310,1.292,1.095,1.077,\
+            1.077,1.040,0.993,0.709,0.519,0.389,0.400,0.222,0.133,0.044,-0.044,-0.133,-0.222,\
+            -0.400,-0.389,-0.973,-1.174,-1.211,-1.250,-1.250,-1.250,-1.329,-1.329,-1.363,\
+            -1.363,-1.363,-1.223,-1.223,-0.830,-0.800,-0.415,-0.400,-0.001,0.000
+
+            R= 1.016,1.016,1.016,1.016,1.016,1.016,1.016,1.016,1.016,1.016,1.016,1.012,1.001,\
+            1.029,1.042,1.046,1.056,1.097,1.108,1.116,1.134,1.148,1.162,1.181,1.182,1.185,1.190,\
+            1.195,1.201,1.209,1.215,1.222,1.228,1.234,1.239,1.242,1.248,1.258,1.263,1.280,1.280,\
+            1.280,1.310,1.328,1.361,1.380,1.419,1.419,1.372,1.372,1.608,1.647,1.785,2.070,2.128,\
+            2.245,2.323,2.377,2.362,2.364,2.365,2.365,2.365,2.365,2.364,2.362,2.377,2.134,1.786,\
+            1.768,1.768,1.682,1.372,1.372,1.420,1.420,1.273,1.153,1.016,1.016,1.016,1.016,1.016,\
+            1.016,1.016,1.016
+
+        else:#SAS diveror
+            R = [1.016,1.016,1.016,1.016,1.016,1.016,1.016,1.016,1.016,1.016,
+            1.016,1.012,1.001,1.029,1.042,1.046,1.056,1.097,1.108,1.116,
+            1.134,1.148,1.162,1.181,1.182,1.185,1.19,1.195,1.201,1.209,
+            1.215,1.222,1.228,1.234,1.239,1.242,1.248,1.258,1.263,1.28,
+            1.28,1.28,1.31,1.328,1.361,1.38,1.419,1.419,1.372,1.37167001,
+            1.37003005,1.36688006,1.36719,1.37178004,1.37223995,
+            1.38662004,1.38707995,1.40382004,1.41127002,1.41857004,
+            1.421,1.48662996,1.49730003,1.49761999,1.49744999,
+            1.49275005,1.49259996,1.49260998,1.49278998,1.49339998,
+            1.49469995,1.49621999,1.47981,1.48081994,1.48149002,
+            1.48645997,1.49094999,1.50304997,1.59696996,1.62549996,
+            1.63751996,1.64699996,1.785,2.07,2.128,
+            2.245,2.323,2.377,2.362,2.364,2.365,2.365,2.365,2.365,2.364,
+            2.362,2.377,2.134,1.786,1.768,1.768,1.682,1.372,1.372,1.42,
+            1.42,1.273,1.153,1.016,1.016,1.016,1.016,1.016,1.016,1.016,1.016]
+            Z = [0.0,0.964,0.968,1.001,1.019,1.077,1.070,1.096,1.113,1.138,1.147,
+            1.165,1.217,1.217,1.162,1.162,1.163,1.165,1.166,1.166,1.169,1.172,
+            1.176,1.183,1.183,1.185,1.188,1.191,1.196,1.202,1.208,1.214,1.221,
+            1.231,1.238,1.244,1.254,1.278,1.29,1.331,1.347,1.348,1.348,1.348,
+            1.348,1.348,1.348,1.310,1.310,1.29238,1.28268,1.25644,1.22955,
+            1.19576,1.19402,1.164870,1.16421,1.15696,1.1573,1.16132,1.164,
+            1.2405,1.23458004,1.23428,1.23174,1.2133,1.21061,1.2048,1.20213,
+            1.19641,1.1851,1.16069,1.124259,1.12256002,1.12137997,1.11692,
+            1.114390,1.11244,1.09489,1.0853,1.07988,1.077,1.077,1.04,0.993,
+            0.709,0.519,0.389,0.400,0.222,0.1330,0.044,-0.044,-0.133,-0.222,
+            -0.400,-0.389,-0.973,-1.174,-1.211,-1.25,-1.25,-1.25,-1.329,
+            -1.329,-1.363,-1.363,-1.363,-1.223,-1.223,-0.823,-0.80,-0.415,-0.400,-0.001,0.0]
+
+
+
+    comp_r = {'vessel':R}
+    comp_z = {'vessel':Z}
     return comp_r,comp_z
-    
 
 
 class equ_map:
-    source = 'MDS'
 
+    source = 'EQDSK'
+    system = None
 
-    def __init__(self, connect, debug=False):
-        
+    def __init__(self, eqdsk, debug=False):
+
         self.eq_open = False
         self.debug = debug
-        self.sf = connect
-        self.orientation = 1
-        
-    def Open(self, shot, diag='EFIT01', exp='DIII-D',ed=0):
+        self.eqdsk = eqdsk
+
+
+    def Open(self, shot=None, diag='EQDSK', exp='DIII-D',ed=0):
 
         """
         Input
@@ -61,39 +101,35 @@ class equ_map:
             edition
         """
         self.system = diag
-        self.gEQDSK = '\\'+self.system+'::TOP.RESULTS.gEQDSK.'
-     
         try:
-            self.sf.openTree(diag,shot)
-            self.shot = shot
-            self.diag = diag
-            # R, z of PFM cartesian grid
-            self.Rmesh = self.sf.get(self.gEQDSK+'R').data()
-            self.Zmesh = self.sf.get(self.gEQDSK+'Z').data()
-            # Time grid of equilibrium shotfile
 
-            self.comment  = self.sf.get('\\'+diag+'::TOP.COMMENTS').data()
-        
-            t_eq  = np.atleast_1d(self.sf.get(self.gEQDSK+'GTIME').data()/1000)
-            atimes = self.sf.get('\\'+diag+'::TOP.RESULTS.aEQDSK.ATIME').data()/1000
-            chi2 = self.sf.get('\\'+diag+'::TOP.RESULTS.aEQDSK.CHISQ').data()
-            chi2_max = 200
-            self.valid = ~np.in1d(t_eq,atimes[chi2 > chi2_max])&(t_eq>0)
-            #print len(t_eq), sum(self.valid)
-            self.t_eq = t_eq[self.valid]
-            if len(self.t_eq) < 2: raise Exception('too few valid timepoints in equlibrium')
+
+            # Time grid of equilibrium shotfile
+            self.times = np.sort(list(self.eqdsk.keys()))
+            self.t_eq  = np.array(self.times)/1000.
+            # R, z of PFM cartesian grid, assume the same for all timepoints!!
+            self.Rmesh = self.eqdsk[self.times[0]]['AuxQuantities']['R']
+            self.Zmesh = self.eqdsk[self.times[0]]['AuxQuantities']['Z']
+
+            self.shot = int(self.eqdsk[self.times[0]]['CASE'][3][2:])
+            self.diag =     self.eqdsk[self.times[0]]['CASE'][5]
+            self.comment = ''.join(self.eqdsk[self.times[0]]['CASE'])
+
+            #if len(self.t_eq) < 2: raise Exception('too few timepoints in equlibrium')
+
+
             self.eq_open = True
 
         except Exception as e:
-            print("loading of equilibrium %s was not successful: "%diag+str(e))
-        
+            print("loading of equilibrium %s was not successful:  "%diag+ str(e))
+
         return self.eq_open
 
-    
+
     def __del__(self):
         self.Close()
-        
-        
+
+
     def Close(self):
 
         """
@@ -104,8 +140,8 @@ class equ_map:
             del self.Rmesh
         if hasattr(self, 'pfm'):
             del self.pfm
-        if hasattr(self, 'pf'):
-            del self.pf
+        if hasattr(self, 'ffp'):
+            del self.ffp
         if hasattr(self, 'psi0'):
             del self.psi0
         if hasattr(self, 'ssq'):
@@ -128,37 +164,35 @@ class equ_map:
 
         if self.debug: print('Reading PFM matrix')
 
-        self.pfm = self.sf.get('\\'+self.system+'::TOP.RESULTS.gEQDSK.PSIRZ').data().T[:,:,self.valid]*2*np.pi
-    
+        self.pfm = [self.eqdsk[t]['PSIRZ'].T*2*np.pi for t in self.times]
+
+
 
     def read_ssq(self):
 
         """
-        Creating dictionary map_equ.equ_map().ssq, containing all 
+        Creating dictionary map_equ.equ_map().ssq, containing all
         SSQ parameters labelled with the corresponding SSQNAM.
-        Beware: in different shotfiles, for a given j0 
-        SSQ[j0, time] can represent a different variable 
+        Beware: in different shotfiles, for a given j0
+        SSQ[j0, time] can represent a different variable
         """
         if not self.eq_open:
             return
         if hasattr(self, 'ssq'):
             return
-        
-        self.ssq = {}
-        
-        self.ssq['Rmag'] = self.sf.get(self.gEQDSK+'RMAXIS').data()[self.valid]
-        self.ssq['Zmag'] = self.sf.get(self.gEQDSK+'ZMAXIS').data()[self.valid]
-        separatrix = self.sf.get(self.gEQDSK+'BDRY').data()[self.valid]
-        self.ssq['Zunt'] = separatrix[:,:,1].min(1)
-        self.ssq['Zoben'] = separatrix[:,:,1].max(1)
 
-        
-        atimes = self.sf.get('\\'+self.system+'::TOP.RESULTS.aEQDSK.ATIME').data()/1000
-        self.ssq['chi2'] = np.interp(self.t_eq, atimes,self.sf.get('\\'+self.system+'::TOP.RESULTS.AEQDSK:CHISQ').data())
-        self.ssq['CONDNO'] = np.interp(self.t_eq, atimes,self.sf.get('\\'+self.system+'::TOP.RESULTS.AEQDSK:CONDNO').data())
-        self.ssq['ERROR'] = np.interp(self.t_eq, atimes,self.sf.get('\\'+self.system+'::TOP.RESULTS.AEQDSK:ERROR').data())
-        self.ssq['TERROR'] = np.interp(self.t_eq, atimes,self.sf.get('\\'+self.system+'::TOP.RESULTS.AEQDSK:TERROR').data())
- 
+        self.ssq = {}
+
+        self.ssq['Rmag'] = [self.eqdsk[t]['RMAXIS'] for t in self.times]
+        self.ssq['Zmag'] = [self.eqdsk[t]['ZMAXIS'] for t in self.times]
+        # separatrix = self.sf.get('\\'+self.system+'::TOP.RESULTS.gEQDSK.BDRY').data()
+        Rseparatrix = [self.eqdsk[t]['RBBBS'] for t in self.times]
+        Zseparatrix = [self.eqdsk[t]['ZBBBS'] for t in self.times]
+        self.ssq['Zunt'] = [zs.min() for zs in Zseparatrix]
+        self.ssq['Zoben'] = [zs.max() for zs in Zseparatrix]
+
+
+
 
     def _read_scalars(self):
 
@@ -175,21 +209,16 @@ class equ_map:
         self.read_ssq()
         if self.debug: print('Reading scalars')
 
-        nt = np.size(self.t_eq)
 
-        #self.Ip = self.sf.get(self.gEQDSK+'CPASMA').data()
-
-# Pol. flux at mag axis, separatrix
-        self.psi0 = self.sf.get(self.gEQDSK+'SSIMAG').data()[self.valid]*2*np.pi
-        self.psix = self.sf.get(self.gEQDSK+'SSIBRY').data()[self.valid]*2*np.pi
-        self.ip = self.sf.get(self.gEQDSK+'CPASMA').data()[self.valid]
-        self.orientation = 1#np.sign(np.mean(self.Ip))  #current orientation
-        self.Bt = self.sf.get(self.gEQDSK+'BCENTR').data()[self.valid]
-        self.R0 = self.sf.get(self.gEQDSK+'RZERO').data()[self.valid]
+        # Pol. flux at mag axis, separatrix
+        self.psi0 = np.array([self.eqdsk[t]['SIMAG'] for t in self.times])*2*np.pi
+        self.psix = np.array([self.eqdsk[t]['SIBRY'] for t in self.times])*2*np.pi
+        self.ip = np.array([self.eqdsk[t]['CURRENT']  for t in self.times])
+        self.orientation = np.sign(np.median(self.ip))  #current orientation
+        self.Bt = np.array([self.eqdsk[t]['BCENTR']  for t in self.times])
+        self.R0 = np.array([self.eqdsk[t]['RCENTR']  for t in self.times])
         self.BR = self.Bt/self.R0
-        
-        
-        
+
 
     def _read_profiles(self):
 
@@ -200,35 +229,32 @@ class equ_map:
 
         if not self.eq_open:
             return
-        if hasattr(self, 'pf'):
+        if hasattr(self, 'ffp'):
             return
 
         if self.debug: print('Reading Profiles')
-
-        nt = np.size(self.t_eq)
+        nt = len(self.t_eq)
         self._read_scalars()
-        
 
-        PSIN = self.sf.get(self.gEQDSK+'PSIN').data()
 
-    
+        PSIN = np.array([self.eqdsk[t]['AuxQuantities']['PSI_NORM'] for t in self.times]).T
+
+
 # Profiles
-        self.pf  = (np.outer(PSIN,(self.psix-self.psi0))+self.psi0)
-        #self.ffp = self.sf.get(self.gEQDSK+'FFPRIM').data()[self.valid].T
-        #self.ppp = self.sf.get(self.gEQDSK+'PPRIME').data()[self.valid].T
-        self.q   = self.sf.get(self.gEQDSK+'QPSI').data()[self.valid].T
-        #self.pres  = self.sf.get(self.gEQDSK+'PRES').data()[self.valid].T
-        #V0  = self.sf.get('\\'+self.system+'::TOP.RESULTS.aEQDSK.VOLUME').data()[self.valid].T
+        self.pf  = (PSIN*(self.psix-self.psi0)+self.psi0)
+        self.ffp = np.array([self.eqdsk[t]['FFPRIM'] for t in self.times]).T
+        self.ppp = np.array([self.eqdsk[t]['PPRIME'] for t in self.times]).T
+        self.q   = np.array([self.eqdsk[t]['QPSI'] for t in self.times]).T
+        self.pres= np.array([self.eqdsk[t]['PRES'] for t in self.times]).T
 
-        V0 = 1  #BUG!!! total volume of the plasma
-        self.vol  =  V0*self.sf.get(self.gEQDSK+'RHOVN').data()[self.valid].T**2
+        #self.vol = np.array([self.eqdsk[t]['fluxSurfaces']['geo']['vol'] for t in self.times]).T
 
         #The toroidal flux PHI can be found by recognizing that the safety factor is the ratio of the differential toroidal and poloidal fluxes
         self.tf = integrate.cumtrapz(np.sign(self.ip)*np.sign(self.Bt)*self.q,self.pf,initial=0,axis=0)
-        
+
         from scipy.constants import mu_0
 
-        self.fpol  = self.sf.get(self.gEQDSK+'FPOL').data()[self.valid].T/mu_0*2*np.pi
+        self.fpol  = np.array([self.eqdsk[t]['FPOL'] for t in self.times]).T/mu_0*2*np.pi
 
 
     def _get_nearest_index(self, tarr):
@@ -253,9 +279,9 @@ class equ_map:
             time
         rho_in : float, ndarray
             radial coordinates, 1D (time constant) or 2D+ (time variable) of size (nt,nx,...)
-        coord_in:  str ['rho_pol', 'rho_tor' ,'rho_V', 'r_V', 'Psi','r_a']
+        coord_in:  str ['rho_pol', 'rho_tor' ,'rho_V', 'r_V', 'Psi','r_a','Psi_N']
             input coordinate label
-        coord_out: str ['rho_pol', 'rho_tor' ,'rho_V', 'r_V', 'Psi','r_a']
+        coord_out: str ['rho_pol', 'rho_tor' ,'rho_V', 'r_V', 'Psi','r_a','Psi_N']
             output coordinate label
         extrapolate: bool
             extrapolate rho_tor, r_V outside the separatrix
@@ -285,18 +311,14 @@ class equ_map:
 # Trivial case
         if coord_out == coord_in: 
             return rho
-        if coord_in=='rho_pol' and coord_out=='Psi_N': 
-            return rho**2
-        if coord_out=='rho_pol' and coord_in=='Psi_N': 
-            return rho**0.5
-            
+
         self._read_scalars()
         self._read_profiles()
         
         unique_idx, idx =  self._get_nearest_index(tarr)
 
             
-        if coord_in in ['rho_pol', 'Psi']:
+        if coord_in in ['rho_pol', 'Psi','Psi_N']:
             label_in = self.pf
         elif coord_in == 'rho_tor':
             label_in = self.tf
@@ -310,7 +332,7 @@ class equ_map:
             raise Exception('unsupported input coordinate')
 
 
-        if coord_out in ['rho_pol', 'Psi']:
+        if coord_out in ['rho_pol', 'Psi','Psi_N']:
             label_out = self.pf
         elif coord_out == 'rho_tor':
             label_out = self.tf
@@ -322,7 +344,7 @@ class equ_map:
                                 t_in=self.t_eq[unique_idx],coord_in='Psi')
             label_out = np.zeros_like(self.pf)
             label_out[:,unique_idx] = (R[:, 0] - R[:, 1]).T**2/4
-    
+        else:
             raise Exception('unsupported output coordinate')
 
         PFL  = self.orientation*self.pf
@@ -343,7 +365,7 @@ class equ_map:
 
             sep_out, mag_out = np.interp([PSIX[i], PSI0[i]], PFL[sort_wh,i], label_out[sort_wh,i])
             sep_in , mag_in  = np.interp([PSIX[i], PSI0[i]], PFL[sort_wh,i], label_in[sort_wh,i])
-            
+
             if (abs(sep_out - mag_out) < 1e-4) or (abs(sep_in - mag_in) < 1e-4) or np.isnan(sep_in*sep_out): #corrupted timepoint
                 #print 'corrupted'
                 continue
@@ -351,8 +373,7 @@ class equ_map:
 # Normalize between 0 and 1
             rho_out = (label_out[sort_wh,i] - mag_out)/(sep_out - mag_out)
             rho_in  = (label_in [sort_wh,i] - mag_in )/(sep_in  - mag_in )
-            
-    
+
             rho_out[(rho_out > 1) | (rho_out < 0)] = 0  #remove rounding errors
             rho_in[ (rho_in  > 1) | (rho_in  < 0)] = 0
 
@@ -370,20 +391,25 @@ class equ_map:
             ratio = rho_out[sortind]/rho_in[sortind]
             rho_in = np.r_[0, rho_in[sortind]]
             ratio = np.r_[ratio[0], ratio]
-      
+            
 
             s = UnivariateSpline(rho_in, ratio, w=w, k=4, s=5e-3,ext=3)  #BUG s = 5e-3 can be sometimes too much, sometimes not enought :( 
             
 
 
             jt = idx == i
-    
+            #print  np.where(jt)[0]
+            #if 826 in np.where(jt)[0]:
+                #import IPython 
+                #IPython.embed()
+
             rho_ = np.copy(rho[jt])
 
             r0_in,r0_out = 1,1
             if coord_in == 'r_V' :
                 r0_in  = np.sqrt(sep_in/ (2*np.pi**2*R0[i]))
             if coord_out == 'r_V' :
+                embed()
                 r0_out = np.sqrt(sep_out/(2*np.pi**2*R0[i]))
             if coord_in == 'RMNMP' :
                 r0_in  = np.sqrt(sep_in)
@@ -391,6 +417,9 @@ class equ_map:
                 r0_out = np.sqrt(sep_out)                
             if coord_in == 'Psi' :
                 rho_  = np.sqrt(np.maximum(0, (rho_ - self.psi0[i])/(self.psix[i] - self.psi0[i])))
+            if coord_in == 'Psi_N' :
+                rho_  = np.sqrt(np.maximum(0, rho_ ))
+                
 
 # Evaluate spline
 
@@ -406,11 +435,11 @@ class equ_map:
 
             if coord_out  == 'Psi':
                 rho_output[jt]  = rho_output[jt]**2*(self.psix[i] - self.psi0[i]) + self.psi0[i]
+            if coord_out == 'Psi_N' :
+                rho_output[jt]  = rho_output[jt]**2 
 
         
         return rho_output
-
-
     def rz2brzt(self, r_in, z_in, t_in=None):
 
         """calculates Br, Bz, Bt profiles
@@ -418,10 +447,10 @@ class equ_map:
         Input
         ----------
         r_in : ndarray
-            R coordinates 
+            R coordinates
             1D, size(nr_in) or 2D, size (nt, nr_in)
         z_in : ndarray
-            Z coordinates 
+            Z coordinates
             1D, size(nz_in) or 2D, size (nt, nz_in)
         t_in : float or 1darray
             time
@@ -442,15 +471,16 @@ class equ_map:
 
         if t_in is None:
             t_in = self.t_eq
-            
+
         tarr = np.atleast_1d(t_in)
         r_in = np.atleast_2d(r_in)
         z_in = np.atleast_2d(z_in)
 
+        self._read_scalars()
         self._read_profiles()
         self._read_pfm()
 
-# Poloidal current 
+# Poloidal current
 
         nt = np.size(tarr)
 
@@ -476,12 +506,12 @@ class equ_map:
         offset  = np.array([self.Rmesh[0], self.Zmesh[0]])
 
         unique_idx, idx =  self._get_nearest_index(tarr)
-        
+
         for i in unique_idx:
 
-            Phi = self.pfm[...,i]
+            Phi = self.pfm[i]
 
-            Br = -np.diff(Phi, axis=1)/(self.Rmesh[:, None]) 
+            Br = -np.diff(Phi, axis=1)/(self.Rmesh[:, None])
             Bz =  np.diff(Phi, axis=0)/(.5*(self.Rmesh[1:] + self.Rmesh[:-1])[:, None])
             Bt = np.interp(Phi, self.pf[:, i], self.fpol[:, i])*mu_0/self.Rmesh[:, None]
 
@@ -495,7 +525,6 @@ class equ_map:
             index_r = ((coords.T - offset)/scaling - np.array((0, .5))).T
             index_z = ((coords.T - offset)/scaling - np.array((.5, 0))).T
 
-            #very fast interpolation
             interpBr[jt] = map_coordinates(Br, index_r, mode='nearest', order=2, prefilter=True)
             interpBz[jt] = map_coordinates(Bz, index_z, mode='nearest', order=2, prefilter=True)
             interpBt[jt] = map_coordinates(Bt, index_t, mode='nearest', order=2, prefilter=True)
@@ -513,10 +542,10 @@ class equ_map:
         t_in : float or 1darray
             time
         r_in : ndarray
-            R coordinates 
+            R coordinates
             1D (time constant) or 2D+ (time variable) of size (nt,nx,...)
         z_in : ndarray
-            Z coordinates 
+            Z coordinates
             1D (time constant) or 2D+ (time variable) of size (nt,nx,...)
         coord_out: str
             mapped coordinates - rho_pol,  rho_tor, r_V, rho_V, Psi
@@ -537,7 +566,6 @@ class equ_map:
 
         if t_in is None:
             t_in = self.t_eq
-
         tarr = np.atleast_1d(t_in)
         r_in = np.atleast_2d(r_in)
         z_in = np.atleast_2d(z_in)
@@ -546,41 +574,41 @@ class equ_map:
         dz = (self.Zmesh[-1] - self.Zmesh[0])/(len(self.Zmesh) - 1)
 
         nt_in = np.size(tarr)
-
-        if np.size(r_in, 0) == 1:
-            r_in = np.tile(r_in, (nt_in, 1))
-        if np.size(z_in, 0) == 1:
-            z_in = np.tile(z_in, (nt_in, 1))
-
         if r_in.shape!= z_in.shape:
-            raise Exception('Wrong shape of r_in or z_in')
-        
-        if np.size(r_in,0) != nt_in:
-            raise Exception('Wrong shape of r_in %s'%str(r_in.shape))
-        if np.size(z_in,0) != nt_in:
-            raise Exception('Wrong shape of z_in %s'%str(z_in.shape))
-        if np.shape(r_in) != np.shape(z_in):
             raise Exception( 'Not equal shape of z_in and r_in %s,%s'\
                             %(str(z_in.shape), str(z_in.shape)) )
 
+        if np.size(r_in,0) != nt_in and np.size(r_in,0) != 1:
+            r_in = r_in[None]
+            z_in = z_in[None]
+
+        if np.size(r_in, 0) == 1:
+            r_in = np.broadcast_to(r_in, (nt_in,)+r_in.shape[1:]) 
+            z_in = np.broadcast_to(z_in, (nt_in,)+z_in.shape[1:]) 
+ 
         self._read_pfm()
         Psi = np.empty((nt_in,)+r_in.shape[1:], dtype=np.single)
-        
+
         scaling = np.array([dr, dz])
         offset  = np.array([self.Rmesh[0], self.Zmesh[0]])
-        
+
         unique_idx, idx =  self._get_nearest_index(tarr)
-      
+
         for i in unique_idx:
             jt = idx == i
             coords = np.array((r_in[jt], z_in[jt]))
             index = ((coords.T - offset) / scaling).T
-            Psi[jt] =  map_coordinates(self.pfm[:, :, i], index,
+
+            Psi[jt] =  map_coordinates(self.pfm[i], index,
                                 mode='nearest',order=2, prefilter=True)
- 
+
+
+
+
+
         rho_out = self.rho2rho(Psi, t_in=t_in, extrapolate=extrapolate, coord_in='Psi',
                               coord_out=coord_out)
-       
+
         return rho_out
 
 
@@ -624,13 +652,10 @@ class equ_map:
                  coord_in=coord_in, coord_out='Psi', extrapolate=True )
         
         try:
-            #import matplotlib._cntr as cntr
-        #except: #slower option        
+            import matplotlib._cntr as cntr
+        except: #slower option        
             import matplotlib._contour as _contour
-        except:
-            from contourpy import contour_generator
-
-
+ 
         nr = len(self.Rmesh)
         nz = len(self.Zmesh)
 
@@ -644,38 +669,25 @@ class equ_map:
 
             Flux = rho_in[jt[0]]
 
-            # matplotlib's contour creation
+# matplotlib's contour creation
  
-            #try: 
-            #c = cntr.Cntr(R, Z, self.pfm[:nr, :nz, i].T)
-            #except: #slower option  
-            try:
+            try: 
+                c = cntr.Cntr(R, Z, self.pfm[:nr, :nz, i].T)
+            except: #slower option  
                 gen = _contour.QuadContourGenerator(R, Z, self.pfm[:nr, :nz, i].T,np.bool_(Z*0), False, 0)
-            except:
-                gen = contour_generator(R, Z, self.pfm[:nr, :nz, i].T)
-
-
+ 
             Rs_t = []
             zs_t = []
 
             for jfl, fl in enumerate(Flux):
-                #try:
-                    #nlist = c.trace(level0=fl, level1=fl, nchunk=0)
-                    #nlist = nlist[:len(nlist)//2]
-                #except: #slower option  
-                    #try:
-                    
-                
-                nlist = gen.create_contour(fl)
-                #output differes for variosu matplotlib versions
-                if len(nlist) > 0 and isinstance(nlist[0], list):
-                    nlist = nlist[0]
-               
-                    
-             
+                try:
+                    nlist = c.trace(level0=fl, level1=fl, nchunk=0)
+                    nlist = nlist[:len(nlist)/2]
+                except: #slower option  
+                    nlist = gen.create_contour(fl)
 
-                #j_ctrs = len(nlist)
-                if len(nlist) == 0:
+                j_ctrs = len(nlist)
+                if j_ctrs == 0:
                     if fl == self.psi0[i]:
                         Rs_t.append(np.atleast_1d(self.ssq['Rmag'][i]))
                         zs_t.append(np.atleast_1d(self.ssq['Zmag'][i]))
@@ -684,16 +696,119 @@ class equ_map:
                         zs_t.append(np.zeros(1))
                     continue
                 elif all_lines: # for open field lines
-                    line = np.vstack([np.vstack(((np.nan,)*2, l)) for l in nlist ])[1:]
-              
+                    line = np.vstack([np.vstack(((np.nan,)*2, l)) for l in nlist[:j_ctrs]])[1:]
+                    
                 else:  #longest filed line 
                     line = []
-                    for l in nlist :
+                    for l in nlist[:j_ctrs]:
                         if len(l) > len(line):
                             line = l
        
                 R_surf, z_surf = list(zip(*line))
-                
+                R_surf = np.array(R_surf, dtype = np.float32)
+                z_surf = np.array(z_surf, dtype = np.float32)
+                if not all_lines:
+                    ind = (z_surf >= self.ssq['Zunt'][i])
+                    if len(ind) > 1:
+                        R_surf = R_surf[ind]
+                        z_surf = z_surf[ind]
+                Rs_t.append(R_surf)
+                zs_t.append(z_surf)
+   
+            for j in jt:f
+    def rho2rz(self, rho_in, t_in=None, coord_in='rho_pol', all_lines=False):
+
+        """Get R, Z coordinates of a flux surfaces contours
+
+        Input
+        ----------
+
+        t_in : float or 1darray
+            time
+        rho_in : 1darray,float
+            rho coordinates of the searched flux surfaces
+        coord_in: str
+            mapped coordinates - rho_pol or rho_tor
+        all_lines: bool:
+            True - return all countours , False - return longest contour
+
+        Output
+        -------
+        rho : array of lists of arrays [npoinst,2]
+            list of times containg list of surfaces for different rho 
+            and every surface is decribed by 2d array [R,Z]
+
+        """
+
+        if not self.eq_open:
+            return
+
+        if t_in is None:
+            t_in = self.t_eq
+
+        tarr  = np.atleast_1d(t_in)
+        rhoin = np.atleast_1d(rho_in)
+
+        self._read_pfm()
+        self._read_scalars()
+
+        rho_in = self.rho2rho(rhoin, t_in=t_in, \
+                 coord_in=coord_in, coord_out='Psi', extrapolate=True )
+        
+        try:
+            import matplotlib._cntr as cntr
+        except: #slower option        
+            import matplotlib._contour as _contour
+ 
+        nr = len(self.Rmesh)
+        nz = len(self.Zmesh)
+
+        R, Z = np.meshgrid(self.Rmesh, self.Zmesh)
+        Rsurf = np.empty(len(tarr), dtype='object')
+        zsurf = np.empty(len(tarr), dtype='object')
+   
+        unique_idx, idx =  self._get_nearest_index(tarr)
+        for i in unique_idx:
+            jt = np.where(idx == i)[0]
+
+            Flux = rho_in[jt[0]]
+
+# matplotlib's contour creation
+ 
+            try: 
+                c = cntr.Cntr(R, Z, self.pfm[i].T)
+            except: #slower option  
+                gen = _contour.QuadContourGenerator(R, Z, self.pfm[i].T,np.bool_(Z*0), False, 0)
+ 
+            Rs_t = []
+            zs_t = []
+
+            for jfl, fl in enumerate(Flux):
+                try:
+                    nlist = c.trace(level0=fl, level1=fl, nchunk=0)
+                    nlist = nlist[:len(nlist)/2]
+                except: #slower option  
+                    nlist = gen.create_contour(fl)
+
+                j_ctrs = len(nlist)
+                if j_ctrs == 0:
+                    if fl == self.psi0[i]:
+                        Rs_t.append(np.atleast_1d(self.ssq['Rmag'][i]))
+                        zs_t.append(np.atleast_1d(self.ssq['Zmag'][i]))
+                    else:
+                        Rs_t.append(np.zeros(1))
+                        zs_t.append(np.zeros(1))
+                    continue
+                elif all_lines: # for open field lines
+                    line = np.vstack([np.vstack(((np.nan,)*2, l)) for l in nlist[:j_ctrs]])[1:]
+                    
+                else:  #longest filed line 
+                    line = []
+                    for l in nlist[:j_ctrs]:
+                        if len(l) > len(line):
+                            line = l
+       
+                R_surf, z_surf = list(zip(*line))
                 R_surf = np.array(R_surf, dtype = np.float32)
                 z_surf = np.array(z_surf, dtype = np.float32)
                 if not all_lines:
@@ -712,18 +827,18 @@ class equ_map:
 
 
     def getQuantity(self, rho,var_name, t_in=None, coord_in='rho_pol'):
-        
-        """Fast evaluation of any PFL quantity from in the equilibrium shotfile 
-        
+
+        """Fast evaluation of any PFL quantity from in the equilibrium shotfile
+
         Input
         ----------
         rho : ndarray
-            rho coordinates (rho_pol or rho_tor), 
+            rho coordinates (rho_pol or rho_tor),
             1D (time constant) or 2D+ (time variable) of size (nt,nx,...)
         var_name: str\
-            name of the quantity, like  
+            name of the quantity, like
 
-            DIII-D 
+            DIII-D
                 FFPRIM
                 PPRIME
                 PRES
@@ -731,27 +846,27 @@ class equ_map:
                 QPSI
                 QPSI_RT
                 RHOVN
-                
-                
+
+
             AUG
-                Qpsi       q_value vs PFL 
-                Bave       <B>vac 
+                Qpsi       q_value vs PFL
+                Bave       <B>vac
                 B2ave      <B^2>vac
                 Jpol       poloidal current,
                 dJpol      dJpol/dpsi
-                Pres       pressure  
+                Pres       pressure
                 dPres      dPres/dpsi
-                Vol        plasma Volume  
+                Vol        plasma Volume
                 dVol       dVol/dpsi
-                Area       plasma Area  
+                Area       plasma Area
                 dArea      dArea/dpsi
-                FFP        ff' 
-                Rinv       <1/R>     
-                R2inv      <1/R^2>    
+                FFP        ff'
+                Rinv       <1/R>
+                R2inv      <1/R^2>
                 FTRA       fraction of the trapped particles
-            
+
         t_in : 1darray
-            T coordinates, float, 1D (time constant) 
+            T coordinates, float, 1D (time constant)
 
         coord_in:str
             choose 'rho_tor',  'rho_pol', 'rho_V','Psi', 'r_V','r_a'
@@ -767,22 +882,22 @@ class equ_map:
 
         if t_in is None:
             t_in = self.t_eq
-        
+
         tarr = np.atleast_1d(t_in)
         Psi = self.rho2rho(rho, t_in=t_in, coord_in=coord_in,
                           coord_out='Psi', extrapolate=True)
         nt = np.size(self.t_eq)
 
-        Qpsi = self.sf.get(self.gEQDSK+''+var_name).data()[self.valid].T
+        Qpsi = array([self.eqdsk[t][var_name] for t in self.times]).T
 
 
         var_out = np.zeros_like(Psi,dtype='single')
         unique_idx, idx =  self._get_nearest_index(tarr)
-   
+
         for i in unique_idx:
             jt = idx == i
             sort_wh = np.argsort(self.pf[:, i])
-            if var_name == 'Qpsi':
+            if var_name in ['Qpsi','QPSI']:
                 ii = Qpsi[sort_wh, i].nonzero()
                 s = InterpolatedUnivariateSpline(self.pf[sort_wh[ii], i], Qpsi[sort_wh[ii], i])
             else:
@@ -840,15 +955,9 @@ class equ_map:
 
         line_r = t*np.cos(theta_in) + r_in
         line_z = t*np.sin(theta_in) + z_in
+
         rho_line = self.rz2rho(line_r, line_z, self.t_eq[unique_idx],
                                coord_out=coord_in, extrapolate=True)
-        #from matplotlib.pylab import *
-
-        #plot(rho_line)
-        #show()
-        
-        #import IPython 
-        #IPython.embed()
         if coord_in == 'Psi':
             rho_line *= self.orientation
             rho      *= self.orientation
@@ -881,10 +990,10 @@ class equ_map:
 
 
     def rhoTheta2rz(self, rho, theta_in, t_in=None, coord_in='rho_pol', n_line=201):
-        
+
         """
         This routine calculates the coordinates R, z of the intersections of
-        a ray starting at the magnetic axis with fluxsurfaces 
+        a ray starting at the magnetic axis with fluxsurfaces
         at given values of some radial coordinate.
         (slower than countours)
 
@@ -897,7 +1006,7 @@ class equ_map:
 
         theta_in: float or 1D array n_theta
             angle of the straight line with respect to horizontal-outward, in radians!!
-            
+
         coord_in:  str ['rho_pol', 'rho_tor' ,'rho_V', 'r_V', 'Psi','r_a']
             input coordinate label
 
@@ -905,7 +1014,7 @@ class equ_map:
         ----------
         R,  z: 3d+ array size(nt, n_theta, nr,...)
         """
-    
+
         if not self.eq_open:
             return
 
@@ -936,21 +1045,20 @@ class equ_map:
         t = np.linspace(0, 1, n_line)**.5*line_m
         c, s = np.cos(theta_in), np.sin(theta_in)
 
-        
+
         tmpc = c*t
         tmps = s*t
         for i, ii in enumerate(unique_idx):
             line_r[i] = tmpc + self.ssq['Rmag'][ii]
             line_z[i] = tmps + self.ssq['Zmag'][ii]
- 
+
 
         rho_line = self.rz2rho(line_r, line_z, self.t_eq[unique_idx],
                                coord_out=coord_in , extrapolate=True)
-        
-       
+
         R = np.empty((nt_in, ntheta) + rho.shape[1:], dtype='single')
         z = np.empty((nt_in, ntheta) + rho.shape[1:], dtype='single')
-    
+
 
 
         if coord_in == 'Psi':
@@ -964,14 +1072,14 @@ class equ_map:
         for i, ii in enumerate(unique_idx):
             jt = idx == ii
             for k in range(ntheta):
-       
+
                 monotonicity = np.cumprod(np.ediff1d(rho_line[i, k],1)>0)==1  #troubles with IDE
                 imax = np.argmax(rho_line[i, k, monotonicity])
-           
+
                 rspl = InterpolatedUnivariateSpline(rho_line[i, k, :imax+1],
                                                     line_r[i, k, :imax+1], k=2)
-                
-                rho_ = np.minimum(rho[jt].flatten(),rho_line[i, k, imax])  #avoid extrapolation 
+
+                rho_ = np.minimum(rho[jt].flatten(),rho_line[i, k, imax])  #avoid extrapolation
                 R[jt, k] = rspl(rho_).reshape(rho[jt].shape)
 
                 zspl = InterpolatedUnivariateSpline( \
@@ -982,36 +1090,32 @@ class equ_map:
 
 
     def mag_theta_star(self, t_in, n_rho=400, n_theta=200, rz_grid=False ):
-        
+
         """
-        Computes theta star 
+        Computes theta star
 
         Input:
         ----------
-        t_in: float 
+        t_in: float
             time point for the evaluation
         n_rho: int
             number of flux surfaces equaly spaced from 0 to 1 of rho_pol
         n_theta: int
-            number of poloidal points 
+            number of poloidal points
         rz_grid: bool
             evaluate theta star on the grid
 
         Output:
         ----------
         R, z, theta: 3d arrays size(n_rho, n_theta)
-        
-            
+
+
         """
         rho = np.linspace(0, 1, n_rho+1)[1:]
         theta = np.linspace(0, 2*np.pi, n_theta, endpoint=False)
-        #print rho
         magr, magz = self.rhoTheta2rz(rho, theta, t_in=t_in, coord_in='rho_pol')
-        #plt.plot(np.squeeze( magr),np.squeeze( magz))
-        #plt.show()
-        
         magr, magz = magr[0].T, magz[0].T
-        
+
         r0 = np.interp(t_in, self.t_eq, self.ssq['Rmag'])
         z0 = np.interp(t_in, self.t_eq, self.ssq['Zmag'])
 
@@ -1030,9 +1134,9 @@ class equ_map:
 
         dtheta_star = ((magr - r0)**2 + (magz - z0)**2)/(dpsi_dz*(magz - z0) + dpsi_dr*(magr - r0))/magr
         theta = np.arctan2(magz - z0, - magr + r0)
-        
+
         theta = np.unwrap(theta - theta[:, (0, )], axis=1)
-        
+
         from scipy.integrate import cumtrapz
 
 # Definition of the theta star by integral
@@ -1040,19 +1144,19 @@ class equ_map:
         correction = (n_theta - 1.)/n_theta
 
         theta_star/= theta_star[:, (-1, )]/(2*np.pi)/correction  #normalize to 2pi
-            
-            
-            
-  
-    
+
+
+
+
+
 
         if not rz_grid:
             return magr, magz, theta_star
 
-# Interpolate theta star on a regular grid 
+# Interpolate theta star on a regular grid
         cos_th, sin_th = np.cos(theta_star), np.sin(theta_star)
         Linterp = LinearNDInterpolator(np.c_[magr.ravel(),magz.ravel()], cos_th.ravel(),0)
-             
+
         nx = 100
         ny = 150
 
@@ -1062,99 +1166,77 @@ class equ_map:
         R,Z = np.meshgrid(rgrid, zgrid)
         cos_grid = Linterp(np.c_[R.ravel(), Z.ravel()]).reshape(R.shape)
         Linterp.values[:, 0] = sin_th.ravel() #trick save a some  computing time
-        sin_grid = Linterp(np.c_[R.ravel(), Z.ravel()]).reshape(R.shape)  
+        sin_grid = Linterp(np.c_[R.ravel(), Z.ravel()]).reshape(R.shape)
 
         theta_star = np.arctan2(sin_grid, cos_grid)
 
         return rgrid, zgrid, theta_star
 
-
+#__name__ = "__main__"
 if __name__ == "__main__":
+    print('done')
 
     from time import time
-    
-    from map_equ import equ_map,get_gc 
+
     import matplotlib.pylab as plt
-    
-    
-    mds_server = "atlas.gat.com"
-
-    import MDSplus as mds
-    c = mds.Connection(mds_server )
-
-    
-    eqm = equ_map(c,debug=False)
-    
-    
-    
-    eqm.Open(175699,diag='EFIT04')
-    
-    
-    eqm._read_profiles()
-    import IPython
-    IPython.embed()
-    
-    #rho_tor = np.linspace(0,1,1000)
-    
-    #r_V = eqm.rho2rho( rho_tor, t_in=5,coord_in='rho_tor', coord_out='r_V' )
-    #r_mn = eqm.rho2rho( rho_tor, t_in=5,coord_in='rho_tor', coord_out='RMNMP' )
-
-#plt.plot(rho_tor, r_V.T)
-#plt.plot(rho_tor, r_mn.T)
-#plt.show()
 
 
-#plt.plot(np.diff(r_V[0])/np.diff(r_mn[0]));plt.show()
 
+    root = OMFIT['EFITtime']['OUTPUTS']['gEQDSK']
+    eqm = equ_map(root,debug=False)
+
+    eqm.Open(167490,diag='EFIT02')
 
     t = 5.33,#s
     color = 'b','g'
     rho = np.linspace(0,2,101)
-    
+
     R,Z = eqm.rho2rz( rho, t, all_lines=True)
 
     for r,z,c in zip(R,Z,color):
         for rc,zc in zip(r,z):
             plt.plot(rc,zc,c)
-            
+
+
     R,Z = eqm.rhoTheta2rz(   np.linspace(0,1,51),np.linspace(-np.pi,np.pi,1000),  t)
 
     plt.plot(R[0],Z[0],'r')
 
+
     Rv,Zv = get_gc()
     for key in list(Rv.keys()):
-        plt.plot(Rv[key],Zv[key])
+        plt.plot(Rv[key],Zv[key],'k')
     plt.axis('equal')
-    
+
     plt.show()
-    
-        
+    plt.figure()
+
+
+
     eqm._read_pfm()
     eqm._read_profiles()
     eqm._read_scalars()
-    
-    
+
+
     rho = np.linspace(0,0.98,100)
-    q = eqm.getQuantity(rho, 'Qpsi', 2)[0]
-    
+    q = eqm.getQuantity(rho, 'QPSI', 2)[0]
+
     plt.plot(rho,q)
     plt.show()
-    
-    
-    #TODO vzkreslit to proti Bt!!
-    
+
+
+ 
     br, bz, bt = eqm.rz2brzt(r_in=eqm.R0[:,None], z_in=0, t_in=eqm.t_eq)
-    #print bt.shape
     plt.figure()
     plt.plot(eqm.t_eq,np.squeeze( bt))
     plt.plot(eqm.t_eq, np.squeeze(eqm.Bt))
 
-    
+
     R = np.linspace(1, 2.2, 100)
     Z = np.linspace(0, 0, 100)
     rhop = np.linspace(0, 1, 100)
-    
-    
+
+
     #br, bz, bt = eqm.rz2brzt(r_in=R, z_in=Z, t_in=3)
     #plt.figure(num="Br")
 
@@ -1165,8 +1247,8 @@ if __name__ == "__main__":
     #plt.figure(num="Bt")
     #plt.pcolor(R,Z,np.squeeze(bt).T)
 
-    #plt.show()
-    
+    plt.show()
+
     r1, z1 = eqm.rhoTheta2rz([1,], np.linspace(0,2*np.pi,20), t_in=3, coord_in='rho_pol', n_line=1000)
 
     r, z = eqm.rhoTheta2rz(rhop, 0, t_in=3)
@@ -1176,7 +1258,7 @@ if __name__ == "__main__":
     plt.xlabel('rho_pol')
     plt.ylabel('R')
     plt.title('kkrhorz')
-    
+
     rho = eqm.rz2rho( R,Z, 3)
 
     plt.figure(2)
@@ -1186,7 +1268,7 @@ if __name__ == "__main__":
     plt.title('kkrzptfn')
 
 #------
-    
+
     rhot = eqm.rho2rho(rhop, 3, coord_in='rho_pol', coord_out='r_a')
 
     plt.figure(3)
@@ -1196,7 +1278,7 @@ if __name__ == "__main__":
     plt.title('kkrhopto')
 
 #------
-    
+
     br, bz, bt = eqm.rz2brzt(r_in=R, z_in=Z[0], t_in=3)
 
     plt.figure(4)
@@ -1240,15 +1322,11 @@ if __name__ == "__main__":
 
 
     rgrid, zgrid, theta_star = eqm.mag_theta_star(3 )
-    print(rgrid.shape, theta_star.shape)
-    
+
     plt.figure()
     plt.pcolor(rgrid, zgrid,theta_star)
     plt.show()
-    
+
 
 
     plt.show()
-
-
-

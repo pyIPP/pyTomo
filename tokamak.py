@@ -76,7 +76,6 @@ class Tokamak(object):
                 'prune_dets',    
                 "boundary",'cos_com','sin_com','use_median_filter' ]:
             exec( "self." + a+" = input_parameters['"+a+"']")
-
         print("=========  TOKAMAK: "+ name+ " ====================")
 
 
@@ -88,7 +87,7 @@ class Tokamak(object):
         self.ymin = coord[2]
         self.ymax = coord[3]
         self.plot_coord = coord # default expectation => coord contains whole vessel 
-        self.geometry_path = os.path.normpath(path)
+        self.geometry_path = os.path.normpath(path)+os.sep
         self.tmp_folder = input_parameters['tmp_folder']
  
         self.allow_self_calibration = False  #  use special recontruction to obtain optimal ratios of detectords
@@ -128,7 +127,7 @@ class Tokamak(object):
         self.boundary_lcfs = True# the boundary is given by the last closed flux surface
         if not hasattr(self,'vessel_boundary'):
             print('loading vessel')
-            self.vessel_boundary = loadtxt(self.geometry_path+'/border.txt')
+            self.vessel_boundary = loadtxt(self.geometry_path+'border.txt')
         
         if all(self.vessel_boundary[0,:] != self.vessel_boundary[-1,:]):   # first and last point are different            
             self.vessel_boundary = r_[self.vessel_boundary, self.vessel_boundary[(0,),:]]
@@ -140,16 +139,17 @@ class Tokamak(object):
         self.wide_boundary = False
         self.boundaryWidth = 10
 
+
     def _post_init(self):
         """ 
         Commands that needs to be run after the data loading 
         """
         self.Ndets = len(self.dets_index)   #  number of standalone detectors 
         
-        if os.path.isfile(self.geometry_path+'/wrong_channels/%d'%self.shot):
-            file = open(self.geometry_path+'/wrong_channels/%d'%self.shot,'r')
-            wrong_dets_stored = [int(a) for a in file]
-            config.wrong_dets_pref  = unique(r_[wrong_dets_stored,config.wrong_dets_pref])
+        if os.path.isfile(os.path.join(self.geometry_path,'wrong_channels',str(self.shot))):
+            with open(os.path.join(self.geometry_path,'wrong_channels',str(self.shot)),'r') as file:
+                wrong_dets_stored = [int(a) for a in file]
+                config.wrong_dets_pref  = unique(r_[wrong_dets_stored,config.wrong_dets_pref])
  
 
         
@@ -177,7 +177,6 @@ class Tokamak(object):
 
         tvec = asarray(tvec.mean())
         debug('Transformation : ' + str(self.transform_index) ) 
-
         params = [self,tvec, self.transform_order_r,self.transform_order_a,
                          self.cos_com, self.sin_com]
         
@@ -188,13 +187,11 @@ class Tokamak(object):
             self.wide_boundary = True
             
         elif self.transform_index == 2: # Cormack
-            params[4] = 'zernike'
-            Transform = global_basis_transform(*params)
+            Transform = global_basis_transform('zernike',*params)
             self.wide_boundary = True
             
         elif self.transform_index == 3: # Fourier-Bessel
-            params[4] = 'bessel'
-            Transform = global_basis_transform(*params)
+            Transform = global_basis_transform('bessel',*params)
             self.wide_boundary = True
         else:
             raise Exception("missing transform")
@@ -263,7 +260,7 @@ class Tokamak(object):
             
             
             debug( 'load from cache')
-            d = load(self.geometry_path+'/data_cache.npz')
+            d = load(self.geometry_path+'data_cache.npz')
 
             if d['shot'] != self.shot:
                 raise  Exception('wrong shot number')
@@ -375,13 +372,13 @@ class Tokamak(object):
 
         """
         
-        mag_path = os.path.dirname(self.geometry_path)+'/equilibrium/MagField_'+str(self.shot)+'.npz'
+        mag_path = os.path.join(self.geometry_path,'equilibrium','MagField_'+str(self.shot)+'.npz')
 
         
         if not hasattr(self, 'magx'):
             try:
                 assert  preferCache, 'Load regulary data'   #  (self.name == "JET" and self.local_network)
-                #if os.path.exists( mag_path ) :
+                
                 d = load( mag_path )
                 
 
@@ -506,7 +503,8 @@ class Tokamak(object):
     def convert_rho_2_r_V(self,rho, magx,magy, ):
         #convert from rho_pol to r_V
         i_rho_sep = rho.searchsorted(1)
-        V = sum(2*pi*((magx[1:]+roll(magx[1:],1,0))/2)**2*(magy[1:]-roll(magy[1:],1,0)),0)
+
+        V = sum(2*pi*((magx[1:]+roll(magx[1:],1,0))/2)**2*(magy[1:]-roll(magy[1:],1,0)),0)/2
         r_V = sqrt(maximum(0,V/V[i_rho_sep]))
        
         if magx.ndim == 2:
@@ -660,24 +658,17 @@ class Tokamak(object):
         :var array normData:  Maximum of data in each timeslice
         """
 
-        #TODO 
-        
-
-
+   
         errorSmooth = max(data_smooth * data_undersampling, 10)  # errobars should be always smoothed
         
         dt = data_smooth/self.sample_freq/2*1.1
-        #print( 'tmin, tmax',tmin, tmax)
-        
+
         tvec,data,error = self.get_data(tmin=tmin-dt,tmax=tmax+dt)
 
         data_smooth = min(max(int(data_smooth),1), len(tvec))
         
         data,error = copy(data.T), copy(error.T) 
-                     
-    
-    
-    
+     
 
         Tmat = self.Tmat if hasattr(self,'Tmat') else None
 
@@ -800,18 +791,18 @@ class Tokamak(object):
 
     def get_calb(self):
         
-        calib_file = self.geometry_path+'/calibration/%d.txt'%(self.shot)
+        calib_file = self.geometry_path+'calibration'+os.sep+'%d.txt'%(self.shot)
         calb = self.calb_0
 
             
-        if not self.default_calb is 'none' and self.Ndets > 1:# and  tokamak.allow_self_calibration:
-            if not os.path.exists(self.geometry_path+'/calibration/'):
-                os.makedirs(self.geometry_path+'/calibration/')
+        if self.default_calb != 'none' and self.Ndets > 1:# and  tokamak.allow_self_calibration:
+            if not os.path.exists(self.geometry_path+'calibration'):
+                os.makedirs(self.geometry_path+'calibration')
                 
             if not os.path.isfile(calib_file): 
                 from os import listdir
     
-                files = listdir(self.geometry_path+'/calibration/')
+                files = listdir(self.geometry_path+'calibration')
                 shots = []
                 for f in files:
                     if not f.endswith('.txt'): continue
@@ -821,7 +812,7 @@ class Tokamak(object):
                 if len(shots):
                     shots.sort()
                     ifile = argmin(abs(array(shots)-self.shot))
-                    calib_file = self.geometry_path+'/calibration/%d.txt'%(shots[ifile])
+                    calib_file = self.geometry_path+'calibration'+os.sep+'%d.txt'%(shots[ifile])
  
             #BUG OLD AND NEW FORMAT OF THE CALIBRATION FILES
             try:
@@ -852,9 +843,9 @@ class Tokamak(object):
                 calb = calb_ 
 
         #save calibration
-        if not self.default_calb is 'none':
-            if not os.path.exists(self.geometry_path+'/calibration/'): 
-                os.makedirs(self.geometry_path+'/calibration/')
+        if self.default_calb != 'none':
+            if not os.path.exists(self.geometry_path+'calibration'): 
+                os.makedirs(self.geometry_path+'calibration')
             cams = list(self.detectors_dict.keys())
             f = open(calib_file, 'w')
             for k,i in zip(cams, calb):  f.write('%s  %.3f\n'%( k,i ))
@@ -885,8 +876,7 @@ class Tokamak(object):
 
             if not self.camera:
                 ind_correct[ind_correct]= ~all(data[ind_correct]<=1e-5,1)                 # selected range values are zeros
-        #import IPython
-        #IPython.embed()
+
         return ind_correct
 
 

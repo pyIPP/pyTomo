@@ -89,14 +89,14 @@ def get_bd_mat(tokamak, nx=None, ny=None, boundary=None,time=None, bbox=None):
     
     BdMat = BdMat%2==0
 
-    #from matplotlib.pylab import *
-    #title('anulus')
-    #imshow(BdMat, interpolation='nearest',aspect='equal',origin='lower',
+    #import matplotlib.pylab as plt
+    #plt.title('anulus')
+    #plt.imshow(BdMat, interpolation='nearest',aspect='equal',origin='lower',
            #extent=(xmin,xmax, ymin,ymax))
-    #plot(bd[:,0], bd[:,1],'w')
-    #xlim(xmin, xmax)
-    #ylim(ymin, ymax)
-    #show()
+    #plt.plot(bd[:,0], bd[:,1],'w')
+    #plt.xlim(xmin, xmax)
+    #plt.ylim(ymin, ymax)
+    #plt.show()
  
 
     return BdMat.ravel(order='F') 
@@ -126,10 +126,11 @@ def get_rho_field_mat(tokamak, tvec,nx=None, ny=None,   extrapolate = 0,  bounda
     ygridc = (ygridc[1:]+ygridc[:-1])/2
 
          
-
-    if tokamak.use_pfm:
-        return tokamak.get_psi(tvec,xgridc, ygridc)
-        
+    try:
+        if tokamak.use_pfm:
+            return tokamak.get_psi(tvec,xgridc, ygridc)
+    except:
+        pass
 
     mag_rhop,fieldx, fieldy = tokamak.mag_equilibrium(tvec, return_mean = False)
 

@@ -31,7 +31,8 @@ try:
     from signal_analysis.sfft  import sfft
     from signal_analysis.sstft import sstft
 except:
-    print('pyfftw is missing')
+    pass
+    #print('pyfftw is missing')
 
 
 from matplotlib.widgets import Slider, RadioButtons,RectangleSelector
@@ -58,6 +59,7 @@ from numpy.linalg import qr
 import scipy.signal as signal
 from scipy.fftpack import ifft,fft,fftfreq
 from matplotlib.widgets import MultiCursor,Widget
+import traceback
 
 
 
@@ -295,7 +297,7 @@ class SVDFilter():
         self.RSS = nan
         self.fig2 = None
         
-        if os.path.isfile('data/tvec_%d.npz'%self.shot):
+        if os.path.isfile('data'+os.sep+'tvec_%d.npz'%self.shot):
             self.path = 'data'
         else:
             self.path = '../geometry/ASDEX/SXR_fast/'
@@ -339,9 +341,7 @@ class SVDFilter():
             
     def load(self):
         
-         #TODO spojis s tomogrefií !!
-
-        #path = '../geometry/ASDEX/SXR_fast/'
+ 
 
         tvec = load(self.path+'/tvec_%d.npz'%(self.shot))['tvec'][self.ind]
         t_range = self.SpecWin.ax.get_xlim()
@@ -358,9 +358,9 @@ class SVDFilter():
 
 
         for d in self.SXR_detectors:   
-            #print self.ind
             self.data_list.append(load(self.path+'/%s_%d.npy'%(d,self.shot), mmap_mode='r')[self.ind])
             self.det_ind[d] = slice(self.ndets,self.ndets+self.data_list[-1].shape[1])
+            traceback.print_exc()
 
             try:
                 detector_stat = load(self.path+'/'+d+"_"+str(self.shot)+"_stat.npy")
@@ -380,15 +380,11 @@ class SVDFilter():
 
         print('data loaded')
         
-        #BUG načítat z tomogrefie!!
+        #BUG načítat z tomografie!!
         self.wrong_det = hstack(self.wrong_det+ [where(mean(self.data,0)<0)[0],where(any(isnan(self.data),0))[0]])
         self.wrong_det = r_[self.wrong_det,80]
         self.wrong_det = unique(self.wrong_det)
-
-        #print self.ndets, data.shape[1]
-        #exit()
-        #ndets = data.shape[1]
-        
+ 
         #BUG!!
         self.err = ones(self.ndets)
         self.err[155:172] = 1e4
@@ -399,23 +395,7 @@ class SVDFilter():
         self.err[87] = 3
 
         self.data[:,self.wrong_det] = 0
-        #self.ch0 -= sum(self.wrong_det < self.ch0) 
 
-        #t_win, frange =  0.0007,(32737, 12832)
-        #t_range = (0,10)
-        
-        #t_win = abs(diff(self.SpecWin.t_range))
-        #t_range = self.SpecWin.ax.get_xlim()
-                
-                
-                
-        #iimin = tvec.searchsorted(t_range[0])
-        #iimax = tvec.searchsorted(t_range[1])
-        #ind = slice(iimin,iimax )
-
-        #self.tvec = copy(tvec[ind])
-        #self.data = copy(data[ind,:])
-        
         
     def run_filter(self):
 
@@ -895,12 +875,12 @@ class SVDFilter():
                     return 
                 update_single_plot(tmin,tmax,ax0._N)
                 
-            elif hasattr(event,'button') and event.button is 3:
+            elif hasattr(event,'button') and event.button == 3:
                 self.AxZoom2.on_click(event)
             #elif hasattr(event,'button') and event.button is 1 and event.inaxes in [ax1,ax2,ax3]:
                 #N = int(event.xdata)
                 
-            elif hasattr(event,'button') and event.button is 2 and event.inaxes in [ax1,ax2,ax3]:
+            elif hasattr(event,'button') and event.button == 2 and event.inaxes in [ax1,ax2,ax3]:
                 tmin,tmax = event.inaxes.get_ylim()
                 N = int(event.xdata)
 
@@ -2008,7 +1988,7 @@ class DataSettingWindow(QMainWindow):
                 wrong_dets_pref = []
                 QMessageBox.warning(self,"Input problem",
                     "Wrong detectors are in bad format, use ...,10,11,13:15,...",QMessageBox.Ok)
-                raise
+                
         elif init:     # do not remove on init
             wrong_dets_pref = config.wrong_dets_pref
         else:
@@ -2058,10 +2038,10 @@ class DataSettingWindow(QMainWindow):
         
         
                     
-        if not os.path.exists(self.tokamak.geometry_path+'/wrong_channels/'):
-            os.mkdir(self.tokamak.geometry_path+'/wrong_channels/')
+        if not os.path.exists(self.tokamak.geometry_path+'wrong_channels'):
+            os.mkdir(self.tokamak.geometry_path+'wrong_channels')
 
-        savetxt(self.tokamak.geometry_path+'/wrong_channels/%d'%self.setting['shot'], config.wrong_dets_pref,fmt='%d')
+        savetxt(os.path.join(self.tokamak.geometry_path,'wrong_channels',str(self.setting['shot'])), config.wrong_dets_pref,fmt='%d')
 
         self.parent.setting = self.setting
         self.parent.tokamak = self.tokamak
@@ -2087,7 +2067,9 @@ class DataSettingWindow(QMainWindow):
 
         except:
             QMessageBox.warning(self,"Loading problem", "Data couldn't be loaded\nIf you changed tokamak now\ntry to remove tomography.npy file",QMessageBox.Ok)
-            raise
+            traceback.print_exc()
+
+            return
         #finally:
             
             #self.message.close()

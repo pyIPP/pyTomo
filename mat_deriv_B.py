@@ -13,7 +13,7 @@ class coord():
 
 
 
-def mat_deriv_B(Tok, tvec, regularization,danis, nx=None, ny=None):
+def mat_deriv_B(Tok, tvec, regularization,reg_params, nx=None, ny=None):
     """
     Prepare  matrix of derivation for unisotropic smoothing. Load magnetic field, prepare angles and determine directions of derivations. The result can be 1. or 2. derivation.
 
@@ -23,7 +23,7 @@ def mat_deriv_B(Tok, tvec, regularization,danis, nx=None, ny=None):
     :var array magx,magy: Coordinater of magnetic field contours
     :var array atan2: Arctan of magnetic lines, "main result", slowest step
     :var spmatrix Bper, Bpar: Matrices of derivation
-    :var danis - anisotropic ratio  - used here only by Imgesson smoothing matrix
+    :var dict reg_params  parameters of the regularisation methods
     :param int nx,ny: horizontal, verticaůl resolution
 
     """
@@ -53,6 +53,7 @@ def mat_deriv_B(Tok, tvec, regularization,danis, nx=None, ny=None):
     diag_mat = diam, diar, dial, diao, diau
     
     Bmat = None
+    danis = reg_params.get('danis',4)
     
 
     if regularization in (-1,1,3,6):
@@ -101,7 +102,6 @@ def mat_deriv_B(Tok, tvec, regularization,danis, nx=None, ny=None):
         Bmat = [eye(npix, npix)]
         
     if regularization  == 7:
-        in_out_frac = 1 #BUG NOT FINISHED
 
         rhop,magx, magy = Tok.mag_equilibrium(tvec, return_mean = True,surf_slice=slice(-1,None),rho=1)
 
@@ -111,7 +111,7 @@ def mat_deriv_B(Tok, tvec, regularization,danis, nx=None, ny=None):
         BdMat = blur_image(BdMat.reshape(Tok.ny, Tok.nx,order='F'),Tok.nx/50.)
         BdMat = BdMat.flatten('F')
 
-        Bmat = generate_aniso_imgesson(coord, rho, BdMat, in_out_frac, danis)
+        Bmat = generate_aniso_imgesson(coord, rho, BdMat, **reg_params)
         
 
     
@@ -319,11 +319,11 @@ def generate_aniso_matrix(coord, atan2,rho,weight, derivation):
 
 
 
-def generate_aniso_imgesson(coord, rho, BdMat, in_out_frac, danis):
+def generate_aniso_imgesson(coord, rho, BdMat,  danis, in_out_frac = 1, pfx_weight = 4, sol_weight = 2, far_sol_psin = 1.05):
     
+    #use matrix from Imgesson's mathematic paper
 
     Psi = rho**2
-    in_out_frac = 1
     Dparin  = sqrt(danis)*sigmoid( in_out_frac)*10
     Dparout = sqrt(danis)*sigmoid(-in_out_frac)*2
     Dperpin = 1/sqrt(danis)*sigmoid( in_out_frac)*10
@@ -357,13 +357,16 @@ def generate_aniso_imgesson(coord, rho, BdMat, in_out_frac, danis):
     #---diagonal and side diagonal matrices to construct differential operators---
 
     
+    #weight pushing emissivity in far sol (Psi > 1.3) to zero
 
     #---creating differential operators---
     D = eye(npix,format='csr')
     
+
+    
     
     Dx = zeros((3,npix))
-    Dx[0] =  -1/2.
+    Dx[0] =-1/2.
     Dx[2] = 1/2.  #central derivative => /2 factor
     #calculating the gradients at the edges
     Dx[1,i_right] = -1
@@ -420,7 +423,7 @@ def generate_aniso_imgesson(coord, rho, BdMat, in_out_frac, danis):
 
 
     #---producing the diffusion matrix---
-    xmeshgrid,_ = meshgrid(xmesh,ymesh)
+    xmeshgrid,ymeshgrid = meshgrid(xmesh,ymesh)
     
     # we can define diffusion coefficient different for different parts of the plasma 
     # the original method caused to strong smoothing in the core 
@@ -455,6 +458,8 @@ def generate_aniso_imgesson(coord, rho, BdMat, in_out_frac, danis):
 
     
     gradRho=DxM**2+DyM**2
+    
+    gradRho[gradRho == 0] = 1e-6
 
     cxx=(Dperp*DxM**2+Dpar*DyM**2)/gradRho
     cyy=(Dperp*DyM**2+Dpar*DxM**2)/gradRho
@@ -494,9 +499,51 @@ def generate_aniso_imgesson(coord, rho, BdMat, in_out_frac, danis):
     cyy= spdiags(cyy*deltax*deltay,0,npix, npix)
     cxy= spdiags(cxy*deltax*deltay,0,npix, npix)
     
-    B = cx*Dx+cy*Dy+cxx*Dxx+cyy*Dyy+2*cxy*Dxy
+    #regularisation matrix
+    B = cx*Dx+cy*Dy+cxx*Dxx+cyy*Dyy+2*cxy*Dxy 
 
-    return B, 
+
+
+
+    #supress radiation in in far SOL
+    Wout = spdiags( 10**sol_weight *maximum(0, Psi.flatten('F')-1.05)**2, 0, npix, npix,format='csr')
+    
+    
+    
+    #supress emission from private flux area
+    
+    #first estimate PFX regions
+    rho_lcfs = 0.999 #a bit less than one
+    
+    try:
+        import matplotlib._contour as _contour
+        gen = _contour.QuadContourGenerator(xmeshgrid,ymeshgrid, rho,bool_(rho*0), False, 0)
+    except:
+        from contourpy import contour_generator
+        gen = contour_generator(xmeshgrid,ymeshgrid, rho)
+
+    nlist = gen.create_contour(rho_lcfs)
+    #output differes for variosu matplotlib versions
+    if len(nlist) > 0 and isinstance(nlist[0], list):
+        nlist = nlist[0]
+        
+    #find longest - it will be separatrix
+    sep = []
+    for c in nlist:
+        if len(c) > len(sep):
+            sep = c
+    
+    #find upper an lower Z limit for core plasma
+    Z_up = sep[:,1].max()
+    Z_low = sep[:,1].min()
+    
+    pfx_region = (rho < 1) &((ymesh > Z_up) | (ymesh < Z_low))[:,None]
+    pfx = (1-rho.copy())**3
+    pfx[~pfx_region] = 0
+   
+    Wpfx = spdiags( 10**pfx_weight*pfx.flatten('F'), 0, npix, npix,format='csr')
+
+    return B,Wout+ Wpfx
 
 
 

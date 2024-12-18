@@ -20,9 +20,9 @@ import warnings
 
 
 #datatype used to represent the solution
-dtype = 'float32'
+dtype = 'float64'
 
-def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,G0, danis, boundary, 
+def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,G0, reg_params, boundary,
                     regularization, solver, reconstruct, ifishermax, postprocessing = False, progress=0):
     """
     Pixel tomography based on SVD with anisotropic smoothing.
@@ -90,105 +90,21 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
     
 
     bound = False #boundary will be introduced to H matrix in order to make H regular and reduces rank of T
-    #print 'BUG!!'
-    #error[:] = 1
-    Bmat,BdMat,bnd, Ts, fs,err,tvec, G  = prepare_inputs(Tok, data, error,dets, tvec, Tmat, normData, G0, danis,bound, regularization, reconstruct, postprocessing)
+
+    Bmat,BdMat,bnd, Ts, fs,err,tvec, G  = prepare_inputs(Tok, data, error,dets, tvec, Tmat, normData, G0, reg_params,bound, regularization)
                         
     ndets = size(fs, 0)
-    #import IPython
-    #IPython.embed()
-    #print( len(fs), mean(fs), sum(BdMat),sum(sum(Bmat).data) , nanmean(err.data), sum(G))
-    
-    #print Ts.shape, Tmat.shape
-    #print sum(Ts.sum(1)==0), sum(Tmat.sum(1)==0)
-    
-    #exit()
-             
-    
-    #print Tmat.shape, ndets
-    #exit()
-    #active_set = []
- #prepare_inputs(Tok, data,error, tvec, Tmat, normData, G0, danis,bound,  regularization, reconstruct, postprocessing)
    
-    #if Tok.transform_index == 0:
-    #BdMat = get_bd_mat(Tok,time=mean(tvec))
-    #H = create_derivation_matrix(G, Bmat,BdMat, regularization, danis, Tok )
-
-
-    
-    ##from scipy.optimize import nnls
-    
-    
-    #def price_func( x, T, Bmat,fs):
-        ##H = create_derivation_matrix(G, Bmat,BdMat, regularization, danis, Tok )
-        #lam = exp(x[0])
-        #x = x[1:]
-        #x = x/mean(x)
-        #x[x<1] = 1
-        #x[x>1] = x[x>1]**2
-        #W=1/sqrt(x)
-        #Bx = W*(Bmat[0]*x)
-        ##H = Bmat[0].T*(W*Bmat[0])
-
-        #res = T*x-fs.T
-        #cost = dot(res,res.T)+ lam*dot(Bx,Bx)
-        ##cost += linalg.norm(Tx-fs)**2
-        ##print cost.shape
-        #return cost
-    
-    #def eqcon(x,T, Bmat,fs):  #zkusit nerovnost? 
-        #return linalg.norm(T*x[1:]-fs)**2-len(fs)
-    
-    #def callback(x):
-        #return
-        #print sum(x[x<0]), sum(x)
-        
-    
-    #from scipy.optimize import fmin_slsqp
-    #x0 = hstack((0,G0))
-    #out,fx,ins,imode,smod=fmin_slsqp( price_func, x0 , args=( Tmat*100, Bmat,fs*100), bounds=[[-10,10]]+[[0,infty]]*nx*ny,eqcons=[eqcon, ] ,callback=callback,full_output=True,iprint=2)
-
-   
-    #Ts = Ts.toarray()
-    #Ts[:,BdMat] = 0  #increae sparsity and reduce rank!! of T matrix, boundary will by added to the smoothing matrix  
-    #Ts = sparse.csc_matrix(Ts)
 
     for step in range(Steps):  # minfisher iterations !!!
         if progress != 0:
             progress.iterateSubStep()
         t = time.time()
         
-        #if input_parameters['main_run'] and input_parameters['rotation_tomography']:
-            #from map_theta_rho9 import prepare_inputs_roto_tomo
-            #Bmat,Ts, fs,tvec,  G = \
-                #prepare_inputs_roto_tomo(Tok, data, error, tvec, Tmat,dets, normData, G, regularization,step)
-
-        
-
-        #print Ts.dtype, fs.dtype
-        #exit()
+ 
         debug('\n======== Linear method -  step === %i' % (step+1))
 
-
-        #print BdMat, G.shape, bnd.shape
-        H = create_derivation_matrix(G, Bmat,BdMat, regularization, danis, Tok )
-        
-        
-        #from min_fish_imgess import tomo_minfisher
-        #g,lam,nonnegcorr,lambdacorr,minfishercorr = tomo_minfisher(fs,Ts,H,nx,ny)
-    
-        #exit()
-
-
-        #from cvxpy import *
-
-        #x = Variable(Tok.npix)
-        #objective = Minimize(sum_entries(square(Ts*x - fs ))+sum_entries(square(H*x)))
-        #constraints = [0 >= x,]
-        #prob = Problem(objective, constraints)
-        #print "Optimal value", prob.solve()
-        #print x.value
-        
+        H = create_derivation_matrix(G, Bmat,BdMat, regularization, reg_params['danis'], Tok )
         
 
         last_step = (step == Steps-1)
@@ -196,88 +112,22 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
         H = H.tocsc()
     
 
-        if Tok.transform_index == 0 and boundary> 0:
-            H =  H + sparse.spdiags(BdMat*sinh(maximum(0,boundary)), 0, nx*ny, nx*ny,format='csc')
+        if Tok.transform_index == 0 and boundary > 0:
+            H =  H + sparse.spdiags(BdMat*sinh(maximum(0,boundary))/100, 0, nx*ny, nx*ny,format='csc')
        
        
        
        
         solvers = {2:PresolveSVD,3:PresolveSVD3,4:PresolveQR,5:PresolveGEV,6:PresolveGEV_singular}
         
-        #if Ts.shape[0]> 500: #solver optimized for large memory consuming tasks
-            #solvers[3] = PresolveSVD3_sparse2
-            
-        #decomposition = PresolveGEV(Ts,H, Tok.nx,Tok.ny,ndets)
-        #U1,V1,D1 = [decomposition[i] for i in ('U','V','D')]
-        #decomposition = PresolveSVD(Ts,H, Tok.nx,Tok.ny,ndets)
-        #U2,V2,D2 = [decomposition[i] for i in ('U','V','D')]
-        #plot(D1)
-        #plot(D2)
-        #show()
-        
-        #print solvers[solver]
+   
         debug('--------Prepare - time  %g' % (time.time()-t))
 
- 
         
-        
-        #t = time.time()
-
+       
 
         decomposition = solvers[solver](Ts,H, Tok.nx,Tok.ny,ndets,BdMat)
         debug('--------Decomposition - time  %g' % (time.time()-t))
-
-        #print solvers[solver]
-        #exit()
-        #print solvers[solver]
-
-        #if last_step:
-            
-            
-            
-
-
-            
-            
-            #figure()
-            #subplots_adjust(hspace=0.00, wspace = 0.0)
-            #for i in range(tsteps):
-                #subplot(1,tsteps,i+1)
-                #imshow(G_.reshape(tsteps, Tok.nx,Tok.ny).T[:,:,i], origin='lower', interpolation='nearest',aspect='auto')
-                #colorbar()
-                
-
-            
-            
-            
-            #imshow( G_.reshape(tsteps, Tok.nx,Tok.ny).T[0], origin='lower', interpolation='nearest');show()
-            
-            
-            
-            #imshow(G_[:,0].reshape(Tok.nx,Tok.ny));show()
-            
-            #decomposition = solvers[solver](Ts,H, Tok.nx,Tok.ny,ndets)
-        
-            #D = decomposition['D']
-            #U = decomposition['U']
-            #V = decomposition['V']
-            #I = decomposition['wrong_dets']
-
-            #W = 1/(1+median(D**2*10)/D**2)
-            #plot(W)
-            #show()
-            
-            #G2 = dot((dot(U.T, data[0][~I])/D*W), V)
-            
-            #G2 = G2.reshape(Tok.nx,Tok.ny).T
-            #imshow(G2, origin='lower', interpolation='nearest');show()
-
-            
-    #K_ = dot(dot(U1.T,diag(1/D1)),V1)
-    #print 'Decomposition accuracy',linalg.norm((K_* Ts.T)-eye(Ts.shape[0]))
-
-            
-
 
 
         if reconstruct:
@@ -292,219 +142,23 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
             try: g_fract_0 = float(input_parameters['lambda_solver'])
             except: pass
 
-
-            #if not Tok.transform_index in [0,4]:  positive_constrain = False
-            
             error_scale = input_parameters['error_scale']
             rapid_solver = input_parameters['rapid_solver']
             
-             #= False
-
-            
-            #if time_MFI and (step >= 3):
-                ##time space tomography
-                 ##je to předrok pravá regib body tomography
-                 ##tam to bude totiž vypadta podobně!! nebo ne?? 
-                
-                ##do a reconsctruction in 3D - (3. dimension is the time!!)
-                #Gt0 = std(G,1)
-
-                #
-                #
-                ##imshow(1/(hypot(Gt0/amax(Gt0),0.5)-.3).reshape(Tok.ny, Tok.nx,order='F'),vmin=0);colorbar()
-                ##show()
-                ##invsqrtD = sparse.spdiags(1/sqrt(D),(0,),len(D),len(D))
-                
-                #def FourierMatrix(n):
-                    ##create matrix of the unitary fourier operator
-
-                    #A = identity(n)
-                    #F = fft.fft(A)
-                    #F/= sqrt(n/2)
-                    
-                    #return F
-
-                #def G_filter(f, f0, s):
-                    ##filter  of the higher orders of signal with frequency f0, width s
-                    #f_resp = ones_like(f)
-                    #if f0 != None and f0 != 0:
-                        #for i in range(1,int(amax(f)/f0)+2):
-                            #f_resp*= 1-exp(-(f-i*f0*sign(f))**2/(2*(s/i**0.0)**2))/sqrt(1+((i-1)/5.)**2)
-                        
-
-                            ##supress also higher harmonics 
-                        ##higher  orders has a narrower window to force a higher stability 
-                
-                    #return f_resp
-                    
-                #def FilteredDerivative(n,f0,dt):
-                
-                    #n_ext = 2**int(ceil(log2(n*2)))
-                    #f = fft.fftfreq(n_ext, d=dt)
-                    
-                    ##speed of the nonperiodic changes
-                    #s = 0.05
-                    #GF = G_filter(f, f0, s)
-                    #FT_D = 4*sin(pi*f*dt)**2
-
-                    #F = FourierMatrix(n_ext)#fast
-                    
-                    #spectrum = -FT_D*GF*sqrt(n_ext/2)
-
-                    #D = fft.ifft((spectrum[:,newaxis]*F).T)
-
-                    #D = real(D[:n,:n])  #use only a cut (D was 2x larger in order to avoid a edge effects)
-                    ##imag part are only numerical errors
-
-                    #D-= diag(sum(D,axis=1))
-            
-                    #D[abs(D)<1e-5] = 0
-
-                    #return D
-                #W = 1/(Gt0/amax(Gt0)+0.05)**2
-                #W = W.reshape((Tok.ny, Tok.nx),order='F')
-                ##W[:,20:] = 400
-                #W = sparse.spdiags(W.flatten(order='F'),(0,),Tok.npix, Tok.npix )
-                ##W = sparse.eye(Tok.npix, Tok.npix )
-                #H_ = [create_derivation_matrix(g[:,None], Bmat,BdMat, regularization, danis, Tok ) for g in G[:,:tsteps].T]
-                #Ht = (sparse.eye(tsteps,tsteps)-sparse.eye(tsteps,tsteps,k=1))
-                #Ht = Ht.T*Ht
-                #Ht[-1,-1] = 1.001
-                ##imshow(Ht.todense(), interpolation='nearest')
-                ##show()
-                ##mu = dot(G_.T,(sparse.block_diag(H_, format='csc')*G_))/dot(G_.T,(sparse.kron(Ht,W , format='csc')*G_))
-                    
-                #smothing = 1
-                #H = sparse.block_diag(H_, format='csc') +sparse.kron(Ht*1e3,W , format='csc')
-                
-                #Ts_ = sparse.kron(sparse.eye(tsteps,tsteps), Ts , format='csc')
-
-             
-                #t = time.time()
-                #decomposition =  PresolveSVD3_sparse(Ts_,H, Tok.nx*tsteps,Tok.ny*tsteps,ndets*tsteps)
-                #debug(('--------Decomposition - time  %g' % (time.time()-t)))
-                #
-                #
-           
-                #G_,retro, chi2,g = SolveLinearMetods(decomposition,(tvec[0],), fs.T.reshape(-1,1),ndets*tsteps,dets, normData/Tok.normTmat,
-                        #Ts_,H_,input_parameters['error_scale'],last_step,lam_method,False,False,g_fract_0,False )
-                #G = G_.reshape(tsteps, -1).T
-                #G*= normData[None,:]/Tok.normTmat   #rescaling
-                
-
-                #chi2 = chi2[0]*ones(tsteps)
-                #g = g[0]*ones(tsteps)
-                
-                #if last_step:
-                    ##gamma = gamma[0]*ones(tsteps)
-                    #imshow(G_.reshape(Tok.ny,-1, order='F'), origin='lower', interpolation='nearest');colorbar();show()
-                    
-                    
-                    
-                    ##TODO uměle extrémě snížit vakiabilitu v centru, jak to dopadne??
-                    ##ds
-                    #N = 20
-                    #fig=figure()
-                    #fig.subplots_adjust(hspace=0.00, wspace = 0.0)
-                    #for i in range(N):
-                        #ax = fig.add_subplot(N,1,i+1)
-                        #X = decomposition['V'][i].reshape(Tok.ny,-1, order='F')
-                        #vmax = max(X.max(), -X.min())
-                        #ax.imshow(X, origin='lower', interpolation='nearest',vmin=-vmax,vmax=vmax,aspect='auto')
-
-                        
-                    #import fconf
-                    #AxZoom = fconf.AxZoom()
-                    #fig.canvas.mpl_connect('button_press_event', AxZoom.on_click)
-                    #show()
-
-                    
-                                    ##chi2 = chi2*ones(tsteps)
-                                    
-
-
-                                    
-                    #semilogy(abs(decomposition['U'].T*fs.T.reshape(-1,1)[~decomposition['wrong_dets']]))
-                    #semilogy(decomposition['D'])
-                    #show()
-                    #plot(G[::10].T)
-                    
-                    
-                    ##plot(sparse.kron(Ht*1e2,W , format='csc')*decomposition['V'].T)
-                    ##plot(sparse.block_diag(H_, format='csc')*decomposition['V'].T)
-                    
-                    ##HV = sparse.kron(Ht*1e2,W , format='csc')*decomposition['V'].T
-                    ##einsum('ij,jk->i' , sparse.kron(Ht*1e2,W , format='csc')*decomposition['V'].T,decomposition['V'])
-                    #plot(einsum('ij,ji->j' , sparse.kron(Ht*1e3,W , format='csc')*decomposition['V'].T,decomposition['V']))
-                    #plot(einsum('ij,ji->j' , sparse.block_diag(H_, format='csc')*decomposition['V'].T,decomposition['V']))
-                    #show()
-
-                    
-
-                    ##plot((array(sparse.kron(Ht*1e2,W , format='csc')*decomposition['V'].T)*array(decomposition['V']).T).sum(0))
-                    ##plot((array( sparse.block_diag(H_, format='csc')*decomposition['V'].T)*array(decomposition['V']).T).sum(0))
-                    
-                    
-                    
-
-                    
-                #subplot(121)
-                #imshow(Gt0.reshape((Tok.ny, Tok.nx),order='F'),origin='lower',vmin=0,vmax=max(Gt0.max(), std(G,1).max()) );colorbar()
-                #subplot(122)
-                #imshow( std(G,1).reshape((Tok.ny, Tok.nx),order='F'),origin='lower',vmin=0,vmax=max(Gt0.max(), std(G,1).max()));colorbar()
-                #show()
-                
-
-                #subplot(121)
-                #imshow(sqrt(W.diagonal()).reshape((Tok.ny, Tok.nx),order='F'),origin='lower');colorbar()
-                #subplot(122)
-                #imshow(1/( std(G,1)/amax( std(G,1))+0.05).reshape((Tok.ny, Tok.nx),order='F'),origin='lower');colorbar()
-                #show()
-                    
-                ##imshow(G_.reshape(Tok.ny,-1, order='F'), origin='lower', interpolation='nearest');colorbar();show()
-
-                
-            #else:
-                
-                
          
-        
-                
-                
-            #t = time.time()
             estimate_sigma = input_parameters['estimate_sigma']
             G,retro, chi2,g,SigmaGsample = SolveLinearMetods( decomposition,tvec,
                         fs,ndets,dets, normData/Tok.normTmat,Ts,H,BdMat, error_scale,
                         last_step,lam_method,positive_constrain,
                         g_fract_0,rapid_solver, input_parameters,estimate_sigma,
                         input_parameters['lambda_up_lim'],input_parameters['lambda_low_lim'])
-            #debug(('--------Solve - time  %g' % (time.time()-t)))
+           
    
             wrong_dets = decomposition['wrong_dets']
             #BUG  not compatible wit QR!!
             U = decomposition['U']
             R = 1 if not 'R' in decomposition else decomposition['R']
             
-            #print U.shape, fs[~wrong_dets].shape
-
-                
-                
-          
-            
-            #plot(chi2);show()
-
-            #print exp(chi2), ((Ts*G-fs)**2).sum(0)/fs.shape[0]
-            
-            #if Tok.transform_index in [0,4]: #no transformation or zoom
-                #G[G<0] = 0 
-            
-            
-            
-            #wrong_dets = decomposition['wrong_dets']
-            #resid = linalg.norm(fs[~wrong_dets]-decomposition['U']*(decomposition['U'].T*fs[~wrong_dets]))/ linalg.norm(fs)
-            #resid_ = linalg.norm(fs-((Ts*G)*mean(self.emiss)))/ linalg.norm(fs)
-            #print '%d. pass - unexplainable data: %.1f%%, unexplained data %.1f%%'%(step,resid*100, resid_*100)
-                    
             debug('Compute emissivity ')
             #Emis = FastLinEmisivity(decomposition,  fs, normData/Tok.normTmat, tsteps)
 
@@ -516,13 +170,6 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
                 debug( '%d. pass - unexplainable data: %.1f%%, unexplained data %.1f%%'%(step+1,resid*100, resid_*100))
                 
             
-        
-            #if  step == Steps -1:
-                #t = time.time()
-                #debug('Running postprocessing')
-                #entropy, smoothnest_izo, smoothnest_anizo =  make_postprocessing(Tok, 
-                        #Bmat, G,Tok.npix, danis, tsteps, diam, diar, diao,regularization, postprocessing,False)
-                #debug(('--------postprocessing - time  %g' % (time.time()-t)))
 
         else:
             post_its = Bmat, diam, diar, diao
@@ -532,14 +179,6 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
     
     G *= normData[None,:]/Tok.normTmat   #rescaling
 
-    #if  not SigmaGsample is None:
-        #SigmaGsample *= normData[None,:]/Tok.normTmat   #rescaling
-    #import IPython
-    #IPython.embed()
-
-    #imshow(G.reshape((Tok.ny,Tok.nx,-1), order='F').mean(2)==0,origin='lower')
-    ##colorbar()
-    #show()
     if Tok.transform_index in [0,4]:
         G[BdMat] = 0  #no emissivity out of the boundary (this emissivity is not contributing to retrofits!)
         if not SigmaGsample is None:   SigmaGsample[BdMat] = 0 
@@ -551,11 +190,6 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
     
     ind = where(~array(isfinite(err.diagonal()))[0] | all(abs(retro)<1e-5,0))[0]
 
-    #print ind
-    ##BUG!!!
-    #if size(ind): 
-        #err[ind] = 0
-        #err[:,ind] = 0
         
     retro = asarray(err*retro.T).T
     
@@ -1324,8 +958,7 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
     vt[~zero_ins] = vt_.T
     #print 'VT2'
     #vt = ascontiguousarray(vt.T)
-    #import IPython
-    #IPython.embed()
+
     #vt = vt.astype(single,copy=False)
     del vt_
     V = F.solve_Lt(vt) #7ms
@@ -2628,98 +2261,164 @@ def FindNegLocMin(image,lim,neighborhood_size=5):
 
     return active_set
 
+ 
+ 
+ 
+def ForcePositivity(E,W,g,V,D,prod,resid,ndets,BdMat,chi2,tokamak):
+    
+    from scipy.optimize import nnls
+    
+    #find positive solution in the subspace of solutions descrived by basis V
 
-def ForcePositivity(E,V,D,BdMat,w,chi2,nx,ny, tokamak):
+    #minimise |T*g-f|^2+|Dx|^2+  where x > 0
+    #using nonlinear minimizer
+    # not other method was working or it was too slow. 
+
     
-    #it will iteratively modify a projection coeficients in order to find positive 
-    # solution close to the oroginal solution.  However this solution is searched only on the subspace spanned by V!!
-    #originaly base on ideas of Fehler and Imgesson, but improved!
-    #BUG možná by se měla jen iterativně rozšiřovat aktivní sada, ale upravovat jen to základní řešené, ne? 
-    delta_prod_mean = zeros_like(w)
+    for ts, iE in enumerate(E):
     
-    
-    V = asarray(tokamak.Transform*V.T).T
-    #V = asarray(V)
-    #import IPython
-    #IPython.embed()
-    
-    
+        if tokamak.transform_index not in [0,4]:
+            iE = tokamak.Transform*iE
+            BdMat = False
+            
+     
+        lim = iE[iE>0&~BdMat].mean()/3
         
-    for i, iE in enumerate(E):
+        from scipy.optimize import minimize
         
-        active_set = []
-        delta_prod = 0
+        A = (W[ts]/D)*V.T/lim
+        A[BdMat] = 0
+        wdg = W[ts]/D*np.exp(g[ts]/2)
+        args = W[ts], wdg, prod[ts], A
+            
+   
+        def cost_fun( x, w, wdg, p, A):
+            
+            cost = np.sum((w*x-p)**2)+np.sum((x*wdg)**2)
+            img = A.dot(x)
+            neg = img < 0
+            cost += np.sum(img[neg]**2)
+   
+            jac = 2*(w**2*x-p*w+wdg**2*x)
+            jac += 2*dot(A[neg].T,img[neg])
+    
+            return cost, jac
+        
+        out = minimize(cost_fun, prod[ts],jac=True, method='L-BFGS-B', args=args )   
+ 
+        iE = dot(W[ts]*out.x/D, V)
+     
+        #inverse transformation
+        E[ts] = tokamak.Transform.T*iE 
+        chi2[ts] =  (np.sum((prod[ts]-W[ts]*out.x)**2)+resid[ts])/ndets
+        
+        
+    return E, chi2
+        
+        
+        
+        
+def ForcePositivity2(E,W,g,V,D,prod,resid,ndets,BdMat,chi2,tokamak):
+    
+    from scipy.optimize import nnls
+    
+    #find positive solution in the subspace of solutions descrived by basis V
+
+    #minimise |T*g-f|^2+|Dx|^2+  where x > 0
+
+    #formulate the original problem in V basis
+    #it is a trivial least squares problem which can be calculated analytically because 
+    #A is double diagonal
+     
+    for ts, iE in enumerate(E):
+    
+        active_set = set()
+
         if tokamak.transform_index not in [0,4]:
             iE = tokamak.Transform*iE
             BdMat = False
             
         iE[BdMat] = 0
-        lim = iE[iE>0].mean()/100
+        lim = iE[iE>0].mean()/20
 
-        #import IPython
-        #IPython.embed()
-        
-        for k in range(10):
+
+        D1 = np.diag(W[ts])
+        D2 = np.diag(W[ts]/D*np.exp(g[ts]/2))
+        A = np.vstack((D1,D2))
+        y = np.hstack((prod[ts], 0*prod[ts]))
+        p = prod[ts]
+   
+        #repeat in 10 interations
+        for k in range(5):
             image = iE.reshape(ny,nx,order='F')
-            
-    
-            update_active_set =  FindNegLocMin(image,lim)
-            
-            if all(in1d(update_active_set, active_set)): break  #BUG 
-
-            
-            active_set = int_(unique(r_[active_set,update_active_set])) #.5ms
-                
-            active_set = array(active_set,ndmin=1)
-            #print i, k, len(active_set)
-            #close()
-            if len(active_set) > V.shape[0]: #no positive colutuion can be found
-                break
-                
-           
-            
-            if size( active_set) <=  0: break
-
-            #import IPython
-            #IPython.embed()
-            VT = V[:,active_set]
-            #print all(~BdMat[active_set])
-            #VT[:,BdMat[active_set]] = 0
  
-            
-            #import IPython
-            #IPython.embed()
-            #find smallest perturbation in prod (i.e. U.T*data), such that 
-            #Emean[active_set]  will be matched (and than set to zero)
-            
-            #t = time.time()
-            #faster than a pinv function for a full rank matrices!!
-            q,r = qr((VT*(w/D)[:,None]), mode='economic', check_finite=True)
-            iA = dot(pinv(r), q.T).T
-            #t2 = time.time()
+            update_active_set =  FindNegLocMin(image,lim)#[0]
+            min_vals = iE[update_active_set]
+            update_active_set = set(update_active_set)
 
-            #iA = pinv((VT*(w/D)[:,None]).T, check_finite=False) #10ms  SLOWEST!!! use QR?
-            #print time.time()-t2, t2-t, len(active_set)
+            #if there is too many constrains, use only the most negative, dont use more than 50% of free dimensions
+            nconst = len(update_active_set|active_set) 
+            if nconst > len(prod[ts])//2:
+                nconst = len(prod[ts])//2 - len(active_set)
+                update_active_set = set(array(list(update_active_set))[argsort(min_vals)][:nconst])
+     
+            if len(update_active_set - active_set) == 0: 
+                break  
             
-            x0 = dot(iA,iE[active_set])
-            #improve solution such that A*x>= b & min(||x||**2)
-            #the active set points must by higher equal to zero
-            #z1 = nnls(iA, x0 )[0]          #6ms    SLOW!!!
+            active_set|=update_active_set
+            
+        
+            
+            B = (W[ts] / D) * V.T[list(active_set)]
 
-            try:
-                z1 = nnls(iA, x0 )[0]          #6ms    SLOW!!!
-            except: #too many iterations in NNLS
-                z1 = active_set*0
-                
-            delta_prod = x0-dot(iA,z1) 
-            #norm of delta_prod is smaller than x0 and still Emean[active_set] >=0
- 
-            iE-= dot(single(w*delta_prod/D), V) #.5ms
+            U,S,V_ = np.linalg.svd(B)  #must be full SVD!
+            
+            n = len(active_set)
+            pinvB = dot(U/S[None],V_[:n]).T
+            perpB = V_[n:].T
+            
+            invB = np.hstack((perpB, pinvB))
+            
+            #rotate the problem in the space of negative points
+            A_ = np.dot(A,invB)
+            
+            #https://en.wikipedia.org/wiki/Constrained_least_squares
+            X1,X2 = A_[:,:-n], A_[:,-n:]
+
+            #TODO better way to calculate np.linalg.pinv(X1)? 
+            invX1 = np.linalg.pinv(X1)
+            
+            #ortonormal projector on space perpediculer to A1 - inequality constrained space
+            P = np.eye(len(X1)) - np.dot(X1, invX1)
+            
+            
+            #constrained projection in the rotated space
+            beta2 = nnls(np.dot(P, X2),  np.dot(P,  y))[0]
+            #beta2 = np.linalg.lstsq(np.dot(P, X2),  np.dot(P,  y))[0]
+            
+            #unconstrained projection in the rotated space
+            beta1 = np.dot(invX1,  y - np.dot(X2, beta2))
+            
+            beta = np.hstack((beta1, beta2))
+            
+            
+            #map back to the original projection space
+            p = np.dot(invB, beta)
+            
+         
+           # print(np.sum((prod[ts]-W[ts]*p)**2)/ np.sum(((1-W[ts])*prod[ts])**2), len(active_set))
+            
+            
+            iE = dot(W[ts]*p/D, V)
+            if tokamak.transform_index not in [0,4]:
+                iE = tokamak.Transform*iE
+            
             iE[BdMat] = 0
-
+            continue
+            
             #vmin  = iE.min()
             #vmax  = iE.max()
-            #print i, k, -sum(image[image<lim]) 
+            #print( i, k, -sum(image[image<lim]) )
             #suptitle(str((i, k, -sum(image[image<lim]) )))
             #subplot(121)
             #itr = dot(single(w*delta_prod/D), V)
@@ -2734,48 +2433,47 @@ def ForcePositivity(E,V,D,BdMat,w,chi2,nx,ny, tokamak):
 
             #show()
             
-            #image2 = copy(iE.reshape(ny,nx,order='F'))
+            image2 = copy(iE.reshape(ny,nx,order='F'))
+            #corr = dot(single(w*delta_prod/D), V) #.5ms
             
-            #image2.ravel(order='F')[active_set] = nan
-            #title(str(i)+'  '+str(k))
-            #imshow( image2.reshape(ny,nx,order='F'),origin='lower', interpolation='nearest')
+            image2.ravel(order='F')[list(active_set)] = nan
+            figure()
+            #suptitle(str(i)+'  '+str(k))
+            subplot(121)
+            imshow( image2.reshape(ny,nx,order='F'),origin='lower', interpolation='nearest', vmin=iE.min(), vmax=None)
+            colorbar()
+            contour(image2,0,colors='w',origin='lower');
+            subplot(122)
+            imshow( image.reshape(ny,nx,order='F'),origin='lower', interpolation='nearest', vmin=iE.min(), vmax=None)
+            colorbar()
+            contour(image,0,colors='w',origin='lower');
+
+
+            show()
+
+
+
+            #imshow( corr.reshape(ny,nx,order='F'),origin='lower', interpolation='nearest',  vmin=iE.min(), vmax=iE.max())
             #colorbar()
-            #contour(image,0,colors='w',origin='lower');show()
+            #contour(image,0,colors='w',origin='lower');
+    
+
             
 
-      
-        iE[(iE>-lim*2)&(iE<0)] = 0  #delete this almost zero poinsts
+     
+        #iE[(iE>-lim*2)&(iE<0)] = 0  #delete this almost zero poinsts
 
         #inverse transformation
-        E[i] = tokamak.Transform.T*iE 
+        E[ts] = tokamak.Transform.T*iE 
 
 
-        chi2[i] = hypot(chi2[i],linalg.norm(delta_prod)/3)
+        chi2[ts] =  (np.sum((prod[ts]-W[ts]*p)**2)+resid[ts])/ndets
         
+    return E, chi2
         
-    #if E.min()/E.max()< -0.2:
-
-    
-        #image2 = copy(image)
-        
-        #image2.ravel(order='F')[active_set] = nan
-        #title(str(i)+'  '+str(k)+' final!!')
-        #imshow( image2.reshape(ny,nx,order='F'),origin='lower', interpolation='nearest')
-        #colorbar()
-        ##contour(image,0,colors='w',origin='lower')
-        #show()
-        #import IPython
-        #IPython.embed()
             
-        #;figure()
-        #imshow( V.sum(0).reshape(ny,nx,order='F'),origin='lower', interpolation='nearest');show()
-        
 
-    return E,chi2
-    
-    
-
-
+         
 
 def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMat,
                       error_scale,LastCycle, lam_method,positive_constrain,
@@ -2875,125 +2573,7 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
         pass  
 
 
-    if plotting and LastCycle:
-
-    
-        from matplotlib.ticker import MaxNLocator,LogLocator
-        g_tmp = logspace(g_min-3,g_max+3,100,base=e)
-        g_quant = interp(log(g_tmp),2*log(D)[::-1],linspace(0,1,len(D)))
-        #semilogx(g_tmp, g_quant)
-        #[axvline(x,lw=.1,c='k') for x in D**2]
-        #show()
-
-        
-        #ion()
-        import matplotlib.pylab as plt
-        #fig = plt.figure(figsize=(15,6))
-        fig = plt.figure(figsize=(10,4))
-
-        fig.clf()
-        #fig.set_size_inches(10,6)
-
-        ax1 = fig.add_subplot(121)
-        ax2 = fig.add_subplot(122)
-        try:
-            G0 = load('./tmp/Emiss0.npz')['G']
-            p_model_diff, = ax1.plot( g_quant , g_tmp,'k-',label='$||G-G_0||_2/||G_0||_2$')
-            p_model_min = ax1.axvline(x=-100,lw=2,ls='--',c='k')
-            #p_res_min   = ax1.axhline(y=1,lw=2,ls='--',c='b')
-            #min_err_plot, = ax1.plot(g_quant, g_tmp*nan,'y--')
-        except:
-            #print 'no emiss 0'
-            
-            pass
-        model_min_txt = ax1.text(0.05, 0.58 ,'', backgroundcolor='w', 
-                                    transform=ax1.transAxes,color='k')
-        
-        methods = 'chi2', 'GCV','AICc','BIC','AIC', 'PRESS','Lcurve','Quasioptimum'
-        methods = 'chi2', 'GCV','PRESS','AICc','AIC'
-
-        if 'chi2' in methods: p_chi, = ax1.plot(g_quant,g_tmp,label='chi2')
-        if 'GCV' in methods: p_gcv, = ax1.plot(g_quant,g_tmp,label='GCV')
-        if 'chi2' in methods: p_chi_root, = ax1.plot( 1,1 ,'*b')
-        if 'GCV' in methods: p_gcv_min, = ax1.plot(1,1,'go')
-        if 'AICc' in methods: p_aicc_min, = ax1.plot(1,1,'kx')
-        if 'AIC' in methods: p_aic_min, = ax1.plot(1,1,'vk')
-        if 'BIC' in methods: p_bic_min, = ax1.plot(1,1,'dk')
-        if 'PRESS' in methods: p_press, = ax1.plot(1,1,'rs')
-        if 'Quasioptimum' in methods: Qopt_plt, = ax1.plot(g_quant, g_tmp*nan,'-.',label='Quasioptimum')
-        if 'Lcurve' in methods: QLcurva_plt,= ax1.plot(g_quant, g_tmp*nan,'y--',label='Lcurve')
-        if 'PRESS' in methods: PRESS_plt, = ax1.plot(g_quant, g_tmp*nan,':',label='PRESS')
-        if 'AIC' in methods: AIC_plt, = ax1.plot(g_quant, g_tmp*nan,'k-.',label='AIC')
-        if 'AICc' in methods: AICc_plt, = ax1.plot(g_quant, g_tmp*nan,'k--',label='AICc')
-        if 'BIC' in methods: BIC_plt, = ax1.plot(g_quant, g_tmp*nan,'k:',label='BIC')
-        if 'GCV' in methods: gcv_diff_txt  = ax1.text(0.05, 0.66, '',backgroundcolor='w',  transform=ax1.transAxes,color='k')
-        if 'chi2' in methods: chi2_diff_txt = ax1.text(0.05, 0.76 , '',backgroundcolor='w',  transform=ax1.transAxes,color='k')
-        if 'PRESS' in methods: press_diff_txt = ax1.text(0.05, 0.84 , '',backgroundcolor='w',  transform=ax1.transAxes,color='k')
-        if 'AICc' in methods: aicc_diff_txt = ax1.text(0.05, 0.92 , '',backgroundcolor='w',  transform=ax1.transAxes,color='k')
-
-        #p_eig_nums = [ax1.axvline(x=d,lw =.1,color='k') for d in D**2]
-        
-        if 'chi2' in methods: ax1.axhline(y=1,ls='--')
-        variance_plot, = ax1.plot(g_quant, g_tmp*nan,'r--')
-        bias_plot,     = ax1.plot(g_quant, g_tmp*nan,'g--')
-
-
-        ax1.set_xlabel('$q_\lambda$',fontsize=13)
-        ax1.set_ylabel('$\chi^2/N$',fontsize=13)
-        leg = ax1.legend(loc='lower right',fancybox=True,ncol=2)
-        leg.get_frame().set_alpha(0.9)
-        #ax.xaxis.set_major_locator( MaxNLocator(nbins = 5) )
-        #ax.locator_params(tight=True, nbins=4)
-        ax1.xaxis.set_major_locator(LogLocator(numticks=6))
-        #ax1.set_xlim(g_tmp[0],g_tmp[-1])
-        ax1.set_xlim(0,1)
-        ax1.set_yscale("log", nonposx='clip')
-        ax1.set_xscale("linear", nonposx='clip')
-
-        
-        
-        #ax1 = subplot(111)
-        prod_ = array(dot(U.T, S[~wrong_dets, :]))            
-        #plot(abs(prod_),'b',lw=.01)
-        ax2.plot((mean(prod_**2,axis=1)),'k',label=r'$\langle |u_i b| \rangle$')
-        vmax = mean(abs(prod_[:20,:]))
-        #ax1.plot(D[0]*mean(abs(prod_[0,:]))/D,label='$1/D_i$')
-        ax2.plot(median(D)/D*10,'--',label='$1/D_i$')
-        orig_spectrum, = ax2.plot([],[],'k-',lw=.3)
-
-  
-        ax2.plot([],[],'r',label='$w_i$')
-        ax2.axhline(y=1,c='k',ls='--')
-        #yscale('symlog', linthreshy=10)
-        ax2.set_xlabel('$i$-th singular value',fontsize=13)
-        
-        ax2.set_ylabel(r'${\langle (u_i b)^2 \rangle }$',fontsize=13)
-        #ax2.set_ylabel(r'$U^T f$')
-
-        ax2.set_yscale('log')
-        ax2.set_ylim(.3, mean(amax(abs(prod_),0))**2*1.3)
-        ax2.set_ylim(1.2e-1, mean(amax(abs(prod_),0))**2*1.3)
-        ax2.set_ylim(1.2e-1, mean(linalg.norm(S,axis=0)**2))
-
-        #ax2.set_ylim(.1, 1e6)
-
-        ax2.text(20,0.7,'noise level')
-        leg = ax2.legend(loc='upper right',fancybox=True)
-        leg.get_frame().set_alpha(0.9)
-        ax3 = ax2.twinx()
-        ax3.set_yscale('linear')
-        p_filter, = ax3.plot([],'-.r')
-        ax3.set_ylim(0,1)
-        ax2.set_xlim(0,len(D))
-        ax3.set_xlim(0,len(D))
-
-        ax3.set_ylabel(r'$w_i$',fontsize=13)
-        for l in leg.legendHandles:  l.set_linewidth(3)
-        #ioff()
-        ##fig.show()
-        #show() 
-        #pause(1)
-        
+         
     def w_i(g):
         w = 1./(1.+exp(g)/D**2)
         w[~isfinite(w)] = 0
@@ -3313,421 +2893,7 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
      
             
    
-        if plotting and LastCycle:
-            ##plotting
-            #ax2 = subplot(111)
-
-            chi2_tmp = zeros(100)
-            chi2_tmp2 = zeros(100)
-            Q_tmp = zeros(100)
-            L_tmp = zeros(100)
-            AIC_tmp = zeros(100)
-            AICc_tmp = zeros(100)
-            BIC_tmp = zeros(100)
-
-            PRESS = zeros(100)
-            stat_err = zeros(100)
-            bias_err = zeros(100)
-
-            GCV_tmp = zeros(100)
-            model_diff = zeros(100)
-            model_diff_pos = zeros(100)
-            #quasi_optim = zeros(100)
-            #from the phantom analysis it looks like that gcv is much more stable and accurate guess of chi2=0
-            Lcurve = zeros(100)
-
-            G0 = None
-            f0 = None
-            g_optim = None
-            min_res = 0
-            try:
-                tvec_0 = load('./tmp/Emiss0.npz')['tvec']
-                G0 = load('./tmp/Emiss0.npz')['G'].reshape( L.shape[1], -1,order='F')
-                ts0 = argmin(abs(tvec_0-tvec[ts]))
-                G0 = G0.mean(1)
-                for i in range(100):
-                    w = w_i(log(g_tmp[i]))
-                    model_diff[i]      = linalg.norm(G0-dot(single(w*prod[ts]/D)*norm[ts], V))/linalg.norm(G0)
-                                        #(linalg.norm(G0-dot(single(w*prod[ts]/D)*norm[ts], V))/linalg.norm(G0[:,ts])*100)
-                    pos = lambda x: (abs(x)+x)/2
-                    #positive part
-                    model_diff_pos[i]  = linalg.norm( G0-pos(dot(single(w*prod[ts]/D)*norm[ts], V)))/linalg.norm(G0)
-                    prod0 = dot((L*G0)[~wrong_dets] ,U).T
-                    PP = abs(prod0.T)/norm[ts]/D
-
-                
-                imin = argmin(model_diff_pos)
-                def poly_min(x,dx,y): #find extrem of polynom 
-                    return x+(y[0]-y[2])*dx/(2*(y[0]+y[2]-2*y[1]))
-                if imin > 0:
-                    g_optim = exp(poly_min(log(g_tmp[imin]),log(g_tmp[imin+1]/g_tmp[imin]),model_diff_pos[imin-1:imin+2]))
-                else:
-                    g_optim = 1e-100
-                #g_optim = g_tmp[argmin(model_diff)]
-                #title('min phantom difference %.2f'%(model_diff.min()*100))
-                
-                
-                
-                g_optim_ = interp(log(g_optim),2*log(D)[::-1],linspace(0,1,len(D)))
-                print('g_optim_rms', g_optim_)
-                p_model_min.set_data([g_optim_,g_optim_],[1e-5,1e5])
-                p_model_diff.set_ydata(model_diff_pos)
-
-                #w = 1/(1+g_optim/D**2)
-                w = w_i(log(g_optim))
-                model_min_txt.set_text('$\min\ \Delta G:$ %.1f%%'%(linalg.norm(G0-\
-                    dot(single(w*prod[ts]/D)*norm[ts],V))/linalg.norm(G0)*100))
-                
-                #ax.text(0.05, 0.7 , 'MIN dev %.2f%%'%(linalg.norm(G0[:,ts]-\
-                    #dot(single(w*prod[ts]/D)*norm[ts],V))/linalg.norm(G0[:,ts])*100),
-                    #backgroundcolor='w',  transform=ax.transAxes,color='k')
-                
-                #if size(V) > 1e6:
-                    #iV = V.T  #BUG it is very slow to calculate a pinv!!
-                #else:
-                iV = linalg.pinv(V)
-           
-                min_res = linalg.norm(G0-dot(V.T,dot(iV.T,G0).T).T)/linalg.norm(G0)
-                print('min residuum', min_res)
-                V_bias = G0-dot(V.T,dot(iV.T,G0).T).T
-                orig_spectrum.set_data(arange(len(w)),(array(dot(U.T, L_*G0.T)).T)**2/norm[ts]**2)
-
-                #min_err_plot.set_ydata(min_res)
-    
-            except:
-                #print e
-
-                
-                
-                pass
-                #pass
-               #savez_compressed('./tmp/Emiss0',G = reshape(G0,(tokamak.ny,tokamak.nx,tsteps), order='F')
-                        #,Rc= tokamak.xgrid+tokamak.dx/2,Zc= tokamak.ygrid+tokamak.dy/2)
-            #close()             
-            
-            #show()
-            
-            
-            #subplot(131)
-            #imshow(((G0[:,ts]-dot(single(w*prod/D)*norm[ts], V))/G0[:,ts]).reshape(tokamak.ny, tokamak.nx,order='F'),origin='lower',vmin=-.1, vmax = .1)
-            #colorbar()
-            #subplot(132)
-            #imshow(G0[:,ts].reshape(tokamak.ny, tokamak.nx,order='F'),origin='lower',cmap='Paired')
-            #colorbar()
-            #subplot(133)
-            #imshow(dot(single(w*prod/D)*norm[ts], V).reshape(tokamak.ny, tokamak.nx,order='F'),origin='lower',cmap='Paired')
-            #colorbar()
-            #show()
-            #print tsteps
-            
-            
-            
-            #PRESS[i]  =    Press( g_gcv,prod[ts],resid[ts],G0)
-            G0_ = G0/norm[ts] if not G0 is None else dot(single(w_i(g[ts])*prod[ts]/D),V)
-            t = time.time()
-            for i in range(100):
-                #w = 1/(1+g_tmp[i]/D**2)
-                #chi2_tmp[i] = (resid+sum((R*((w-1)*prod))**2))/ndets
-                chi2_tmp[i] = CHI2(log(g_tmp[i]),prod[ts],resid[ts])
-                GCV_tmp[i]  = GCV( log(g_tmp[i]),prod[ts],resid[ts])
-                Q_tmp[i]  = QuasiOpt( log(g_tmp[i]),prod[ts],resid[ts])
-                PRESS[i]  = Press( log(g_tmp[i]),prod[ts],resid[ts])
-                L_tmp[i]  = CurvLCurv( log(g_tmp[i]),prod[ts],resid[ts])
-                AIC_tmp[i]  = AIC( log(g_tmp[i]),prod[ts],resid[ts])
-                AICc_tmp[i] = AICc( log(g_tmp[i]),prod[ts],resid[ts])
-                BIC_tmp[i]  = BIC( log(g_tmp[i]),prod[ts],resid[ts])
-                chi2_tmp2[i]= CHI2(log(g_tmp[i]),prod[ts],resid[ts]*0,bias=False)
-                #w = 1/(1+g_tmp[i]/D**2)
-                w = w_i(log(g_tmp[i]))
-         
-                #Lcurve[i] = linalg.norm(H*dot(single(w*prod[ts]/D), V))**2
-                Lcurve[i] = sum(w**2/D**2*prod**2)
-                #len(w)/float(ndets)*
-                #close()
-                #plot(G0_.ravel());show()
-                
-                linalg.norm(dot(single(w_i(g[ts])*prod[ts]/D),V))
-                stat_err[i] = sqrt(sum(dot((w/D)**2,asarray(V)**2)))/linalg.norm(G0_)
-                
-                
-                 
-                
-                
-                #bias_err[i] = linalg.norm(V_bias+dot((1-w)/D*array(L_*G0.T).T,V))/linalg.norm(G0)
-                #stat_err[i] = sqrt(sum((V/D[:,None])**2))/linalg.norm(G0_)
-                try:
-                    bias_err[i] = linalg.norm(V_bias+dot(  (1-w)/D*array(dot(U.T, L_*G0.T))[0]  ,V))/linalg.norm(G0)
-                    #bias_err[i] = hypot(bias_err[i],stat_err[i])
-                except:pass
-                #plt.plot(sqrt(mean(prod_**2,axis=1)),'k',label=r'$\langle |u_i b| \rangle$')
-                #plt.plot(abs(array(dot(U.T, L_*G0_.T)).T))
-                #plt.show()
-                
-                
-                
-                ##X = dot(w*(random.randn(len(D),1000)+prod[ts][:,None] ).T/D, V)
-                    
-                #stat_err2[i]  = linalg.norm(X.std(0))/linalg.norm(G0_)
-                
-                #sqrt(sum(dot(( w_i(g_gcv )/D)**2,V**2)))/linalg.norm(G0_)
-
-                #quasi_optim[i] = linalg.norm(dot(single(w**2*len(D)*g_tmp[i]/D**3*prod), V))
-#imshow(X.mean(0).reshape(60,40,order='F'),interpolation='nearest' ,origin='lower');colorbar()
-#imshow(X.std(0).reshape(60,40,order='F'),interpolation='nearest' ,origin='lower');colorbar()
-            print(time.time()-t)
-
-
-
-            #title(str(ts)+' '+str( LastCycle))
-            #close()
-            da = gradient(log(chi2_tmp))/gradient(log(g_tmp))
-            dda = gradient(da)/gradient(g_tmp)
-            db = gradient(log(Lcurve))/gradient(log(g_tmp))
-            ddb = gradient(db)/gradient(g_tmp)
-            kappa = (da*ddb-dda*db)/(da**2+db**2)**1.5
-            #close()
-            
-             
-            
-            
-            
-            #close()
-            #loglog(chi2_tmp ,Lcurve)
-            #figure()
-            #semilogx(chi2_tmp,kappa)
-                
-            #show()
-            
-            #from scipy.stats import chi2
-            #print chi2.ppf(0.10, len(D)),  chi2.ppf(0.90, len(D)),chi2.ppf(0.50, len(D)),len(D)
-            #ax2.loglog(chi2_tmp, Lcurve,'b-',label='L-curve')
-            #ax2.loglog(chi2_tmp2, Lcurve,'r--',label='unbiased $\chi^2/DoF$')
-
-            #ax2.axvline(x=1,ls=':',c='k')
-            ##ax2.axvline(x=1)
-            
-
-            ##ax2.plot(interp(D**2, g_tmp,chi2_tmp),interp(D**2, g_tmp, Lcurve),'y+')
-            #ax2.plot(interp(exp(g_gcv), g_tmp,chi2_tmp),interp(exp(g_gcv), g_tmp, Lcurve),'o',label='GCV')
-            #ax2.loglog(1,interp(1, chi2_tmp,Lcurve),'sk',label=r'$\chi^2/k = 1$')
-
-            #ax2.set_xlabel('$||Ax-b ||_2^2/DoF$')
-            #ax2.set_ylabel('$||Dx||_2^2$')
-            #ax2.xaxis.set_major_locator(LogLocator(numticks=6))
-            #ax2.yaxis.set_major_locator(LogLocator(numticks=6))
-            #ax2.legend(loc='best')
-            #if not g_optim is None:
-                #ax2.plot(interp(g_optim, g_tmp,chi2_tmp),interp(g_optim, g_tmp, Lcurve),'*',label='optimal')
-
-            #ind = argsort()
-            #ax2.axvline(x=interp(1,chi2_tmp2[::-1],chi2_tmp[::-1])  ,ls='--')
-
-            #ax2.axvline(x=interp(exp(g_gcv), g_tmp,chi2_tmp) )
-
-            #show()
-            
-
-            #loglog(g_tmp,chi2_tmp)
-            #loglog(g_tmp,chi2_tmp2,'-.')
-            #loglog(g_tmp,GCV_tmp)
-            
-            #loglog(g_tmp,quasi_optim,':')
-
-            #plot(exp(g2),exp(fg2) ,'*b',label = '$\chi^2/N_{det} = 1$')
-            #plot(exp(g_gcv),exp(gcv),'go', label = 'min GCV')
-            #plot(exp(g0) ,CHI2(g0,prod[ts],resid[ts]),'rs',label = 'initial guess')
-            #plot(exp(median(log(D**2))) ,CHI2(median(log(D**2)),prod,resid),
-                 #'ks',label = 'median $\gamma_0$')
-
-            if 'chi2' in methods: p_chi.set_ydata(chi2_tmp)
-            #p_chi2.set_ydata(chi2_tmp2)
-            if 'GCV' in methods: p_gcv.set_ydata(GCV_tmp)
-            #ax1.plot(g_tmp, Q_tmp,'-.')
-            #ax1.plot(g_tmp, kappa,'--')
-            #ax1.plot(g_tmp, PRESS,':')
-            if 'Quasioptimum' in methods:Qopt_plt.set_ydata(Q_tmp)
-            if 'Lcurve' in methods:QLcurva_plt.set_ydata(kappa)
-            if 'AIC' in methods: AIC_plt.set_ydata(AIC_tmp/100)
-            if 'AICc' in methods: AICc_plt.set_ydata(AICc_tmp/100)
-            if 'BIC' in methods: BIC_plt.set_ydata(BIC_tmp/100)
-            if 'PRESS' in methods: PRESS_plt.set_ydata(PRESS)
-
-            #ax1.plot(g_tmp, AIC_tmp,'k-.',label='AIC')
-            #ax1.plot(g_tmp, AICc_tmp,'k--',label='AICc')
-            #ax1.plot(g_tmp, BIC_tmp,'k:',label='BIC')
-
-            
-            
-            
-            
-
-                    #Qopt_plt, = ax1.plot(g_tmp, g_tmp,'-.')
-        #QLcurva_plt,= ax1.plot(g_tmp, g_tmp,'--')
-        #PRESS_plt, = ax1.plot(g_tmp, g_tmp,':')
-            
-            #p_res_min   = ax1.axhline(y=1,lw=2,ls='--',c='b')
-            variance_plot.set_ydata(stat_err)
-
-            try:
-                bias_plot.set_ydata(bias_err)
-            except:
-                pass
-
-            
-            #ax1.axhline(y= linalg.norm(dot(( w_i(g_gcv)/D)**2,V**2)) ,ls='--',c='r')
-            
-            
-            #w_i(g_gcv)/D*X
-            
-            #dot( w_i(g_gcv)/D*X.T,V)
-            
-            
-            #err = std(dot( w_i(g_gcv)/D*X.T,V),0)**2
-            
-            
-            #plot(sqrt(dot(( w_i(g_gcv)/D)**2,V**2)))
-            
-            #plot(dot(single(w_i(g_gcv)*prod[ts]/D), V))
-            
-
-
-            #ax1.plot(g_tmp, L_tmp,'--')
-        #g_quant = 
         
-        #interp(g_chi2,2*log(D)[::-1],linspace(0,1,len(D)))
-            if 'chi2' in methods: p_chi_root.set_data(interp(g_chi2,2*log(D)[::-1],linspace(0,1,len(D))),exp(f_chi2))
-            if 'GCV' in methods: p_gcv_min.set_data(interp(g_gcv,2*log(D)[::-1],linspace(0,1,len(D))),exp(fgcv))
-            if 'PRESS' in methods: p_press.set_data(interp(g_press,2*log(D)[::-1],linspace(0,1,len(D))),exp(fpress))
-            if 'AICc' in methods: p_aicc_min.set_data(interp(g_aicc,2*log(D)[::-1],linspace(0,1,len(D))),exp(faicc)/100)
-            if 'AIC' in methods: p_aic_min.set_data(interp(g_aic,2*log(D)[::-1],linspace(0,1,len(D))),exp(faic)/100)
-            if 'BIC' in methods: p_bic_min.set_data(interp(g_bic,2*log(D)[::-1],linspace(0,1,len(D))),exp(fbic)/100)
-
-            #p_chi, = loglog([],[])
-            #p_chi2, = loglog([],[],'-.')
-            #p_gcv, = loglog([],[])
-            
-            #p_chi_root, = plot([],[] ,'*b',label = '$\chi^2/N_{det} = 1$')
-            #p_gcv_min, = plot([],[],'go', label = 'min GCV')
-            #p_init, = plot([],[],'rs',label = 'initial guess') 
-      
-            if not G0 is None:
-                #w = 1/(1*exp(g_gcv)/D**2)
-                w = w_i(g_gcv)
-
-                if 'GCV' in methods: gcv_diff_txt.set_text('$\mathrm{GCV}: \Delta G $ %.1f%%'%(linalg.norm(G0\
-                        -dot(single(w*prod[ts]/D)*norm[ts],V))/linalg.norm(G0)*100))
-                #w = 1/(1+ndets*exp(g2)/D**2)
-                w = w_i(g2)
-
-                if 'chi2' in methods: chi2_diff_txt.set_text('$\chi^2/N: \Delta G $ %.1f%%'%(linalg.norm(G0
-                    -dot(single(w*prod[ts]/D)*norm[ts],V))/linalg.norm(G0)*100))
-                
-                w = w_i(g_press)
-
-                if 'PRESS' in methods: press_diff_txt.set_text('$\mathrm{PRESS}: \Delta G $ %.1f%%'%(linalg.norm(G0
-                    -dot(single(w*prod[ts]/D)*norm[ts],V))/linalg.norm(G0)*100))
-            
-                
-                w = w_i(g_aicc)
-
-                if 'AICc' in methods: aicc_diff_txt.set_text('$\mathrm{AICc}: \Delta G $ %.1f%%'%(linalg.norm(G0
-                    -dot(single(w*prod[ts]/D)*norm[ts],V))/linalg.norm(G0)*100))
-            
-            
-                
-                
-                
-                #ax.text(0.05, 0.75 , 'GCV dev %.2f%%'%(linalg.norm(G0[:,ts]-dot(single(w*prod[ts]/D)*norm[ts],                                                                        
-                                    #V))/linalg.norm(G0[:,ts])*100),backgroundcolor='w',  transform=ax.transAxes,color='k')
-                #ax.text(0.05, 0.8, '$\chi^2/doF$ dev %.2f%%'%(linalg.norm(G0[:,ts]-dot(single(w*prod[ts]/D)*norm[ts],                                                                           
-                                    #V))/linalg.norm(G0[:,ts])*100), backgroundcolor='w',  transform=ax.transAxes,color='k')
-            
-            ax1.set_ylim(1e-3,sum(prod[ts]**2)/ndets*2)
-
-            #p_eig_nums
-            #for d in D**2/ndets:   axvline(x=d, lw = .1,color='k')
-            #asymptotes
-            #loglog(g_tmp,ndets*sum((R*(prod/D**2))**2)*g_tmp**2,'-.k')
-            #axhline(y=sum(prod**2)/ndets, linestyle='-.', color='k')
-    
-            
-    
-
-            #savefig('%d.png'%ts)
-            
-            #show()
-            #figure()
-            
-            
-
-            #ax1 = subplot(111)
-            #prod_ = dot(U.T, S)            
-            ##plot(abs(prod_),'b',lw=.01)
-            #ax1.plot(sqrt(mean(prod_**2,axis=1)),'k',label=r'$\langle |u_i b| \rangle$')
-            #vmax = mean(abs(prod_[:20,:]))
-            ##ax1.plot(D[0]*mean(abs(prod_[0,:]))/D,label='$1/D_i$')
-            #ax1.plot(median(D)/D,label='$1/D_i$')
-
-            #ax1.plot([],[],'r',label='$w_i$')
-            #ax1.axhline(y=1,c='k',ls='--')
-            ##yscale('symlog', linthreshy=10)
-            #ax1.set_xlabel('$i$-th singular value')
-            #ax1.set_ylabel(r'$\langle |u_i b| \rangle $')
-            #ax1.set_yscale('log')
-            #ax1.set_ylim(.1, mean(amax(abs(prod_),0))*1.3)
-            #ax1.text(2,1.1,'noise level')
-            #leg = ax1.legend(loc='upper right',fancybox=True)
-            #leg.get_frame().set_alpha(0.9)
-            #ax2 = ax1.twinx()
-            #ax2.set_yscale('linear')
-            #ax2.plot(1/(1+ndets*exp(g_gcv)/D**2),'r')
-            #ax2.set_ylim(0,1)
-            #ax2.set_ylabel(r'$w_i$')
-            #for l in leg.legendHandles:  l.set_linewidth(3)
-
-            #show() 
-            g_ = g0
-            if lam_method=='press':         g_ = g_press
-            if lam_method=='gcv':           g_ = g_gcv
-            if lam_method=='chi2':          g_ = g_chi2
-            if lam_method=='aic':           g_ = g_aic
-            if lam_method=='aicc':          g_ = g_aicc
-            if lam_method=='bic':           g_ = g_bic
-            if lam_method=='qoptimum':      g_ = g_qopt
-            
-            p_filter.set_data(arange(len(D)),w_i(g_))
-            #ion()
-            #savefig('./tmp/lambda_optim_%.5f.png'%tvec[ts])
-            #print './tmp/lambda_optim_%.5f.png'%tvec[ts]
-            
-            print('chi2: %.2f'%CHI2(g_,prod[ts],resid[ts]))
-            print('DoF: %.1f'%sum((1-w_i(g_))**2))
-            print('gamma: %.3f'%g_)
-            
-            ax2.text(0.05, 0.91 , 'N-DoF: %.1f'%sum(1-(1-w_i(g_))**2),backgroundcolor='w',  transform=ax2.transAxes,color='k')
-
-
-            #show()
-            #draw()
-            #print ts
-            #fig.canvas.draw_idle()
-            #pause(1)
-            #ion()
-            plt.show()
-            #plt.savefig('/home/tom/Desktop/CLANEK/mfi_iter4/out.svg')
-            
-            #exit()
-            #break
-            
-            
-            
-    
-            print(ts)
-
-            
-            #clf()
-
-
     #exit()
     #emulate a rapid solver - use only one median value fo the whole block - it is more stable, lower noise in the timeevolution
     if rapid_solver:
@@ -3795,29 +2961,34 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
         if not sparse.issparse(V):
             V = array(V,copy=False)
             
-                
+        W = np.zeros_like(prod)
         for ts,(p,r) in enumerate(zip(prod,resid)):
-            w = w_i(g[ts])
+            W[ts] = w_i(g[ts])
             chi2[ts] = CHI2(g[ts],p,r)
             #slowest step 
             if sparse.issparse(V):
-                E[ts] = V.T.dot((w*p/D).astype(dtype))
+                E[ts] = V.T.dot((W[ts]*p/D).astype(dtype))
             else:
-                dot((w*p/D).astype(dtype), V,out=E[ts])
+                dot((W[ts]*p/D).astype(dtype), V,out=E[ts])
             p = transpose(R)*(R*p)  #for QR decomposition
-            retro[ts,~wrong_dets] = dot(asarray(U),w*p)
+            retro[ts,~wrong_dets] = dot(asarray(U),W[ts]*p)
             
 
-        Leverage = einsum('ij,ij,j->i', U,U,w_i( median(g))  )        
+        #Leverage = einsum('ij,ij,j->i', U,U,w_i( median(g))  )        
 
-        p = sum(w_i( median(g)))
-        n = ndets
-        er =  mean((retro-S.T)**2,0)
+        #p = sum(w_i( median(g)))
+        #n = ndets
+        #er =  mean((retro-S.T)**2,0)
         #s2 = sum(e**2)/n
         #NOTE it is just inspired by Cook's Distance!! 
-        rel_err = er/mean(er)
+        #rel_err = er/mean(er)
         #CookDistance[~wrong_dets] = rel_err[~wrong_dets]*(Leverage/(1-Leverage))
         #CookDistance[wrong_dets] = infty
+        
+        
+
+        
+        
         
         
         
@@ -3826,7 +2997,8 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
         #import IPython
         #IPython.embed()
         if positive_constrain :
-            E,chi2 = ForcePositivity(E,V,D,BdMat,w,chi2,nx,ny,tokamak)
+            E,chi2 = ForcePositivity(E,W,g,V,D,prod,resid,ndets, BdMat,chi2,tokamak)
+            #E,chi2 = ForcePositivity_old(E,V,D,BdMat,w,chi2,nx,ny, tokamak)
             #print retro.shape, L.shape, E.shape
             retro = asarray(L*E.T).T  #retrofit was affected
             #print retro.shape, L.shape, E.shape

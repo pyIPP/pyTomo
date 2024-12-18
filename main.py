@@ -3,7 +3,7 @@
 import sys
 from numpy import *
 #from  matplotlib.pyplot import *
-from scipy import sparse
+from scipy import sparse 
 from numpy import linalg
 import time
 from scipy.interpolate import RectBivariateSpline, interp1d
@@ -14,17 +14,17 @@ import socket
 from scipy.sparse import spdiags, eye
 from copy import deepcopy, copy
 import gc
-import multiprocessing
+import multiprocessing 
 from prepare_data import * 
 from shared_modules import debug
-import config
+import  config
 from shared_modules import make_postprocessing
 from asymmetries import CalcAsymNew
 
-
+    
 
 try:
-    from multiprocessing import Process, Pool, cpu_count
+    from multiprocessing import Process, Pool
     import threading
     threading._DummyThread._Thread__stop = lambda x:40
 except:
@@ -73,7 +73,6 @@ def tomography(inputs, tokamak, progress = None):
 
     tokamak.prepare_emiss0( (inputs['tmax']+inputs['tmin'])/2.)
     
-
     data_all, error_all, tvec, dets, Tmat_all, normData = tokamak.prepare_data(inputs['tmin'], inputs['tmax'], 
                         inputs['data_smooth'], inputs['data_undersampling'], inputs['error_scale'], inputs['prune_dets'], False)
 
@@ -83,13 +82,12 @@ def tomography(inputs, tokamak, progress = None):
     error = error_all[dets]
     Tmat  =  Tmat_all[dets]
 
-
-    if not tokamak.default_calb is 'none':# and  tokamak.allow_self_calibration:
+    if tokamak.default_calb != 'none':# and  tokamak.allow_self_calibration:
         if inputs['ratiosolver'] != 0:
             calb = pre_calibrate(tokamak, inputs, inputs['ratiosolver'], inputs['ifishmax'], 
                                     data, error, data_all,error_all, tvec, dets,Tmat, normData)
             cams = list(tokamak.detectors_dict.keys())
-            calib_file = tokamak.geometry_path+'/calibration/%d.txt'%tokamak.shot
+            calib_file = tokamak.geometry_path+'calibration'+os.sep+'%d.txt'%tokamak.shot
 
             f = open(calib_file, 'w')
             for k,i in zip(cams, calb): f.write('%s  %.3f\n'%( k,i ))
@@ -157,11 +155,9 @@ def tomography(inputs, tokamak, progress = None):
         try:
             os.remove(tokamak.tmp_folder+'/Emiss0.npz')
         except:
-            pass
-        
-    #debug( 'mean error  %.4f'%(median(error[isfinite(error)]/(1e-10+data[isfinite(error)]))))
-    debug( 'mean error  %.4f'%(median(error[isfinite(error)])/median(data[isfinite(error)])))
+            pass                
 
+ 
 
     
     #  ================== PRESOLVE CYCLE ========================
@@ -254,6 +250,7 @@ def tomography(inputs, tokamak, progress = None):
 
             data -= mean(data[:,subst_ind],axis=1)[:,None]
             error = tile(data[:,subst_ind].std(1)*inputs['error_scale'], (len(tvec),1)).T
+            error[:] = error.mean()  #assume the same error for all LOS 
             corrupted = isinf(error)
             
             error[corrupted] = infty
@@ -278,15 +275,14 @@ def tomography(inputs, tokamak, progress = None):
 
         import multiprocessing
         inputs['main_run'] = True #flag that this is the main run
-        numcores = multiprocessing.cpu_count()
         if inputs['solid_parallel'] or tokamak.npix < 1000:    #faster, but unbreakable, without progressbar, for nx*ny<1000 is parallel processing too slow
             numTasks = 1
             debug( 'Uses solid parallel solve => Cancel button will not work')
         else:
-            numTasks = int(ceil(numSteps/(numcores*4.)))
+            numTasks = int(ceil(numSteps/(inputs['n_cpu']*4.)))
         numTasks = min(100,numTasks) #small speed improvement for very large number of blocks
         
-        if config.DEBUG:
+        if config.DEBUG or config.no_multiprocessing:
             numTasks = numSteps
 
         ind = [slice(i*tsteps//numSteps,(i+1)*tsteps//numSteps) for i in range(numSteps)]
@@ -302,24 +298,36 @@ def tomography(inputs, tokamak, progress = None):
  
         if size(lam0) != numSteps:
             lam0 = ones(numSteps)*mean(lam0)
-  
+        
+        #MDSplus object is not pickable
+        if hasattr(tokamak, 'MDSconn' ):
+            del tokamak.MDSconn
+        if hasattr(tokamak, 'mds_server' ):
+            del tokamak.mds_server
+        mds_server = inputs.pop('mds_server', None)
+             
+            
         postprocessing = True
         sequence = array([(i,data[:,ii],error[:,ii],tvec[ii],Tmat,dets, normData[ii], 
                     G0[i],lam0[i],  numSteps, postprocessing,inputs, tokamak,
-                    inputs['solver'], inputs['ifishmax'], time_0,postprocessing)  for i,ii in enumerate(ind)],copy=False)    
+                    inputs['solver'], inputs['ifishmax'], time_0,postprocessing)  for i,ii in enumerate(ind)],copy=False,dtype=object)    
             
         sequence = array_split(sequence, numTasks)
-        pool = multiprocessing.Pool(min(numcores,numSteps))
-        method =  map if config.DEBUG or numSteps==1 else pool.map        
+   
+        if config.DEBUG or numSteps==1 or config.no_multiprocessing:
+            method =  map 
+            pool = None
+        else:
+            pool = multiprocessing.Pool(min(inputs['n_cpu'],numSteps))
+            method = pool.map  
+            
+                  
         results = []
         try:
             from PyQt5.QtCore import currentThread
         except:
-            try:
-                from PyQt4.QtCore import currentThread
-            except:
-                currentThread = None
-        
+            currentThread = None
+     
         try:
             from tqdm import tqdm
             if not progress is None: progress.setNumSubSteps(len(sequence))
@@ -327,7 +335,7 @@ def tomography(inputs, tokamak, progress = None):
                 if currentThread is not None:
                     if currentThread().isInterruptionRequested():
                         raise Exception('Externally interrupted!')
-                
+           
                 out = method(main_cycle, seq)  #   pool.imap(main_cycle, seq)  #!!!open main cycle !!!
                 gc.collect()
                 results.extend(out)
@@ -338,11 +346,13 @@ def tomography(inputs, tokamak, progress = None):
             results.extend(out)
             
         finally:
-            pool.close()
-            pool.join()
+            if pool is not None:
+                pool.close()
+                pool.join()
         
         sys.stdout.write("\r MAIN SOLVE DONE\n")
         if not progress is None: progress.iterateStep()
+        inputs['mds_server'] = mds_server
 
 
         if numSteps == 1:
@@ -375,7 +385,7 @@ def tomography(inputs, tokamak, progress = None):
     mean_chi2 = exp(nansum(log(output['chi2']))/tsteps)
     mean_lam = median(output['lam0'])
     
-    print('Statistics: \n Mean time: %.3gs \n Mean Chi2: %.6g \n Mean Lam: %.3g \n Time slices: %d\n Blocks: %d'\
+    print('Statistics: \n Mean time: %.3gs \n Mean Chi2: %.3g \n Mean Lam: %.3g \n Time slices: %d\n Blocks: %d'\
             %(TotTime/tsteps,mean_chi2,mean_lam,tsteps ,numSteps ))
     if 'mag_rho' in output:
         output['mag_rho'] =  output['mag_rho'][0]
@@ -523,7 +533,7 @@ def presolve(tokamak, data, error, tvec, Tmat, dets,  normData,
 
     :var double lam0: Initial value of parameter lambda in min. fisher
     """
-    from multiprocessing import Pool, cpu_count
+    from multiprocessing import Pool
     inputs = inputs.copy()
     inputs['regularization'] = regularization
     inputs['postprocessing'] = False
@@ -540,7 +550,11 @@ def presolve(tokamak, data, error, tvec, Tmat, dets,  normData,
     lam0 = 3 *ones(numSteps)
     retro = None
     postprocessing=False
-
+    
+    #MDSplus object is not pickable
+    if hasattr(tokamak, 'MDSconn' ):
+        del tokamak.MDSconn
+        
     if solver in r_[1:7]:  # MFI rapid, SVD,SVD2, QR, GEV,GSVD   #(numSteps > 10 and solver == 1) or solver == 2:
         if G0 == None:
             G0 = single(tokamak.emiss_0)
@@ -548,22 +562,22 @@ def presolve(tokamak, data, error, tvec, Tmat, dets,  normData,
         nt = size(tvec)
         
         ind = [slice(i*nt//numSteps,(i+1)*nt//numSteps) for i in range(numSteps)]
-        sequence = [(i,data[:,ii],error[:,ii],tvec[ii],Tmat,dets, normData[ii],G0.mean(-1),lam0[i], 
+        sequence = array([(i,data[:,ii],error[:,ii],tvec[ii],Tmat,dets, normData[ii],G0.mean(-1),lam0[i], 
                          numSteps, False,inputs, tokamak,
-                        solver, ifishmax, time_0, postprocessing)  for i,ii in enumerate(ind)]
+                        solver, ifishmax, time_0, postprocessing)  for i,ii in enumerate(ind)],copy=False,dtype=object) 
 
 
 
         out = []
-        if  config.DEBUG == True:
+        if  config.DEBUG:
             out = list(map(main_cycle, sequence))
         else:
-            numTasks = 1 if solid_parallel else int(ceil(numSteps/double(cpu_count())))
+            numTasks = 1 if solid_parallel else int(ceil(numSteps/inputs['n_cpu']))
 
             sequence = array_split(sequence, numTasks)
 
             from tqdm import tqdm
-            pool = Pool(min(cpu_count(),numSteps) )
+            pool = Pool(min(inputs['n_cpu'],numSteps) )
 
             for seq in tqdm(sequence,desc='Presolver: '):
 
@@ -631,7 +645,7 @@ def presolve(tokamak, data, error, tvec, Tmat, dets,  normData,
     
    
         try:
-            pool = Pool(min(cpu_count(),numSteps))
+            pool = Pool(min(inputs['n_cpu'],numSteps))
             out =  pool.map(main_cycle, sequence)
         except:
             print('multiprocessing in preprocessing has failured, turning it off')
@@ -678,18 +692,22 @@ def main_cycle(input):
         :param double time_0:   Initial time of recontruction, it is used to guess remaining time
     """
     debug('Starter main cycle')
-    os.nice(3)
+    if os.name != 'nt':
+        os.nice(3)
 
     
 
     step,data,error,tvec, Tmat,dets,  normData, G0,lam0,  numSteps, \
             _postprocessing, inputs, tokamak, solver, _ifishmax,time_0,postprocessing = input
 
-    danis = inputs['danis']
+
     boundary = inputs['boundary']
     regularization = inputs['regularization']
     
-
+    reg_params = {}
+    reg_params['danis'] =  inputs['danis']
+    reg_params['pfx_weight'] = inputs.get('pfx_weight', 4)
+    reg_params['sol_weight'] = inputs.get('sol_weight', 2)
     data = data.T
     error = error.T
 
@@ -705,12 +723,12 @@ def main_cycle(input):
     if solver in [0,1]:  #direct inversion
         from minfisher import minfisher
         tvec, g,retro, chi2, lam0,bnd,SigmaGsample = minfisher(data, error,tvec,Tmat,dets,
-                        normData, G0,lam0, tokamak, danis, boundary,
+                        normData, G0,lam0, tokamak, reg_params, boundary,
                         regularization,_ifishmax, _postprocessing)
     elif solver in [2,3,4,5,6]: #SVD,SVD2, QR, GEV,GSVD solver
         from linear_methods import linear_methods
         tvec, g , chi2, lam0,retro,bnd,SigmaGsample  =  linear_methods(tokamak,inputs,
-                data, error, tvec, Tmat,dets, normData, G0,  danis, boundary,regularization,
+                data, error, tvec, Tmat,dets, normData, G0,  reg_params, boundary,regularization,
                 solver,  True,_ifishmax, _postprocessing)
     elif solver in [7,]: # no solver - return phantom. Useful for testing of the postprocessing methods
         if (G0.shape[-1] == 1 and  len(tvec)!= 1) or G0.ndim == 1:
@@ -734,6 +752,9 @@ def main_cycle(input):
             SigmaGsample = tokamak.Transform*SigmaGsample
 
     output['g'] = g.T
+    if SigmaGsample is not None:
+        output['g_samples'] = SigmaGsample.T[None]
+        
     output['retro'] = retro
     output['lam0'] = lam0
     output['bnd']  = bnd
