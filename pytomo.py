@@ -54,7 +54,7 @@ for tomography and command-line interface. All functions should be fully accesib
 
 
 
-
+import config
 
 import sys,os
 from numpy import *
@@ -62,7 +62,7 @@ import time
 import os.path
 import socket
 import matplotlib
-import config
+
 from shutil import copyfile
 
 set_printoptions(precision=4,linewidth=400)
@@ -232,17 +232,15 @@ def usage():
 class pytomo_class:
     def __init__(self, inputs):
         
- 
-     
-        
-
+  
         self.inputs = loadSetting( )
         self.inputs.update(inputs)
 
         #should not be needed!?
-        self.inputs['tmp_folder']  = os.path.expanduser(os.path.expandvars(self.inputs['tmp_folder' ]))
-        self.inputs['output_path'] = os.path.expanduser(os.path.expandvars(self.inputs['output_path']))
-
+        for dir in ['tmp_folder', 'output_path']:
+            self.inputs[dir] = os.path.expanduser(os.path.expandvars(self.inputs[dir]))
+            os.mkdirs(dit, exist_ok=True)
+   
 
     def run(self):
         #matplotlib.rcParams['backend'] = 'Qt5Agg'   
