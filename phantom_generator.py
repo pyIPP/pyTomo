@@ -282,10 +282,7 @@ def phantom_generator(tokamak, tvec_new, nx_new=100, ny_new=100, profile = 'Gaus
         asym = exp(s_cos(M.flatten()).reshape(M.shape)*cos(theta))
         asym *= 1+s_sin(M.flatten()).reshape(M.shape)*sin(theta)
         asym[asym<0] = 0
-
-        savetxt(tokamak.tmp_folder+'/cos',s_cos(linspace(0,1,100)) )
-        savetxt(tokamak.tmp_folder+'/sin',s_sin(linspace(0,1,100)) )
-
+ 
         emissivity*= asym.T
       
         
@@ -365,7 +362,7 @@ def phantom_generator(tokamak, tvec_new, nx_new=100, ny_new=100, profile = 'Gaus
             P /= amax(P)
             emissivity[:, it] = interp(M[ it,:],x,P*(1+sin(2*pi*w*x+it)/10.)).T
             emissivity[:,-it] = interp(M[-it,:],x,P*(1+cos(2*pi*w*x+it)/10.)).T
-        savetxt(tokamak.tmp_folder +os.sep+'emiss0', c_[x,P].T)
+       
         
     elif profile == 'poloidal_modes':
         theta = arctan2(ygrid[:,None]-y0.mean(),xgrid[None,:]-x0.mean()).flatten(order='F')
@@ -376,9 +373,7 @@ def phantom_generator(tokamak, tvec_new, nx_new=100, ny_new=100, profile = 'Gaus
         edge = 0.99
         P =  Gaussian(x, h, edge)
         P /= amax(P)
-    
-        savetxt(tokamak.tmp_folder +os.sep+'emiss0', c_[x,P].T)
-
+     
         P = interp(M[0,:],x,P)
         for it,w in enumerate(omega):
             emissivity[:,  it] = P*(1+sin(w*theta+it)*M[it,:]*(1-M[it,:])**2)
@@ -418,8 +413,7 @@ def phantom_generator(tokamak, tvec_new, nx_new=100, ny_new=100, profile = 'Gaus
         edge = 0.99
         P = profile_fun(x, h, edge)
         P /= amax(P)
-        savetxt(tokamak.tmp_folder +os.sep+'emiss0', c_[x,P*scale].T)
-
+         
         emissivity[:] = interp(M,x,P).T
 
 
@@ -465,9 +459,9 @@ def phantom_generator(tokamak, tvec_new, nx_new=100, ny_new=100, profile = 'Gaus
     
     Tmat_ , _, _ = geom_mat_setting(tokamak, tokamak.nx, tokamak.ny, tokamak.virt_chord)
 
-    savez_compressed(tokamak.tmp_folder+os.sep+'Emiss0.npz',G = reshape(emissivity_out,(tokamak.ny,tokamak.nx,tsteps), order='F')
-            ,Rc= xgridc_out,Zc= ygridc_out,tvec=tvec_new, 
-            xgridc=xgridc,ygridc=ygridc,G0=emissivity.reshape(ny_new, nx_new,tsteps,order='F'))
+    #savez_compressed(tokamak.tmp_folder+os.sep+'Emiss0.npz',G = reshape(emissivity_out,(tokamak.ny,tokamak.nx,tsteps), order='F')
+    #        ,Rc= xgridc_out,Zc= ygridc_out,tvec=tvec_new, 
+    #        xgridc=xgridc,ygridc=ygridc,G0=emissivity.reshape(ny_new, nx_new,tsteps,order='F'))
 
     return single(data),single(error), tvec_new, single(emissivity_out)
 
