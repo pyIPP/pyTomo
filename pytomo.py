@@ -239,7 +239,7 @@ class pytomo_class:
         #should not be needed!?
         for dir in ['tmp_folder', 'output_path']:
             self.inputs[dir] = os.path.expanduser(os.path.expandvars(self.inputs[dir]))
-            os.mkdirs(dit, exist_ok=True)
+            os.makedirs(dir, exist_ok=True)
    
 
     def run(self):
