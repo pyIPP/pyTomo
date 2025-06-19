@@ -360,12 +360,19 @@ class loader_BOLO():
             self.MDSconn.closeTree(self.tree,self.shot)
             self.real_time_data = False
         except:
+            import time
             print('Standart bolometer data are not availible')
-            self.tvec = self.MDSconn.get(f'dim_of(PTDATA2("DGSDPWRU01",{self.shot},1))').data()/1e3 
-            self.real_time_data = True
+            for i in range(10):
+                self.tvec = self.MDSconn.get(f'dim_of(PTDATA2("DGSDPWRU01",{self.shot},1))').data()/1e3  
+                if len(self.tvec) > 1:
+                    break
+                print('No realtime bolometer data, waiting 10s...')
+                time.sleep(10)
+
             if len(self.tvec) == 1:
                 raise Exception('No Realtime bolo data!!')
             
+            self.real_time_data = True
             nt = len(self.tvec)
             dt = (self.tvec[-1]-self.tvec[0]) / (nt+1)
             self.downsample = max(int(1e-2/dt), 1)
