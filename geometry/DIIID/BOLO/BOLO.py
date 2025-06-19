@@ -353,7 +353,7 @@ class loader_BOLO():
         
       
         try:
-            ss
+          #  ss
             self.MDSconn.openTree(self.tree,self.shot)
             TDIcall = "\\BOLOM::TOP.PRAD_01:TIME"
             self.tvec = self.MDSconn.get(TDIcall).data()/1e3
@@ -1037,6 +1037,17 @@ class loader_BOLO():
         data_err = np.single(data_err)
   
         self.cache = data,data_err
+        
+                
+        mdata = np.mean((shot_data),0)
+        likely_invalid =  (data_err[0]  <1 ) |(mdata < np.median(mdata)/10)#(mdata <  data_err[0] *  
+        
+        try:
+            import config
+            config.wrong_dets_pref = np.where(likely_invalid)[0]
+        except: 
+            pass
+        
         
        
     def get_data(self,tmin=-infty,tmax=infty):
