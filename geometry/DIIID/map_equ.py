@@ -964,19 +964,21 @@ class equ_map:
         for i, ii in enumerate(unique_idx):
             jt = idx == ii
             for k in range(ntheta):
-       
+
                 monotonicity = np.cumprod(np.ediff1d(rho_line[i, k],1)>0)==1  #troubles with IDE
                 imax = np.argmax(rho_line[i, k, monotonicity])
                 try:
-                	rspl = InterpolatedUnivariateSpline(rho_line[i, k, :imax+1],
+	                rspl = InterpolatedUnivariateSpline(rho_line[i, k, :imax+1],
                                                     line_r[i, k, :imax+1], k=2)
                 except:
-                        print('Warning: issue with rhoTheta2rz spline mapping! ')
-                	R[jt, k]  = R[jt, k-1] 
-                	z[jt, k] = z[jt, k-1] 
-                	continue
+
+                    print('Warning: issue with rhoTheta2rz spline mapping! ')
+                    R[jt, k]  = R[jt, k-1] 
+                    z[jt, k] = z[jt, k-1] 
+                    continue
             
-                
+            
+
                 rho_ = np.minimum(rho[jt].flatten(),rho_line[i, k, imax])  #avoid extrapolation 
                 R[jt, k] = rspl(rho_).reshape(rho[jt].shape)
 
