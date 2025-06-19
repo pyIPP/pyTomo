@@ -1020,7 +1020,8 @@ class loader_BOLO():
         
         #median absolute deviation
         data_err += 1.22*np.mean(abs(shot_data-data_smooth), 0)
-   
+        data_err += np.abs(data_smooth) * 0.05 #5% calibration error 
+        data_err = np.single(data_err)
         self.cache = data,data_err
         
        
@@ -1075,8 +1076,16 @@ class loader_BOLO():
         sos = butter(4, 0.02, output='sos')
         data_smooth = sosfiltfilt(sos, shot_data, axis=0)
         
+        
+        
+        init_err = data[self.tvec<0].std(0)/2
+        #Mean absolute deviation
+        data_err = 1.22* np.exp(sosfiltfilt(sos,sosfiltfilt(sos, np.log(np.abs(shot_data-data_smooth+1e-6)+init_err), axis=0), axis=0))
+        data_err += np.abs(data_smooth) * 0.05 #5% calibration error 
+        data_err = np.single(data_err)
+        
         #median absolute deviation
-        data_err += 1.22*np.mean(abs(shot_data-data_smooth), 0)
+        #data_err += 1.22*np.mean(abs(shot_data-data_smooth), 0)
         
        # for i in range(50):
         #    plt.plot(shot_data[:,i])
@@ -1097,7 +1106,8 @@ class loader_BOLO():
         
         
         mdata = np.mean((shot_data),0)
-        likely_invalid = (mdata <  data_err[0] * 3) | (data_err[0]  <1 )|(mdata < np.median(mdata)/10)
+        likely_invalid =  (data_err[0]  <1 ) |(mdata < np.median(mdata)/10)#(mdata <  data_err[0] * 3) |
+       # likely_invalid = (mdata <  data_err[0] * 3) | (data_err[0]  <1 )|(mdata < np.median(mdata)/10)
         #np.mean(np.abs(np.diff(shot_data[::10],axis=0)),0)*2 
         
        # plt.plot(mdata)
@@ -1109,7 +1119,11 @@ class loader_BOLO():
         
        # plt.show()
         
-
+        try:
+            import config
+            config.wrong_dets_pref = np.where(likely_invalid)[0]
+        except: 
+            pass
         
         #import config
         #config.wrong_dets_pref = np.where(likely_invalid)[0]
