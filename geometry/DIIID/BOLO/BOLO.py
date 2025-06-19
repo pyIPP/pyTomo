@@ -353,7 +353,7 @@ class loader_BOLO():
         
       
         try:
-          
+            ss
             self.MDSconn.openTree(self.tree,self.shot)
             TDIcall = "\\BOLOM::TOP.PRAD_01:TIME"
             self.tvec = self.MDSconn.get(TDIcall).data()/1e3
@@ -363,6 +363,14 @@ class loader_BOLO():
             print('Standart bolometer data are not availible')
             self.tvec = self.MDSconn.get(f'dim_of(PTDATA2("DGSDPWRU01",{self.shot},1))').data()/1e3 
             self.real_time_data = True
+            if len(self.tvec) == 1:
+                raise Exception('No Realtime bolo data!!')
+            
+            nt = len(self.tvec)
+            dt = (self.tvec[-1]-self.tvec[0]) / (nt+1)
+            self.downsample = max(int(1e-2/dt), 1)
+            #downsample
+            self.tvec = self.tvec[:nt // self.downsample * self.downsample].reshape(-1, self.downsample).mean(1)
                 
             
             
@@ -402,6 +410,7 @@ class loader_BOLO():
         
          
         try:
+            assert not self.real_time_data 
             try:
                 powers = list(np.load(geometry_path+'/power_%d.npz'%self.shot, allow_pickle=True)['power'])
             except:
@@ -451,7 +460,8 @@ class loader_BOLO():
            
                 np.savez_compressed(geometry_path+'/power_%d.npz'%self.shot, power=self.powers)
         except:
-            pass
+            powers = {}
+            
        
         return powers
       
@@ -989,39 +999,43 @@ class loader_BOLO():
                 smoothN = savitzky_golay(N, 101,1,firstvals=mean(N[:200]))
                 G = conj(H)*S/(H*conj(H)*S+smoothN)
                 pwr[:,ch]=  np.fft.irfft(G*fx)*tau[ch]/dt/scrfact[ch]
-       
+           #embed()
         return tvec, pwr
        
     def get_data_realtime(self,tmin=-infty,tmax=infty):
         print('Loading realtime bolometer data')
-        
-
-        ntim = len(self.tvec)
-
-        data = zeros((ntim, self.nl),dtype=single)
-        data_err = zeros((ntim, self.nl),dtype=single)
-        #BOLOM::TOP.RAW:BOL_L23_V
+       
+        data = []
  
+       
         for cam, index in self.cam_ind.items():
             for i in index:
                 name = self.detectors_dict[cam][i-index[0]]
                 
                 TDIcall = f'PTDATA2("DGSDPWR{name[4:]}",{self.shot},1)'
 
-                data[:,i] = self.MDSconn.get(TDIcall).data() #W
-                data[:,i] *= self.etendue[cam][i-index[0]]*1e4 #W/m^2
-
+                data.append( self.MDSconn.get(TDIcall).data()) #W
+                data[i] *= self.etendue[cam][i-index[0]]*1e4 #W/m^2
         
-        shot_data = data[(self.tvec > 0)&(self.tvec < 5)]
+        data =  np.array(data).T
+ 
+        
+        data = data[:len(data) // self.downsample * self.downsample].reshape(-1, self.downsample, data.shape[1]).mean(1)
+      
+        data_err = zeros_like(data,dtype=single)
+        #down
+       
+        shot_data = data#[(self.tvec > 0)&(self.tvec < 5)]
   
         from scipy.signal import butter, sosfiltfilt
         sos = butter(4, 0.02, output='sos')
         data_smooth = sosfiltfilt(sos, shot_data, axis=0)
-        
-        #median absolute deviation
-        data_err += 1.22*np.mean(abs(shot_data-data_smooth), 0)
+   
+        #Mean absolute deviation
+        data_err = 1.22* np.exp(sosfiltfilt(sos,sosfiltfilt(sos, np.log(np.abs(shot_data-data_smooth+1e-6)), axis=0), axis=0))
         data_err += np.abs(data_smooth) * 0.05 #5% calibration error 
         data_err = np.single(data_err)
+  
         self.cache = data,data_err
         
        
@@ -1036,6 +1050,7 @@ class loader_BOLO():
         
         if hasattr(self,'cache'):
             data, data_err = self.cache
+         
             return self.tvec[imin:imax],data[imin:imax],data_err[imin:imax]
         
         
