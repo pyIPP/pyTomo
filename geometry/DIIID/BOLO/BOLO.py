@@ -1051,7 +1051,7 @@ class loader_BOLO():
         
        
     def get_data(self,tmin=-infty,tmax=infty):
-        
+         
         #try load realtime data 
         if self.real_time_data and not hasattr(self,'cache'):
             self.get_data_realtime(tmin,tmax)
@@ -1061,6 +1061,7 @@ class loader_BOLO():
         
         if hasattr(self,'cache'):
             data, data_err = self.cache
+
          
             return self.tvec[imin:imax],data[imin:imax],data_err[imin:imax]
         
@@ -1092,7 +1093,7 @@ class loader_BOLO():
         #data_err += 0.1*mean(data,1)[:,None]
         
         
-        shot_data = data[(self.tvec > 0)&(self.tvec < 5)]
+        shot_data = data#[(self.tvec > 0)&(self.tvec < 5)]
         #data_err += np.median(np.abs(np.diff(shot_data[::10],axis=0)),0)/2
         
          
