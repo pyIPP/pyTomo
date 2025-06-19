@@ -15,7 +15,7 @@ from scipy.signal import fftconvolve, medfilt
 import time
 from multiprocessing import  cpu_count
 from multiprocessing.pool import Pool
-
+from IPython import embed
 import numpy
 
 def savitzky_golay(y, window_size, order, deriv=0, rate=1,firstvals=None, lastvals=None):
@@ -351,14 +351,21 @@ class loader_BOLO():
         self.dets_index = [v for k,v in self.cam_ind.items()]
         
         
-        #import IPython
-        #IPython.embed()
-
-        self.MDSconn.openTree(self.tree,self.shot)
-        TDIcall = "\\BOLOM::TOP.PRAD_01:TIME"
-        self.tvec = self.MDSconn.get(TDIcall).data()/1e3
-        self.MDSconn.closeTree(self.tree,self.shot)
-
+      
+        try:
+          
+            self.MDSconn.openTree(self.tree,self.shot)
+            TDIcall = "\\BOLOM::TOP.PRAD_01:TIME"
+            self.tvec = self.MDSconn.get(TDIcall).data()/1e3
+            self.MDSconn.closeTree(self.tree,self.shot)
+            self.real_time_data = False
+        except:
+            print('Standart bolometer data are not availible')
+            self.tvec = self.MDSconn.get(f'dim_of(PTDATA2("DGSDPWRU01",{self.shot},1))').data()/1e3 
+            self.real_time_data = True
+                
+            
+            
 
     #def get_psi(self, tvec,xgridc, ygridc):
         #from .. import map_equ
@@ -393,9 +400,7 @@ class loader_BOLO():
         
     def get_total_rad(self):
         
-        
-        #if hasattr(self, 'powers'):
-            #return self.powers
+         
         try:
             try:
                 powers = list(np.load(geometry_path+'/power_%d.npz'%self.shot, allow_pickle=True)['power'])
@@ -443,13 +448,11 @@ class loader_BOLO():
                         break
                     except:
                         pass
-                
-                #np.savez_compressed(geometry_path+'_power.npz', power=self.powers)
+           
                 np.savez_compressed(geometry_path+'/power_%d.npz'%self.shot, power=self.powers)
         except:
             pass
-        #import IPython
-        #IPython.embed()
+       
         return powers
       
       
@@ -989,10 +992,43 @@ class loader_BOLO():
        
         return tvec, pwr
        
+    def get_data_realtime(self,tmin=-infty,tmax=infty):
+        print('Loading realtime bolometer data')
+        
+
+        ntim = len(self.tvec)
+
+        data = zeros((ntim, self.nl),dtype=single)
+        data_err = zeros((ntim, self.nl),dtype=single)
+        #BOLOM::TOP.RAW:BOL_L23_V
+ 
+        for cam, index in self.cam_ind.items():
+            for i in index:
+                name = self.detectors_dict[cam][i-index[0]]
+                
+                TDIcall = f'PTDATA2("DGSDPWR{name[4:]}",{self.shot},1)'
+
+                data[:,i] = self.MDSconn.get(TDIcall).data() #W
+                data[:,i] *= self.etendue[cam][i-index[0]]*1e4 #W/m^2
+
+        
+        shot_data = data[(self.tvec > 0)&(self.tvec < 5)]
+  
+        from scipy.signal import butter, sosfiltfilt
+        sos = butter(4, 0.02, output='sos')
+        data_smooth = sosfiltfilt(sos, shot_data, axis=0)
+        
+        #median absolute deviation
+        data_err += 1.22*np.mean(abs(shot_data-data_smooth), 0)
+   
+        self.cache = data,data_err
+        
        
     def get_data(self,tmin=-infty,tmax=infty):
         
-        
+        #try load realtime data 
+        if self.real_time_data and not hasattr(self,'cache'):
+            self.get_data_realtime(tmin,tmax)
         
         imin,imax = self.tvec.searchsorted((tmin, tmax))
         imax += 1
@@ -1002,12 +1038,15 @@ class loader_BOLO():
             return self.tvec[imin:imax],data[imin:imax],data_err[imin:imax]
         
         
+
+    
+
         
         ntim = len(self.tvec)
 
         data = zeros((ntim, self.nl),dtype=single)
-
-        #BOLOM::TOP.RAW:BOL_L23_V
+        data_err = zeros((ntim, self.nl),dtype=single)
+        
         TDIcall = "\\BOLOM::TOP.PRAD_01.POWER:"
         self.MDSconn.openTree(self.tree,self.shot)
         for cam, index in self.cam_ind.items():
@@ -1025,62 +1064,59 @@ class loader_BOLO():
         #data_err += std(data[self.tvec < 0],0)*2
         #data_err += 0.1*mean(data,1)[:,None]
         
-        shot_data = data
-        #shot_data = data[(self.tvec > rmin)&(self.tvec < 5)]
+        
+        shot_data = data[(self.tvec > 0)&(self.tvec < 5)]
         #data_err += np.median(np.abs(np.diff(shot_data[::10],axis=0)),0)/2
-
-
-
-
+        
+         
+        
+        import matplotlib.pylab as plt
         from scipy.signal import butter, sosfiltfilt
         sos = butter(4, 0.02, output='sos')
         data_smooth = sosfiltfilt(sos, shot_data, axis=0)
-
-        init_err = data[self.tvec<0].std(0)/2
-        #Mean absolute deviation
-        data_err = 1.22* np.exp(sosfiltfilt(sos,sosfiltfilt(sos, np.log(np.abs(shot_data-data_smooth+1e-6)+init_err), axis=0), axis=0))
-        data_err += np.abs(data_smooth) * 0.05 #5% calibration error
-        data_err = np.single(data_err)
-        #import matplotlib.pylab as plt
-        #for i in range(len(data)):
-            #plt.title(i)
-            #plt.errorbar(self.tvec, data[:,i], data_err[:,i])
-            #plt.plot(self.tvec, data_smooth[:,i])
-            #plt.show()
-
-        ##embed()
-        #import IPython
-        #IPython.embed()
+        
+        #median absolute deviation
+        data_err += 1.22*np.mean(abs(shot_data-data_smooth), 0)
+        
+       # for i in range(50):
+        #    plt.plot(shot_data[:,i])
+         #   plt.plot(data_smooth[:,i])
+         #   plt.title(i)
+         #   plt.show()
+        
+        
+       # for i in range(len(data)):
+        #    plt.title(i)
+        #    plt.errorbar(self.tvec, data[:,i], data_err[:,i])
+        #    plt.plot(self.tvec[(self.tvec > 0)&(self.tvec < 5)], data_smooth[:,i])
+        #   plt.show()
+ 
  
         
         self.cache = data,data_err
         
         
         mdata = np.mean((shot_data),0)
-            #likely_invalid = (mdata <  data_err[0] * 3) | (data_err[0]  <1 )|(mdata < np.median(mdata)/10)
-        likely_invalid =  (data_err[0]  <1 ) |(mdata < np.median(mdata)/10)#(mdata <  data_err[0] * 3) |
-
-
+        likely_invalid = (mdata <  data_err[0] * 3) | (data_err[0]  <1 )|(mdata < np.median(mdata)/10)
         #np.mean(np.abs(np.diff(shot_data[::10],axis=0)),0)*2 
         
-        #plt.plot(mdata)
+       # plt.plot(mdata)
         #plt.plot( data_err[0] * 3)
         #plt.plot(np.arange(len(mdata))[likely_invalid], mdata[likely_invalid],'o')
         
        # plt.plot(np.median(np.abs(np.diff(shot_data[::10],0)),0), '--'  )
         #plt.plot(  np.mean(np.abs(np.diff(shot_data[::10],axis=0)),0)   , '--'  )
         
-        #plt.show()
+       # plt.show()
         
 
-        try:
-            import config
-            config.wrong_dets_pref = np.where(likely_invalid)[0]
-        except:
-            pass
+        
+        #import config
+        #config.wrong_dets_pref = np.where(likely_invalid)[0]
+        
         #print(config.wrong_dets_pref)
        # data_err[:,likely_invalid] = np.inf
-        #PRINT()
+ 
         
         return self.tvec[imin:imax],data[imin:imax],data_err[imin:imax]
 
@@ -1187,15 +1223,16 @@ def main():
     import os
     import os,sys
     #, shot, geometry_path,MDSconn
+   # c = mds.Connection('localhost' )
     c = mds.Connection('atlas.gat.com' )
-
+    
     bolo = loader_BOLO(200380,'/home/tomas/tomography/geometry/DIIID/BOLO/',c )
     T = time.time()
     bolo.get_data(1.9,3)
-   # bolo.get_total_rad(4,6)
+    #bolo.get_total_rad(4,6)
 
-    print('loaded in ',time.time()-T)
-    bolo.load_geom()
+    #print('loaded in ',time.time()-T)
+    #bolo.load_geom()
 
 
     
