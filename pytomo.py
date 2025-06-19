@@ -158,8 +158,13 @@ s
     if not os.path.exists(local_path):
         os.mkdir(local_path)
     
+    #DIII-D IRIS or OMEGA
+    if os.path.exists('/fusion/projects/codes/pytomo'):
+        import getpass
+        local_path = '/local-scratch/'+getpass.getuser()+'/pytomo/'
+    
     if not os.path.exists(os.path.join(local_path,'geometry')):
-        os.mkdir(os.path.join(local_path,'geometry'))
+        os.makedirs(os.path.join(local_path,'geometry'), exist_ok=True)
         
     from multiprocessing import cpu_count
     n_cpu = cpu_count() 
@@ -168,6 +173,7 @@ s
         if os.path.exists('/fusion/projects/codes/pytomo'):
             tok_name = 'D3D'
             n_cpu = 4
+            
         elif os.path.exists('/afs/ipp-garching.mpg.de/'):
             tok_name = 'AUG'
         elif os.path.exists('/p/'):

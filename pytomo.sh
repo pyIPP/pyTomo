@@ -15,7 +15,7 @@ export C_INCLUDE_PATH=$C_INCLUDE_PATH:/fusion/projects/codes/pytomo/SuiteSparse/
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/fusion/usc/opt/intel2020/intelpython3/lib/
 
-module load omfit/unstable
+module load omfit
 module load intel
 
 echo 'Start pyTOMO'

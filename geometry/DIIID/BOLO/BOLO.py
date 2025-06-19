@@ -1038,7 +1038,7 @@ class loader_BOLO():
 
         init_err = data[self.tvec<0].std(0)/2
         #Mean absolute deviation
-        data_err = 1.22* np.exp(sosfiltfilt(sos,sosfiltfilt(sos, np.log(np.abs(shot_data-data_smooth)+init_err), axis=0), axis=0))
+        data_err = 1.22* np.exp(sosfiltfilt(sos,sosfiltfilt(sos, np.log(np.abs(shot_data-data_smooth+1e-6)+init_err), axis=0), axis=0))
         data_err += np.abs(data_smooth) * 0.05 #5% calibration error
         data_err = np.single(data_err)
         #import matplotlib.pylab as plt
