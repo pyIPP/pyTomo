@@ -131,7 +131,7 @@ class MOM2RZ:
 
 def Descur_fit_core(args):
 
-    t_fract, i, rho, R_contour, Z_contour, R0, Z0,n_fourier = args
+    t_fract, i, rho, R_contour, Z_contour, R0, Z0,n_fourier, poly_order = args
 
     n_rho = len(rho)
 
@@ -161,7 +161,7 @@ def Descur_fit_core(args):
     rsin = moments_all[:,:,1]
     zcos = moments_all[:,:,2]
     zsin = moments_all[:,:,3]
-    poly_order = 20
+
 
 
     try:
@@ -502,11 +502,6 @@ class Equlibrium:
 
 
 
-        #corrupted_eq = abs(self.eqm.PFxx[3]) > 1000
-
-
-
-        #print( self.eqm.t_eq)
         corrupted_eq = np.zeros_like(self.eqm.t_eq, dtype='bool')
         if self.eqm.ssq['ERROR'] is not None:
             corrupted_eq |=  abs(self.eqm.ssq['Zmag']-0)>0.3
@@ -540,7 +535,7 @@ class Equlibrium:
             out = pool.map(help_fun,args )
             R_cont,z_cont = hstack(out)
         except:
-             R_cont,z_cont = self.eqm.rhoTheta2rz(rho, theta,t_eq, n_line=100)
+            R_cont,z_cont = self.eqm.rhoTheta2rz(rho, theta,t_eq, n_line=100)
 
 
 
@@ -613,11 +608,15 @@ class Equlibrium:
         Z0 = self.eqm.ssq['Zmag'][~corrupted_eq]
 
 
-
+        
+       # import matplotlib.pylab as plt
+       # plt.plot(R_cont[:,:,-1].T, z_cont[:,:,-1].T)
+       # plt.show()
 
         mom_order = 10
+        poly_order = 20
 
-        args = [(jt/float(nti),jt,rho,R_cont[jt],z_cont[jt],R0[jt], Z0[jt], mom_order) for jt in arange(nti)]
+        args = [(jt/float(nti),jt,rho,R_cont[jt],z_cont[jt],R0[jt], Z0[jt], mom_order, poly_order) for jt in arange(nti)]
 
 
         t1 = time()
