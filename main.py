@@ -88,7 +88,7 @@ def tomography(inputs, tokamak, progress = None):
                                     data, error, data_all,error_all, tvec, dets,Tmat, normData)
             cams = list(tokamak.detectors_dict.keys())
             calib_file = tokamak.geometry_path+'calibration'+os.sep+'%d.txt'%tokamak.shot
-
+            print('Write calibration factors: ', calib_file)
             f = open(calib_file, 'w')
             for k,i in zip(cams, calb): f.write('%s  %.3f\n'%( k,i ))
             f.close()
