@@ -159,9 +159,9 @@ s
         os.mkdir(local_path)
     
     #DIII-D IRIS or OMEGA
-    if os.path.exists('/fusion/projects/codes/pytomo'):
-        import getpass
-        local_path = '/local-scratch/'+getpass.getuser()+'/pytomo/'
+    #if os.path.exists('/fusion/projects/codes/pytomo'):
+     #   import getpass
+        #local_path = '/local-scratch/'+getpass.getuser()+'/pytomo/'
     
     if not os.path.exists(os.path.join(local_path,'geometry')):
         os.makedirs(os.path.join(local_path,'geometry'), exist_ok=True)
@@ -186,13 +186,16 @@ s
         
         print('Config file was copied from '+cfg_path)
     from shared_modules import read_config
+    print('Load config from: ', local_path+cfg_file+".cfg")
     inputs = read_config(local_path+cfg_file+".cfg")
  
     inputs['program_path']= program_path
     inputs['local_path']  = local_path
     inputs['output_path'] = os.path.expanduser(os.path.expandvars(os.path.normpath(inputs['output_path'])))+os.sep
+    
     inputs['tmp_folder']  = os.path.expanduser(os.path.expandvars(os.path.normpath(inputs['tmp_folder'])))+os.sep
     inputs.setdefault('n_cpu', n_cpu)
+    
     config.wrong_dets_pref = inputs['wrong_dets']
     if 'useCache' in inputs:
         config.useCache = inputs['useCache']

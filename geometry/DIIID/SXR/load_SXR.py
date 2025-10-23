@@ -597,7 +597,14 @@ def get_calib(shot,calib_path,cam):
             line = line.split()
             shots.append(int(line[0]))
             
-            Rc.append(float(line[1+P].replace('k','e3')))
+            #R = re.sub(r'[A-Za-z]', 'e', line[1+P])
+            R = line[1+P]
+            try:
+                Rc.append(float(R.replace('k','e3'))) #still a failing?
+            except:
+                print(' Wrong resistor value!! :' + R + '  in   '+SXRsettings)
+                Rc.append(1e5)
+                
             Gain.append(float(line[2+PA+P]))
             Filt.append(int(line[3+PA*2+P]))
         if line[:4] == 'shot':
@@ -640,7 +647,7 @@ def get_calib_fact(shot, geometry_path,  toroidal=False):
     calib_dict = {}
 
     if toroidal:
-        cams = '45R1','165R1','195R1'
+        cams = '45R1',  '195R1'
     else:
         cams = '90RM1','90RP1'
 
@@ -651,7 +658,9 @@ def get_calib_fact(shot, geometry_path,  toroidal=False):
 
         try:
             resistor, gain, pinhole, filter = get_calib(shot,calib_path,cam)
-        except:
+        except Exception as e:
+            #raise
+            
             #if cam == '195R1': shot = min(shot, 160000) #to prevent loading of calibration for new U45 camera
             resistor, gain, pinhole, filter = get_calib(shot,geometry_path,cam)
 
@@ -887,7 +896,7 @@ class loader_SXR():
         self.detectors_dict=OrderedDict()
 
         if toroidal:
-            cams = '45R1','195R1',
+            cams = '45R1',   '195R1' 
             self.n_diods = 12
             n_chunks = 5
             for c in cams: 
