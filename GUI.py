@@ -1652,7 +1652,8 @@ class MainWindow(QMainWindow):
       
         import shutil
 
-
+        print('Not cleaning TMP!')
+        """
         try:
             
             debug('clean tmp')
@@ -1661,7 +1662,7 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print('cleaning of the TMP folder %s has failured'%setting['tmp_folder'], e)
             print(os.listdir(setting['tmp_folder'] ))
-        
+        """
         
         try:
             if not os.path.exists(setting['tmp_folder']):

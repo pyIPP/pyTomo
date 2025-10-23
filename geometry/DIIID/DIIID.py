@@ -847,8 +847,8 @@ sqrt(max(data))
                 nimp_err  = nimp['err']
                 Zimp = 6  #carbon
                 Zmain = 1  #carbon
-                ne = interp1d(ne_tvec, ne_data,axis=0)(np.clip(Zeff_tvec, ne_tvec[0], ne_tvec[-1]))
-                Zeff_data  = Zimp*(Zimp-Zmain)*nimp_data/ne + Zmain
+                ne = interp1d(ne_tvec, ne_data,axis=0)(np.clip(Zeff_tvec, ne_tvec[0], ne_tvec[-1]))+1
+                Zeff_data  = np.clip(Zimp*(Zimp-Zmain)*nimp_data/ne + Zmain,1,6)
 
             print('Loaded from kindata')
  
