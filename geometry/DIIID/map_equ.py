@@ -78,7 +78,7 @@ class equ_map:
             atimes = self.sf.get('\\'+diag+'::TOP.RESULTS.aEQDSK.ATIME').data()/1000
             chi2 = self.sf.get('\\'+diag+'::TOP.RESULTS.aEQDSK.CHISQ').data()
             chi2_max = 200
-            self.valid = ~np.in1d(t_eq,atimes[chi2 > chi2_max])&(t_eq>0)
+            self.valid = ~np.isin(t_eq,atimes[chi2 > chi2_max])&(t_eq>0)
             #print len(t_eq), sum(self.valid)
             self.t_eq = t_eq[self.valid]
             if len(self.t_eq) < 2: raise Exception('too few valid timepoints in equlibrium')
