@@ -330,8 +330,7 @@ def main():
     inputs['output_path'] = os.path.expanduser(os.path.expandvars(inputs['output_path']))
 
     for f in [inputs['tmp_folder'],inputs['output_path']]:
-        if not os.path.isdir( f):
-            os.mkdir(f)
+        os.makedirs(f, exist_ok = True)
             
             
     if len(sys.argv) == 1:

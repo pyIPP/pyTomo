@@ -158,6 +158,34 @@ def glob_initializer( plot_details_):
     plot_details = plot_details_
 
 
+
+ 
+from PIL import Image
+from concurrent.futures import ThreadPoolExecutor
+import matplotlib.cm as cm
+
+def save_slice_fast(data, path):
+    t = time.time()
+    os.makedirs(path, exist_ok=True)
+    
+    # Normalize entire volume at once (vectorized)
+    max_val = data.max()
+    normalized = clip(data / max_val, 0, 1)
+    
+    # Apply inferno colormap (returns RGBA float 0-1)
+    colormap = cm.get_cmap('inferno')
+    colored = (colormap(normalized) * 255).astype(uint8)  # shape: H x W x slices x 4
+    
+    def save_single(i):
+        # Take RGB only (drop alpha), shape: H x W x 3
+        Image.fromarray(colored[:, :, i, :3]).save(f'{path}/tomo_{i:05d}.png')
+    
+    # Save in parallel using threads
+    with ThreadPoolExecutor() as executor:
+        executor.map(save_single, range(data.shape[-1]))
+    
+    print(f'Plotted {data.shape[-1]} reconstructions in {time.time()-t}s')
+ 
 def make_graphs(input_data, plot_svd = False):
     """
     Prepare graphs for GUI and export. This is main plotting module. It can plot via Gnuplot (fast) and matplotlib (slow, better quality).
@@ -185,6 +213,10 @@ def make_graphs(input_data, plot_svd = False):
 
     my_cmap = my_cmap_ if inputs['cmap'] == 'ingesson' else cm.get_cmap(inputs['cmap'])
     my_cmap._init()
+    
+    
+
+
 
     #NOTE for transparent cmaps 
     #from matplotlib.colors import ListedColormap
@@ -203,6 +235,9 @@ def make_graphs(input_data, plot_svd = False):
 
     tmin = inputs['tmin']
     tmax = inputs['tmax']
+    
+    
+
     print('PLOTTING ..'+ str(shot))
 
     dets = tokamak.dets
@@ -216,9 +251,17 @@ def make_graphs(input_data, plot_svd = False):
     if G_samples is not None:
         G_samples = G_samples.T
         G_samples*= tokamak.norm    #convert from W/m^2/cm na W/m^3
+   
+    tsteps = len(tvec)
+
+    inputs['tsteps'] = tsteps   # used in GUI.py
         
     
-
+    if inputs.get('fast_plot', False):
+        G = G.reshape(tokamak.ny,tokamak.nx,-1, order='F')
+        save_slice_fast(G    , tmp_folder)
+        return 
+         
     data[:,results['dets']]  = results['data']  #include data correction (bacground substraction) done during preprocessing  
     error[:,results['dets']] = results['error']  #include data correction (bacground substraction) done during preprocessing  
     retro = zeros_like(data)
@@ -243,9 +286,6 @@ def make_graphs(input_data, plot_svd = False):
     #=========================================
 
 
-    tsteps = len(tvec)
-
-    inputs['tsteps'] = tsteps   # used in GUI.py
     base = '_SVD_' if plot_svd else '_rec_'
 
 
@@ -374,7 +414,8 @@ def make_graphs(input_data, plot_svd = False):
     #==============================================
 
     BdMat = get_bd_mat(tokamak,time=tvec.mean())
-
+    
+  
     #save the data 
     try:
         gresnorm = 1
@@ -2373,7 +2414,7 @@ def postprocessing_plot(input_data):
 
   
 
-
+ 
 
 
 def CalcPoloidalModeSpectrum(input_data):

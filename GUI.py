@@ -1428,7 +1428,7 @@ class MainWindow(QMainWindow):
                 
             
         
-        if self.postprocessing:
+        if self.postprocessing :
             images = {  self.Picture_position_1:'xmass',\
                         self.Picture_position_2:'ymass',\
                         self.Picture_emis_1:'power',\
@@ -1652,8 +1652,8 @@ class MainWindow(QMainWindow):
       
         import shutil
 
-        print('Not cleaning TMP!')
-        """
+        #print('Not cleaning TMP!')
+       
         try:
             
             debug('clean tmp')
@@ -1662,7 +1662,7 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print('cleaning of the TMP folder %s has failured'%setting['tmp_folder'], e)
             print(os.listdir(setting['tmp_folder'] ))
-        """
+        
         
         try:
             if not os.path.exists(setting['tmp_folder']):
@@ -1766,7 +1766,7 @@ class MainThread(QThread):
         try:
 
             
-            if self.setting['postprocessing'] and self.setting['reconstruct'] and self.setting['tsteps']>1:
+            if self.setting['postprocessing'] and self.setting['reconstruct'] and self.setting['tsteps']>1 and not self.setting['fast_plot']:
                 postprocessing_plot(output_list)
                 self.progress.iterateStep()
 

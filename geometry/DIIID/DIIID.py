@@ -463,9 +463,9 @@ sqrt(max(data))
                     output.update(self.PFM)
                 except:
                     pass
-                    
-                if config.useCache:
-                    savez_compressed(eq_path,diag=mag_diag,exp=self.mag_exp,
+           
+           
+                savez_compressed(eq_path,diag=mag_diag,exp=self.mag_exp,
                                 ed=self.mag_ed,**output)
 
 
