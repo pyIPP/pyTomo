@@ -15,6 +15,13 @@ dependencies:
   - python>=3.8
 
   # ============================================================
+  # BUILD TOOLS (for compiling Cython extensions)
+  # ============================================================
+  - cython>=0.29
+  - gcc_linux-64  # C compiler for building extensions
+  - gxx_linux-64  # C++ compiler (may be needed by some dependencies)
+
+  # ============================================================
   # CORE DEPENDENCIES (REQUIRED)
   # ============================================================
   - numpy>=1.15.0
@@ -22,7 +29,6 @@ dependencies:
   - matplotlib>=3.0.0
   - pillow>=5.0.0
   - netcdf4
-  - cython>=0.29
 
   # Sparse matrix operations (all available on conda-forge)
   - scikit-sparse>=0.4.4
