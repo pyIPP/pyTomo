@@ -557,10 +557,10 @@ class Tokamak(object):
 
 
         
-        from scipy.integrate import cumtrapz
+        from scipy.integrate import cumulative_trapezoid
 
         #definition of the thetat star by integral
-        theta_star = cumtrapz(dtheta_star,theta,axis=1,initial=0)
+        theta_star = cumulative_trapezoid(dtheta_star,theta,axis=1,initial=0)
         correction = (n_theta-1.)/n_theta
         if all(magr[:,0]==magr[:,-1]) and all(magz[:,0]==magz[:,-1]):
             correction = 1
