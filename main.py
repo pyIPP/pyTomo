@@ -244,7 +244,7 @@ def tomography(inputs, tokamak, progress = None):
                 G_phantom-= mean(G_phantom[:,subst_ind],axis=1)[:,None]
             corrupted = isinf(error)
             error = tile(data[:,subst_ind].std(1)*inputs['error_scale'], (len(tvec),1)).T
-            error[corrupted] = infty
+            error[corrupted] = inf
             
         else:         
 
@@ -253,7 +253,7 @@ def tomography(inputs, tokamak, progress = None):
             error[:] = error.mean()  #assume the same error for all LOS 
             corrupted = isinf(error)
             
-            error[corrupted] = infty
+            error[corrupted] = inf
 
             G0    = mean(G0[:,subst_ind],axis=1)[:,None]
             if not tokamak.allow_negative:
@@ -479,7 +479,7 @@ def pre_calibrate(tokamak, inputs, solver,ifishmax, data, error,
     D = data
     E = (1/error).mean(1)
     Eind = E == 0
-    E[Eind ] = infty
+    E[Eind ] = inf
     E[~Eind]= 1/E[~Eind]
 
     calib = ones(len(det_ind))

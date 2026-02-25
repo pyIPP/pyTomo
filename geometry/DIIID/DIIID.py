@@ -338,7 +338,7 @@ sqrt(max(data))
 
   
             
-    def get_data(self, failsave = True,tmin = -infty,tmax = infty):
+    def get_data(self, failsave = True,tmin = -inf,tmax = inf):
 
         t = time.time()
         global loader

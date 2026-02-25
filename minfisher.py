@@ -20,17 +20,9 @@ from shared_modules import prepare_inputs, create_derivation_matrix, debug
 try:
     from sksparse.cholmod import  cholesky,CholmodWarning,CholmodError, analyze, cholesky_AAt
 except:
-    print("Can't find Cholesky decomposition for sparse matrices !!! \nFalling back to slow version (~6x slower)\n Install scikits.sparse package")
+    print("Can't find Cholesky decomposition for sparse matrices !!! \n Install scikits.sparse package")
 
     pass
-    """
-    import cvxopt ;import cvxopt.cholmod
-        # Solve system 
-        K = cvxopt.spmatrix(K.data,K.row.astype(np.int),K.col.astype(np.int))
-        B = cvxopt.matrix(f[free,0])
-        cvxopt.cholmod.linsolve(K,B)
-        u[free,0]=np.array(B)[:,0] 
-    """
 
 
 

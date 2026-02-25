@@ -21,7 +21,7 @@ sys.path.append(os.path.abspath(parent_path))
 
 
 
-def dget_xtomo(connect, shot,tmin=-infty,tmax=infty):
+def dget_xtomo(connect, shot,tmin=-inf,tmax=inf):
     
     from mds_data import mds_load
 

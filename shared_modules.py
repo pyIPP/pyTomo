@@ -77,7 +77,7 @@ def prepare_inputs(Tok, data, error_all, dets, tvec, Tmat, normData, G0, reg_par
     normData = single(normData)
     data = (data/normData[:,None]).T
   
-    error = ones(size(error_all,1))*infty
+    error = ones(size(error_all,1))*inf
      #BUG all or  any???? !!!
     ind = all(isfinite(error_all)&(error_all!= 0),0)
 

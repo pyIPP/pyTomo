@@ -352,7 +352,7 @@ class ASDEX(Tokamak):
 
 
         
-    def get_data(self, failsave = True,tmin = -infty,tmax = infty):
+    def get_data(self, failsave = True,tmin = -inf,tmax = inf):
         
         #print( 'tmin, tmax',tmin, tmax)
         global loader

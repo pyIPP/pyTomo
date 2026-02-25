@@ -27,7 +27,7 @@ def ReadTomo(path, diag, shot, time,geometry_path):
     E = reshape(E, (nx,ny)).T
     ndets  = int(f.readline())
     data,retro,err,fact = array([float_(f.readline().split()) for i in range(ndets)]).T
-    err[err<0] = infty
+    err[err<0] = inf
     err*= data
     r1, r2 = f.readline().split()
     chi2 = float(f.readline())
@@ -295,7 +295,7 @@ class loader_BOLO():
         
       
       
-    def get_data(self,tmin=-infty,tmax=infty):
+    def get_data(self,tmin=-inf,tmax=inf):
 
         if not self.dd.Open('BLB',self.shot, experiment=self.experiment, edition=self.ed):
             raise Exception('no bolometric data!!')
@@ -372,7 +372,7 @@ class loader_BOLO():
                 dataerr = interp1d(data_tvec,dataerr,fill_value=0,bounds_error=True,
                             copy=False,axis=0,assume_sorted=True)(tvec)
 
-            dataerr[isnan(data)] = infty
+            dataerr[isnan(data)] = inf
             data[isnan(data)] = 0
             data_all[:,  self.cam_ind[det]] = data
             data_err_all[:, self.cam_ind[det]] = dataerr

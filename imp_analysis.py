@@ -165,10 +165,10 @@ def imp_analysis( input_data):
     W = array([interp(rho,r, p ) for r,p in zip( rho_data, W)])
     W_low = array([interp(rho,r, p ) for r,p in zip( rho_data, W_low)])
     W_high = array([interp(rho,r, p ) for r,p in zip( rho_data, W_high)])
-    W_high[isnan(W_high)] = infty
+    W_high[isnan(W_high)] = inf
      
-    W_high[isnan(W_high)] = infty
-    BR_high[isnan(BR_high)] = infty
+    W_high[isnan(W_high)] = inf
+    BR_high[isnan(BR_high)] = inf
 
 
 

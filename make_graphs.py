@@ -910,7 +910,7 @@ def matplotlib_data_tg(params):
         
     n_col = len(cam_ind)
     n_row = 1
-    resid0 = infty
+    resid0 = inf
     for i_col in range(int(ceil(sqrt(len(cam_ind))))+1):
         for i_row in range(i_col+1):
             resid = (i_col+1)*(i_row+1) - len(cam_ind)
@@ -1705,7 +1705,7 @@ def make_svd(inputs, tokamak,progress,results ):
 
     ax = None
     ymax = 0
-    ymin = infty
+    ymin = inf
     for i in range(n_svd_show):
         ax =  fig.add_subplot(gs[n_svd_show+i],sharey=ax)
 

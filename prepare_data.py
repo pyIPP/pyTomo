@@ -145,7 +145,7 @@ def preview(fig, inputs, tokamak, plot_2D = True, show_prew= False):
     ax = fig.add_subplot(111)
     
     if len(tvec) > 1 :
-        data[~ind_correct, :] = NaN
+        data[~ind_correct, :] = nan
 
         ind = slice(None,None, max(1, int(len(tvec)/1000)))
 

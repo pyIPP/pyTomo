@@ -101,7 +101,7 @@ class Tokamak(object):
         self.min_error = min_error
         self.norm = norm
         self.t_name = 's'   # time in seconds
-        self.nl = NaN   # default number of chord is unknown
+        self.nl = nan   # default number of chord is unknown
         self.default_calb  = 'const'  # const, none, variable
         self.camera = False  # in the case of tangential  camera => True
         self.allow_negative = True  # negative values are most often unphysical but not always 
@@ -249,7 +249,7 @@ class Tokamak(object):
         debug( "object tokamak done")
 
 
-    def get_data(self, failsave = True,tmin = -infty,tmax = infty,return_err=False,tind=None):
+    def get_data(self, failsave = True,tmin = -inf,tmax = inf,return_err=False,tind=None):
         """
         Returns loaded data from cache -> prevents memory issues
         """        
@@ -332,11 +332,11 @@ class Tokamak(object):
 
         error = (1/error[:(N/Nsmooth)*Nsmooth].reshape(N//Nsmooth, Nsmooth,ndet)).mean(1)
         error[error!= 0] = error[error!= 0]
-        error[error== 0] = infty
+        error[error== 0] = inf
         error = 1/repeat(c_[error.T, error.T[:,-1]], Nsmooth, 1)[:,:N].T        
 
-        error[(data.mean(0) <= 1e-6)|isnan(error)] = infty
-        error[saturated] = infty
+        error[(data.mean(0) <= 1e-6)|isnan(error)] = inf
+        error[saturated] = inf
 
         error = sqrt(error, out = error)   # ugly fix for old  numpy
  
@@ -695,7 +695,7 @@ class Tokamak(object):
                 ind = (isfinite(error[i])) & (error[i] > 0)
                 if sum(ind) > data_smooth:
                     error[i,ind] =  1./MovingAveradge(1./error[i,ind],data_smooth,-1)
-                error[i,~ind] = infty
+                error[i,~ind] = inf
                 data[i] = MovingAveradge(copy(data[i]),data_smooth)
         
         imin,imax = tvec.searchsorted((tmin,tmax))
@@ -770,7 +770,7 @@ class Tokamak(object):
     
             
         if len(tvec) > 2: #remove "blocked detectors"
-            error[:,all(abs(data-nanmean(data))<1e-3,0)]  = infty
+            error[:,all(abs(data-nanmean(data))<1e-3,0)]  = inf
         
         normData = nanmax(data, axis=0) + nanmax(data)*1e-6
 

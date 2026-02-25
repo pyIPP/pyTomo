@@ -397,8 +397,8 @@ def mpxdata(connect, shot,action,**kwarg):
                 #for node in 
  
                 #tvec = 0
-                #tvec,data = mds_load(node,chn, chnfmt=None, tmin=-infty,tmax=infty,step=1,raw=True,
-                    #remove_offset=False,offset_time_min = -infty, offset_time_max=0)
+                #tvec,data = mds_load(node,chn, chnfmt=None, tmin=-inf,tmax=inf,step=1,raw=True,
+                    #remove_offset=False,offset_time_min = -inf, offset_time_max=0)
                 #tvec = pmds.mdsvalue('_t=dim_of('+DTNE1+'01'+')')
                 tvec = asarray(connect.get('_t=dim_of('+DTNE1+'01'+')'))
                 ind_min = tvec.searchsorted(time[0])

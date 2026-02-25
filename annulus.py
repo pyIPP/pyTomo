@@ -141,7 +141,7 @@ def get_rho_field_mat(tokamak, tvec,nx=None, ny=None,   extrapolate = 0,  bounda
     if extrapolate:
         #C = [0.99, 1, 1.01,1.02] if getboundary else extrapolate
         bdx,bdy = tokamak.get_boundary(n_theta, boundary,time=tvec.mean()).T  
-        if extrapolate == infty:  #make sure that it will circumscribe whole grid
+        if extrapolate == inf:  #make sure that it will circumscribe whole grid
             min_dist = amin(hypot(bdx-mean(bdx),bdy-mean(bdy)))
             max_dist_x = max(abs(tokamak.xmax-mean(bdx)),abs(tokamak.xmin-mean(bdx)))
             max_dist_y = max(abs(tokamak.ymax-mean(bdy)),abs(tokamak.ymin-mean(bdy)))

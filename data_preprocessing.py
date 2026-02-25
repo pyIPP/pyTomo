@@ -732,7 +732,7 @@ class SVDFilter():
             ###exit()
 
             ##f3.canvas.draw()
-        ##update_single_plot(0,infty, N)
+        ##update_single_plot(0,inf, N)
         #show()
 
         ##plot(lfilter(b_comb,1, data[:,71]-mean(data[:-len_b,71]))[f_bank.shape[1]/2:])
@@ -912,7 +912,7 @@ class SVDFilter():
                 #pass
             self.fig2.canvas.draw()
             
-        update_single_plot(0,infty, self.ch0)
+        update_single_plot(0,inf, self.ch0)
 
 
       
