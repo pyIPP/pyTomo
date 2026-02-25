@@ -4,7 +4,6 @@
 
 
 import numpy as np
-from numpy import *
 from scipy.interpolate import interp1d
 from time import time
 from scipy.signal import  medfilt
@@ -30,12 +29,12 @@ class MOM2RZ:
     def __init__(self,rho,rcos,rsin,zcos,zsin,order=3,R0=0,Z0=0,regularization=1e5):
         nmom = np.size(rcos,-1)
 
-        self.p_rcos = zeros((order+1+nmom,nmom))
-        self.p_zcos = zeros((order+1+nmom,nmom))
-        self.p_rsin = zeros((order+1+nmom,nmom))
-        self.p_zsin = zeros((order+1+nmom,nmom))
+        self.p_rcos = np.zeros((order+1+nmom,nmom))
+        self.p_zcos = np.zeros((order+1+nmom,nmom))
+        self.p_rsin = np.zeros((order+1+nmom,nmom))
+        self.p_zsin = np.zeros((order+1+nmom,nmom))
 
-        order_range = r_[:order:2]
+        order_range = np.r_[:order:2]
 
         #do not use zero order term for zero order mode
         #self.p_rcos[-order-1:,0] = polyfit_reg(rho,rcos[:,0],order_range+1)
@@ -44,7 +43,7 @@ class MOM2RZ:
         #self.p_zsin[-order-1:,0] = polyfit_reg(rho,zsin[:,0],order_range+1)
 
         #use n to n+order  polynom order for higher modes ( it will have n zero derivations rho zero)  and zero first derivative
-        for i,n in enumerate(r_[1,arange(1,nmom)]):
+        for i,n in enumerate(np.r_[1,np.arange(1,nmom)]):
 
             #regularization is important, else rounding errors can be huge
             self.p_rcos[-n-order_range-1,i],r = self.polyfit_reg(rho,rcos[:,i],order_range+n,regularization)
@@ -94,36 +93,36 @@ class MOM2RZ:
 
 
     def polyfit_reg(self, x,y,order,regularization=1,weight=1):
-        ind = ~any(isnan(y.reshape(len(x),-1)),1)
+        ind = ~np.any(np.isnan(y.reshape(len(x),-1)),1)
         x = x[ind]
-        y = array(y.T,ndmin=2).T
+        y = np.array(y.T,ndmin=2).T
 
         y = y[ind,...]
 
         y/= x[:,None]**(order.min()-1)
         order-= order.min()-1
 
-        N_order = amax(order)+1
+        N_order = np.amax(order)+1
 
-        if isscalar(order):
-            order  = arange(order)
+        if np.isscalar(order):
+            order  = np.arange(order)
         order = N_order - order-1
 
-        lhs = vander(x, N_order)[:,order]
+        lhs = np.vander(x, N_order)[:,order]
 
-        scale = sqrt((lhs*lhs).sum(axis=0))
+        scale = np.sqrt((lhs*lhs).sum(axis=0))
         lhs /= scale
         rhs = y
-        rcond = len(x)*finfo(x.dtype).eps*regularization
+        rcond = len(x)*np.finfo(x.dtype).eps*regularization
 
-        c, resids, rank, s = linalg.lstsq(lhs*x[:,None] , rhs*x[:,None], rcond)
+        c, resids, rank, s = np.linalg.lstsq(lhs*x[:,None] , rhs*x[:,None], rcond)
 
         c = (c.T/scale).T # broadcast scale coefficients
 
-        #C = zeros((N_order,)+y.shape[1:])
+        #C = np.zeros((N_order,)+y.shape[1:])
         #C[order,...] =  c
 
-        return squeeze(c),resids
+        return np.squeeze(c),resids
 
 
 
@@ -138,10 +137,10 @@ def Descur_fit_core(args):
     try:
         sys.stdout.write("\r calculate Fourier coefficients: %3.0f %%    N: %d        " %(t_fract*100,i))
         sys.stdout.flush()
-        moments_all= empty((n_rho, n_fourier,4))
+        moments_all= np.empty((n_rho, n_fourier,4))
         for nr, (cr,cz) in enumerate(zip(R_contour.T, Z_contour.T)):
             #don't use to high order in the core - regularization
-            n_fourier_ = 2+int(ceil((nr+1)/float(n_rho)*(n_fourier-2)))
+            n_fourier_ = 2+int(np.ceil((nr+1)/float(n_rho)*(n_fourier-2)))
             moments_all[nr,:n_fourier_,:] =  D.descur_fit(cr-R0,cz-Z0,n_fourier_)
             moments_all[nr,n_fourier_:,:] = 0
 
@@ -149,10 +148,10 @@ def Descur_fit_core(args):
         #print('Warning: DESCUR failes, running backup option')
         #this method is faster, but less efficients, it needs more coefficients!
         n_fourier *= 2
-        moments_all= empty((n_rho, n_fourier,4))
+        moments_all= np.empty((n_rho, n_fourier,4))
         for nr, (cr,cz) in enumerate(zip(R_contour.T, Z_contour.T)):
             #don't use to high order in the core - regularization
-            n_fourier_ = 2+int(ceil((nr+1)/float(n_rho)*(n_fourier-2)))
+            n_fourier_ = 2+int(np.ceil((nr+1)/float(n_rho)*(n_fourier-2)))
             moments_all[nr,:n_fourier_,:] =  D.descur_fit_fast(cr-R0,cz-Z0,n_fourier_)
             moments_all[nr,n_fourier_:,:] = 0
 
@@ -166,15 +165,15 @@ def Descur_fit_core(args):
 
     try:
         mom_poly = MOM2RZ(rho,rcos,rsin,zcos,zsin,order=poly_order,R0=R0,Z0=Z0)
-        coeff = dstack((mom_poly.p_rcos, mom_poly.p_zcos, mom_poly.p_rsin, mom_poly.p_zsin ))
+        coeff = np.dstack((mom_poly.p_rcos, mom_poly.p_zcos, mom_poly.p_rsin, mom_poly.p_zsin ))
     except Exception as e:
         print('Descur_fit_core',e)
-        coeff = ones((poly_order+1+n_fourier,n_fourier, 4))*nan
+        coeff = np.ones((poly_order+1+n_fourier,n_fourier, 4))*np.nan
 
 
 
 
-    return single(coeff)
+    return np.single(coeff)
 
 
 
@@ -186,16 +185,16 @@ def ElmCorrection(tvec_fast, sig_fast, tvec_slow, sig_slow, t_elms, dt_elms,nsmo
 
 
     #make a high time resolution signal
-    sig = sig_fast-interp(tvec_fast,tvec_slow,interp(tvec_slow,tvec_fast,sig_fast))+interp(tvec_fast,tvec_slow,sig_slow)
+    sig = sig_fast-np.interp(tvec_fast,tvec_slow,np.interp(tvec_slow,tvec_fast,sig_fast))+np.interp(tvec_fast,tvec_slow,sig_slow)
     tvec = tvec_fast
 
     if mode== None:
         return tvec,sig
 
     #prepare intervals of the elms which will be removed from the analysis
-    n_elm  = size(t_elms)
-    tvec_elm = vstack((t_elms-3e-4, t_elms,t_elms+ dt_elms, t_elms+ dt_elms+3e-4)).T.ravel()
-    elm = vstack((zeros(n_elm),ones(n_elm),ones(n_elm), zeros(n_elm))).T.ravel()
+    n_elm  = np.size(t_elms)
+    tvec_elm = np.vstack((t_elms-3e-4, t_elms,t_elms+ dt_elms, t_elms+ dt_elms+3e-4)).T.ravel()
+    elm = np.vstack((np.zeros(n_elm),np.ones(n_elm),np.ones(n_elm), np.zeros(n_elm))).T.ravel()
 
     elms_interp = interp1d(tvec_elm, elm,bounds_error = False,fill_value= 0 )(tvec)
     elms_ind = elms_interp != 0
@@ -219,27 +218,27 @@ def ElmCorrection(tvec_fast, sig_fast, tvec_slow, sig_slow, t_elms, dt_elms,nsmo
     if mode== 'remove': #remove elms
 
         for t,dt in zip(t_elms,dt_elms) :
-            sig_fast[~((tvec_fast<t-dt*0.1)|(tvec_fast>t+dt*1.1))] = nan
-            sig_slow[~((tvec_slow<t-dt*0.1)|(tvec_slow>t+dt*1.1))] = nan
+            sig_fast[~((tvec_fast<t-dt*0.1)|(tvec_fast>t+dt*1.1))] = np.nan
+            sig_slow[~((tvec_slow<t-dt*0.1)|(tvec_slow>t+dt*1.1))] = np.nan
 
 
 
 
-        sig_fast[isnan(sig_fast)] = interp(tvec_fast[isnan(sig_fast)],tvec_fast[~isnan(sig_fast)], sig_fast[~isnan(sig_fast)] )
-        sig_slow[isnan(sig_slow)] = interp(tvec_slow[isnan(sig_slow)],tvec_slow[~isnan(sig_slow)], sig_slow[~isnan(sig_slow)] )
+        sig_fast[np.isnan(sig_fast)] = np.interp(tvec_fast[np.isnan(sig_fast)],tvec_fast[~np.isnan(sig_fast)], sig_fast[~np.isnan(sig_fast)] )
+        sig_slow[np.isnan(sig_slow)] = np.interp(tvec_slow[np.isnan(sig_slow)],tvec_slow[~np.isnan(sig_slow)], sig_slow[~np.isnan(sig_slow)] )
 
         #sig = interp1d(tvec[~elms_ind], sig[~elms_ind],bounds_error = False,fill_value= 0 )(tvec_slow)
 
 
-        dt_elms = median(diff(t_elms))
-        if isnan(dt_elms): dt_elms = 0
-        n_smooth = int(dt_elms/mean(diff(tvec_slow)))*2+1
+        dt_elms = np.median(np.diff(t_elms))
+        if np.isnan(dt_elms): dt_elms = 0
+        n_smooth = int(dt_elms/np.mean(np.diff(tvec_slow)))*2+1
         #print 'n_smooth',n_smooth
 
-        dsig = medfilt(sig_slow,n_smooth)-medfilt(interp(tvec_slow,tvec_fast, sig_fast ),n_smooth)
+        dsig = medfilt(sig_slow,n_smooth)-medfilt(np.interp(tvec_slow,tvec_fast, sig_fast ),n_smooth)
 
 
-        sig_fast+= interp(tvec_fast, tvec_slow, dsig)
+        sig_fast+= np.interp(tvec_fast, tvec_slow, dsig)
 
         sig = medfilt(sig_fast,5)
 
@@ -253,9 +252,9 @@ def ElmCorrection(tvec_fast, sig_fast, tvec_slow, sig_slow, t_elms, dt_elms,nsmo
         #TODO vylepšit!!!!! moc to průměruje 26061
 
         sig = interp1d(tvec[~elms_ind], sig[~elms_ind],bounds_error = False,fill_value= 0 )(tvec_slow)
-        dt_elms = median(diff(t_elms))
-        if isnan(dt_elms): dt_elms = 0
-        n_smooth = int(dt_elms/mean(diff(tvec_slow)))*2+1
+        dt_elms = np.median(np.diff(t_elms))
+        if np.isnan(dt_elms): dt_elms = 0
+        n_smooth = int(dt_elms/np.mean(np.diff(tvec_slow)))*2+1
         #print 'n_smooth',n_smooth
 
         sig = medfilt(sig,n_smooth)
@@ -302,7 +301,7 @@ class Equlibrium:
 
 
         rho_p = self.MDS_plus.get(tra_path+'PLFLX').data()
-        rho_p = sqrt(rho_p/rho_p[:,(-1,)])
+        rho_p = np.sqrt(rho_p/rho_p[:,(-1,)])
         rho_t = self.MDS_plus.get(tra_path+'XB').data()[0]
 
 
@@ -320,10 +319,10 @@ class Equlibrium:
 
 
         nmom = min(nmom, 10)
-        rcos = zeros((ntim,n_rho, nmom))
-        rsin = zeros((ntim,n_rho, nmom))
-        zsin = zeros((ntim,n_rho, nmom))
-        zcos = zeros((ntim,n_rho, nmom))
+        rcos = np.zeros((ntim,n_rho, nmom))
+        rsin = np.zeros((ntim,n_rho, nmom))
+        zsin = np.zeros((ntim,n_rho, nmom))
+        zcos = np.zeros((ntim,n_rho, nmom))
 
 
         for jmom in range(nmom):
@@ -345,23 +344,23 @@ class Equlibrium:
 
         npoly = 8
 
-        coeffs = zeros((ntim,npoly+1,nmom , 4))
+        coeffs = np.zeros((ntim,npoly+1,nmom , 4))
         for it in range(ntim):
             for i in range(nmom):
-                coeffs[it,:,i,0] =  np.polyfit(r_[0,rho_p[it]], r_[0,rcos[it,:,i]] ,npoly)
-                coeffs[it,:,i,1] =  np.polyfit(r_[0,rho_p[it]], r_[0,zcos[it,:,i]] ,npoly)
-                coeffs[it,:,i,2] =  np.polyfit(r_[0,rho_p[it]], r_[0,rsin[it,:,i]] ,npoly)
-                coeffs[it,:,i,3] =  np.polyfit(r_[0,rho_p[it]], r_[0,zsin[it,:,i]] ,npoly)
+                coeffs[it,:,i,0] =  np.polyfit(np.r_[0,rho_p[it]], np.r_[0,rcos[it,:,i]] ,npoly)
+                coeffs[it,:,i,1] =  np.polyfit(np.r_[0,rho_p[it]], np.r_[0,zcos[it,:,i]] ,npoly)
+                coeffs[it,:,i,2] =  np.polyfit(np.r_[0,rho_p[it]], np.r_[0,rsin[it,:,i]] ,npoly)
+                coeffs[it,:,i,3] =  np.polyfit(np.r_[0,rho_p[it]], np.r_[0,zsin[it,:,i]] ,npoly)
 
 
         coeffs[:,-1,0,0]+= R0
         coeffs[:,-1,0,1]+= Z0
 
 
-        Rmag_ = zeros_like(tvec)
-        Zmag_ = zeros_like(tvec)
-        ahor_ = ones_like(tvec)
-        bver_ = ones_like(tvec)
+        Rmag_ = np.zeros_like(tvec)
+        Zmag_ = np.zeros_like(tvec)
+        ahor_ = np.ones_like(tvec)
+        bver_ = np.ones_like(tvec)
 
 
         output = {'tsurf':tvec,
@@ -409,7 +408,7 @@ class Equlibrium:
 
         tvec=cdf.variables['TIME3'][:]
         rho_p = cdf.variables['PLFLX'][:]
-        rho_p = sqrt(rho_p/rho_p[:,(-1,)])
+        rho_p = np.sqrt(rho_p/rho_p[:,(-1,)])
         rho_t = cdf.variables['XB'][:]
 
 
@@ -422,10 +421,10 @@ class Equlibrium:
             nmom += 1
             rc='RMC%.2d'%nmom
 
-        rcos = zeros((ntim,n_rho, nmom))
-        rsin = zeros((ntim,n_rho, nmom))
-        zsin = zeros((ntim,n_rho, nmom))
-        zcos = zeros((ntim,n_rho, nmom))
+        rcos = np.zeros((ntim,n_rho, nmom))
+        rsin = np.zeros((ntim,n_rho, nmom))
+        zsin = np.zeros((ntim,n_rho, nmom))
+        zcos = np.zeros((ntim,n_rho, nmom))
 
 
         for jmom in range(nmom):
@@ -450,19 +449,19 @@ class Equlibrium:
             #BUG sometimes, very rarelly it can failure if rho_p is deviating from straight line in the core!!!
             #during core ECRH current drive!
             mom_poly = MOM2RZ(rho_p[it],rcos[it],rsin[it],zcos[it],zsin[it],order=30,R0=R0[it],Z0=Z0[it],regularization=0.1)
-            coeff = dstack((mom_poly.p_rcos, mom_poly.p_zcos, mom_poly.p_rsin, mom_poly.p_zsin ))
+            coeff = np.dstack((mom_poly.p_rcos, mom_poly.p_zcos, mom_poly.p_rsin, mom_poly.p_zsin ))
             coeffs.append(coeff)
 
 
 
-        coeffs = array(list(coeffs))
+        coeffs = np.array(list(coeffs))
 
 
         tvec = tvec_surf
-        Rmag_ = zeros_like(tvec_surf)
-        Zmag_ = zeros_like(tvec_surf)
-        ahor_ = ones_like(tvec_surf)
-        bver_ = ones_like(tvec_surf)
+        Rmag_ = np.zeros_like(tvec_surf)
+        Zmag_ = np.zeros_like(tvec_surf)
+        ahor_ = np.ones_like(tvec_surf)
+        bver_ = np.ones_like(tvec_surf)
 
 
         output = {'tsurf':tvec_surf,
@@ -497,8 +496,8 @@ class Equlibrium:
             os.nice(3)
         n_rho = 40
         n_theta = 150
-        rho = linspace(0.01,0.998,n_rho)
-        theta = linspace(0,2*pi,n_theta, endpoint=False)
+        rho = np.linspace(0.01,0.998,n_rho)
+        theta = np.linspace(0,2*np.pi,n_theta, endpoint=False)
 
 
 
@@ -506,15 +505,15 @@ class Equlibrium:
         if self.eqm.ssq['ERROR'] is not None:
             corrupted_eq |=  abs(self.eqm.ssq['Zmag']-0)>0.3
             corrupted_eq |=  abs(self.eqm.ssq['Rmag']-self.eqm.R0)>0.3
-            corrupted_eq |= self.eqm.ssq['chi2'] > median(self.eqm.ssq['chi2'])*2
-            corrupted_eq |= self.eqm.ssq['ERROR'] > median(self.eqm.ssq['ERROR'])*5
+            corrupted_eq |= self.eqm.ssq['chi2'] > np.median(self.eqm.ssq['chi2'])*2
+            corrupted_eq |= self.eqm.ssq['ERROR'] > np.median(self.eqm.ssq['ERROR'])*5
 
 
         t_eq = self.eqm.t_eq[~corrupted_eq]
         nti = len(t_eq)
 
         ncpu = cpu_count()
-        t_sequence = array_split(t_eq, min(ncpu,nti))
+        t_sequence = np.array_split(t_eq, min(ncpu,nti))
 
         print('Find flux contours from %.3f to %.3fs'%(t_eq[0],t_eq[-1]))
         t1 = time()
@@ -533,7 +532,7 @@ class Equlibrium:
             args = [(self.eqm,  rho, theta, t) for t in t_sequence]
             pool = Pool(ncpu)
             out = pool.map(help_fun,args )
-            R_cont,z_cont = hstack(out)
+            R_cont,z_cont = np.hstack(out)
         except:
             R_cont,z_cont = self.eqm.rhoTheta2rz(rho, theta,t_eq, n_line=100)
 
@@ -580,16 +579,16 @@ class Equlibrium:
 
         #plot()
 
-        D = hypot(R_cont-R_cont[:,:,(-0,)],z_cont-z_cont[:,:,(-0,)])
-        wrong = any(any(diff(D, axis=2)< 0, 2),1)
-        wrong |= any(any(isnan(R_cont),1),1)
+        D = np.hypot(R_cont-R_cont[:,:,(-0,)],z_cont-z_cont[:,:,(-0,)])
+        wrong = np.any(np.any(np.diff(D, axis=2)< 0, 2),1)
+        wrong |= np.any(np.any(np.isnan(R_cont),1),1)
         corrupted_eq[~corrupted_eq] = wrong
         R_cont,z_cont,t_eq = R_cont[~wrong],z_cont[~wrong],t_eq[~wrong]
         nti = len(t_eq)
 
-        #plot(diff(D, axis=2)[0].T)
+        #plot(np.diff(D, axis=2)[0].T)
 
-        if size(t_eq) == 0:
+        if np.size(t_eq) == 0:
             raise Exception('Corrupted equlibrium')
         #plot(R_cont[0]-R_cont[0,:,(0,)].T,z_cont[0]-z_cont[0,:,(0,)].T)
         #i = 0
@@ -616,7 +615,7 @@ class Equlibrium:
         mom_order = 10
         poly_order = 20
 
-        args = [(jt/float(nti),jt,rho,R_cont[jt],z_cont[jt],R0[jt], Z0[jt], mom_order, poly_order) for jt in arange(nti)]
+        args = [(jt/float(nti),jt,rho,R_cont[jt],z_cont[jt],R0[jt], Z0[jt], mom_order, poly_order) for jt in np.arange(nti)]
 
 
         t1 = time()
@@ -637,9 +636,9 @@ class Equlibrium:
 
 
 
-        coeffs = array(list(coeffs))
+        coeffs = np.array(list(coeffs))
 
-        ind = all(isfinite(coeffs.reshape(nti, -1)),1)
+        ind = np.all(np.isfinite(coeffs.reshape(nti, -1)),1)
         surf_coeff = coeffs[ind]
         tvec_surf = t_eq[ind]
 
@@ -718,9 +717,9 @@ class Equlibrium:
         #ahor_ = ones_like(ahor_slow)
         #bver_ = ones_like(bver_slow)
 
-        output = {'tsurf':single(tvec_surf),
-                'surf_coeff':single(surf_coeff),
-                'tvec_fast': single(tvec_surf) ,
+        output = {'tsurf':np.single(tvec_surf),
+                'surf_coeff':np.single(surf_coeff),
+                'tvec_fast': np.single(tvec_surf) ,
                 'Rmag':None,
                 'Zmag':None,
                 'ahor':None,
