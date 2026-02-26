@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import sys
-from numpy import *
-#from  matplotlib.pyplot import *
-from scipy import sparse 
+import numpy as np
+from scipy import sparse
 from numpy import linalg
 import time
 from scipy.interpolate import RectBivariateSpline, interp1d
@@ -103,7 +102,7 @@ def tomography(inputs, tokamak, progress = None):
         numSteps = inputs['rapid_blocks']
     nx,ny = inputs['nx'], inputs['ny']
     
-    num_iter = sum(r_[(inputs['ratiosolver']!=0), inputs['plot_all']*(1+inputs['plot_svd']),inputs['postprocessing'],inputs['rem_back'],\
+    num_iter = np.sum(np.r_[(inputs['ratiosolver']!=0), inputs['plot_all']*(1+inputs['plot_svd']),inputs['postprocessing'],inputs['rem_back'],\
             inputs['presolver']!= 0 and inputs['solver'] == 0,inputs['asymmetry'],
         inputs['sawtooths'],inputs['impurities'],inputs['plot_poloidal_spectrum'],2])
     if not progress is None:   #try to determine progress of reconstruction
@@ -115,8 +114,8 @@ def tomography(inputs, tokamak, progress = None):
     
     ##==================== Phantom Generator==========================
     use_phantom_data = inputs['use_phantom_data']
-    if isinstance(inputs['use_phantom_data'],  ndarray):
-        use_phantom_data = array_str(use_phantom_data)
+    if isinstance(inputs['use_phantom_data'],  np.ndarray):
+        use_phantom_data = np.array_str(use_phantom_data)
 
     if str(use_phantom_data) != "None" or inputs['solver'] == 7:
 
@@ -128,7 +127,7 @@ def tomography(inputs, tokamak, progress = None):
         nx_new = 200
         ny_new = 300
         
-        scale = nanmean(data.ravel())*5#/nanmean(data_.ravel())
+        scale = np.nanmean(data.ravel())*5#/np.nanmean(data_.ravel())
  
             
         data_,error_, tvec_new, G0 = phantom_generator(tokamak, tvec, nx_new=nx_new, 
@@ -140,17 +139,17 @@ def tomography(inputs, tokamak, progress = None):
         data = data_[dets,:]
 
         G_phantom = G0
-        data_ = copy(data)
+        data_ = np.copy(data)
         
         if use_phantom_data == 'moving_circle':
             error[:] = 1
             
         elif inputs['solver'] != 7 and inputs['error_scale'] >  0.01:
 
-            data[isfinite(error)] += error[isfinite(error)]*random.randn(sum(isfinite(error)))
+            data[np.isfinite(error)] += error[np.isfinite(error)]*np.random.randn(np.sum(np.isfinite(error)))
             
 
-        tokamak.emiss_0 = ones_like(G0)
+        tokamak.emiss_0 = np.ones_like(G0)
     else:
         try:
             os.remove(tokamak.tmp_folder+'/Emiss0.npz')
@@ -169,10 +168,10 @@ def tomography(inputs, tokamak, progress = None):
     subst_ind = slice(None,None)
     if inputs['rem_back']:
         #substract averadge of the first 10% of points! 
-        subst_ind = slice(0,int(ceil(tsteps*inputs['bcg_subst_fract'])))
+        subst_ind = slice(0,int(np.ceil(tsteps*inputs['bcg_subst_fract'])))
         
     ifishmax = inputs['ifishmax']
-    lam0 = 3*ones(numSteps)
+    lam0 = 3*np.ones(numSteps)
     if inputs['solver']!= 7 and (inputs['solver'] == 0 or inputs['rem_back'] or inputs['rotation_tomography']):
         print("="*10+" PRESOLVE" +"="*10)
  
@@ -183,11 +182,11 @@ def tomography(inputs, tokamak, progress = None):
         if inputs['presolver'] != 0:  ifishmax = 1 #will increase the stability
         debug( 'ifishmax in presolve is set to 1!!'  )
         debug('--------Prepare TIME - time  %g' % (time.time()-TotTime))
-    elif inputs['solver'] != 7 or str(inputs['use_phantom_data']) == "None": #None solver 
+    elif inputs['solver'] != 7 or str(inputs['use_phantom_data']) == "None": #None solver
         try:
-            G0 = single(tokamak.emiss_0*mean(data)/mean(Tmat*tokamak.emiss_0)) #make a size of profile more similar 
+            G0 = np.single(tokamak.emiss_0*np.mean(data)/np.mean(Tmat*tokamak.emiss_0)) #make a size of profile more similar
         except:
-            print('error single(tokamak.emiss_0*mean(data)/mean(Tmat*tokamak.emiss_0)) ')
+            print('error np.single(tokamak.emiss_0*np.mean(data)/np.mean(Tmat*tokamak.emiss_0)) ')
             print(tokamak.emiss_0.shape, Tmat.shape)
 
     
@@ -207,27 +206,27 @@ def tomography(inputs, tokamak, progress = None):
             
             from  scipy.interpolate import RectBivariateSpline, UnivariateSpline
           
-            G0_ = mean(G0[:,subst_ind],axis=1).reshape((ny,nx), order='F')
+            G0_ = np.mean(G0[:,subst_ind],axis=1).reshape((ny,nx), order='F')
 
             interp2 = RectBivariateSpline(tokamak.ygrid, tokamak.xgrid,G0_)
             ind = (tokamak.mag_axis['tvec']>=tvec.min()-0.05)&(tokamak.mag_axis['tvec']<=tvec.max()+0.05)
 
             Zmag = tokamak.mag_axis['Zmag'][ind]
             Rmag = tokamak.mag_axis['Rmag'][ind]
-            mag_tvec = copy(tokamak.mag_axis['tvec'][ind])
+            mag_tvec = np.copy(tokamak.mag_axis['tvec'][ind])
 
-            R,z = interp(tvec,mag_tvec, Rmag),interp(tvec,mag_tvec, Zmag)
-            R0,z0 = mean(R[subst_ind]), mean(z[subst_ind])
+            R,z = np.interp(tvec,mag_tvec, Rmag),np.interp(tvec,mag_tvec, Zmag)
+            R0,z0 = np.mean(R[subst_ind]), np.mean(z[subst_ind])
             dR,dz = R-R0, z-z0
             
-            data0 = median(data[:,subst_ind],axis=1)
+            data0 = np.median(data[:,subst_ind],axis=1)
             data -= data0[:,None]
 
             G0_ = G0_.ravel(order='F')
-            data_diff = zeros_like(data)
+            data_diff = np.zeros_like(data)
             peak_perturb = G0.max(0)/G0_.max()
             if G0.ndim==2:
-               peak_perturb =  nanmean(data,0)/nanmean(data0)
+               peak_perturb =  np.nanmean(data,0)/np.nanmean(data0)
             
             #remove movements of the plasma during LBO 
             for it in range(tsteps): 
@@ -236,31 +235,31 @@ def tomography(inputs, tokamak, progress = None):
              
 
             data -= data_diff
-            G0    = mean(G0[:,subst_ind],axis=1)[:,None]
+            G0    = np.mean(G0[:,subst_ind],axis=1)[:,None]
             if not tokamak.allow_negative:
                 data += Tmat*G0_[:,None]
             
             if str(use_phantom_data) != "None" or inputs['solver'] == 7:
-                G_phantom-= mean(G_phantom[:,subst_ind],axis=1)[:,None]
-            corrupted = isinf(error)
-            error = tile(data[:,subst_ind].std(1)*inputs['error_scale'], (len(tvec),1)).T
-            error[corrupted] = inf
+                G_phantom-= np.mean(G_phantom[:,subst_ind],axis=1)[:,None]
+            corrupted = np.isinf(error)
+            error = np.tile(data[:,subst_ind].std(1)*inputs['error_scale'], (len(tvec),1)).T
+            error[corrupted] = np.inf
             
         else:         
 
-            data -= mean(data[:,subst_ind],axis=1)[:,None]
-            error = tile(data[:,subst_ind].std(1)*inputs['error_scale'], (len(tvec),1)).T
+            data -= np.mean(data[:,subst_ind],axis=1)[:,None]
+            error = np.tile(data[:,subst_ind].std(1)*inputs['error_scale'], (len(tvec),1)).T
             error[:] = error.mean()  #assume the same error for all LOS 
-            corrupted = isinf(error)
+            corrupted = np.isinf(error)
             
-            error[corrupted] = inf
+            error[corrupted] = np.inf
 
-            G0    = mean(G0[:,subst_ind],axis=1)[:,None]
+            G0    = np.mean(G0[:,subst_ind],axis=1)[:,None]
             if not tokamak.allow_negative:
                 data += Tmat*G0
 
             if str(use_phantom_data) != "None" or inputs['solver'] == 7:
-                G_phantom-= mean(G_phantom[:,subst_ind],axis=1)[:,None]
+                G_phantom-= np.mean(G_phantom[:,subst_ind],axis=1)[:,None]
                 
                 G0 = G_phantom
     else:
@@ -269,7 +268,7 @@ def tomography(inputs, tokamak, progress = None):
 
     ##==============MAIN CYCLE =======================
 
-    if inputs['solver'] in r_[0:8]:
+    if inputs['solver'] in np.r_[0:8]:
         print("="*10+" MAIN SOLVE "+"="*10)
         time_0 = time.time()
 
@@ -279,7 +278,7 @@ def tomography(inputs, tokamak, progress = None):
             numTasks = 1
             debug( 'Uses solid parallel solve => Cancel button will not work')
         else:
-            numTasks = int(ceil(numSteps/(inputs['n_cpu']*4.)))
+            numTasks = int(np.ceil(numSteps/(inputs['n_cpu']*4.)))
         numTasks = min(100,numTasks) #small speed improvement for very large number of blocks
         
         if config.DEBUG or config.no_multiprocessing:
@@ -289,15 +288,15 @@ def tomography(inputs, tokamak, progress = None):
         
 
 
-        if size(G0,1)== 1:
+        if np.size(G0,1)== 1:
             G0 = [G0 for i in range(numSteps)]
-        elif size(G0,1)== tsteps:
+        elif np.size(G0,1)== tsteps:
             G0 = [G0[:,ii] for ii in ind]
 
         
  
-        if size(lam0) != numSteps:
-            lam0 = ones(numSteps)*mean(lam0)
+        if np.size(lam0) != numSteps:
+            lam0 = np.ones(numSteps)*np.mean(lam0)
         
         #MDSplus object is not pickable
         if hasattr(tokamak, 'MDSconn' ):
@@ -308,12 +307,12 @@ def tomography(inputs, tokamak, progress = None):
              
             
         postprocessing = True
-        sequence = array([(i,data[:,ii],error[:,ii],tvec[ii],Tmat,dets, normData[ii], 
+        sequence = np.asarray([(i,data[:,ii],error[:,ii],tvec[ii],Tmat,dets, normData[ii],
                     G0[i],lam0[i],  numSteps, postprocessing,inputs, tokamak,
-                    inputs['solver'], inputs['ifishmax'], time_0,postprocessing)  for i,ii in enumerate(ind)],copy=False,dtype=object)    
+                    inputs['solver'], inputs['ifishmax'], time_0,postprocessing)  for i,ii in enumerate(ind)],dtype=object)    
             
-        sequence = array_split(sequence, numTasks)
-   
+        sequence = np.array_split(sequence, numTasks)
+
         if config.DEBUG or numSteps==1 or config.no_multiprocessing:
             method =  map 
             pool = None
@@ -341,7 +340,7 @@ def tomography(inputs, tokamak, progress = None):
                 results.extend(out)
                 if not progress is None:  progress.iterateSubStep()
         except Exception as e:
-            print('Error '+str( e))     #try to find the error
+            print('Error '+str(e))     #try to find the error
             out = list(map(main_cycle, seq)) 
             results.extend(out)
             
@@ -364,7 +363,7 @@ def tomography(inputs, tokamak, progress = None):
             keys.remove('bnd')
 
             for key in keys:   
-                output[key] = concatenate([d[key] for d in results],0)
+                output[key] = np.concatenate([d[key] for d in results],0)
                 for d in results: del d[key]
             output['bnd'] = []
             for d in results: output['bnd'].extend(d['bnd'])
@@ -382,8 +381,8 @@ def tomography(inputs, tokamak, progress = None):
     gc.collect()        # free unused RAM memory !!!
 
 
-    mean_chi2 = exp(nansum(log(output['chi2']))/tsteps)
-    mean_lam = median(output['lam0'])
+    mean_chi2 = np.exp(np.nansum(np.log(output['chi2']))/tsteps)
+    mean_lam = np.median(output['lam0'])
     
     print('Statistics: \n Mean time: %.3gs \n Mean Chi2: %.3g \n Mean Lam: %.3g \n Time slices: %d\n Blocks: %d'\
             %(TotTime/tsteps,mean_chi2,mean_lam,tsteps ,numSteps ))
@@ -401,7 +400,7 @@ def tomography(inputs, tokamak, progress = None):
     if str(use_phantom_data) != "None":
 
         
-        Emiss0 = load(tokamak.tmp_folder+'/Emiss0.npz')
+        Emiss0 = np.load(tokamak.tmp_folder+'/Emiss0.npz')
         
         xgridc = Emiss0['xgridc']
         ygridc = Emiss0['ygridc']
@@ -410,7 +409,7 @@ def tomography(inputs, tokamak, progress = None):
         G0 = Emiss0['G0']#.flatten(order='F')
         from scipy.interpolate import RectBivariateSpline
 
-        emissivity_out = zeros((tsteps,len(xgridc), len(ygridc) ))
+        emissivity_out = np.zeros((tsteps,len(xgridc), len(ygridc) ))
         for it in range(tsteps):
             Rint = RectBivariateSpline(xgridc_out,ygridc_out,output['g'][it].reshape(nx, ny,order='C'),kx=1,ky=1)                        
             emissivity_out[it] = Rint(xgridc,ygridc)
@@ -469,9 +468,9 @@ def pre_calibrate(tokamak, inputs, solver,ifishmax, data, error,
     G0,retro_fit,lam = presolve(tokamak, data, error, tvec, Tmat, dets,  normData, 
                       regularization, ifishmax,inputs,solver,inputs['rapid_blocks'])
  
-    new_calib = ones(Ndets)  #multiplicative modification of the orig calibration 
+    new_calib = np.ones(Ndets)  #multiplicative modification of the orig calibration 
 
-    det_ind = where([any(in1d(ind, dets)) for ind in tokamak.dets_index])[0]
+    det_ind = np.where([np.any(np.isin(ind, dets)) for ind in tokamak.dets_index])[0]
 
         
 
@@ -479,30 +478,30 @@ def pre_calibrate(tokamak, inputs, solver,ifishmax, data, error,
     D = data
     E = (1/error).mean(1)
     Eind = E == 0
-    E[Eind ] = inf
+    E[Eind ] = np.inf
     E[~Eind]= 1/E[~Eind]
 
-    calib = ones(len(det_ind))
+    calib = np.ones(len(det_ind))
     for i,ind in enumerate(det_ind):
         ind = tokamak.dets_index[ind]
-        ind = in1d(dets,ind)
-        if any(ind):
-            calib[i] = mean(D[ind]*R[ind]/E[ind,None])/mean(D[ind]**2/E[ind,None])+1e-5
+        ind = np.isin(dets,ind)
+        if np.any(ind):
+            calib[i] = np.mean(D[ind]*R[ind]/E[ind,None])/np.mean(D[ind]**2/E[ind,None])+1e-5
 
     new_calib[det_ind] = calib
-    new_calib[isnan(new_calib)] = 1
+    new_calib[np.isnan(new_calib)] = 1
     
     if len(new_calib) == len(tokamak.get_calb()):
         new_calib *= tokamak.get_calb()
  
 
-    mean_corr = exp(mean([log(abs(new_calib[i])) for i in det_ind]))
+    mean_corr = np.exp(np.mean([np.log(np.abs(new_calib[i])) for i in det_ind]))
     new_calib /= mean_corr
     
 
     for i,ii in enumerate(det_ind):
         ind = tokamak.dets_index[ii]
-        dind = in1d(dets,ind)
+        dind = np.isin(dets,ind)
         data[dind]*= calib[i]
         error[dind]*= calib[i]
         data_all[ind]*= calib[i]
@@ -547,7 +546,7 @@ def presolve(tokamak, data, error, tvec, Tmat, dets,  normData,
     else:
         numSteps = rapid_blocks
 
-    lam0 = 3 *ones(numSteps)
+    lam0 = 3 *np.ones(numSteps)
     retro = None
     postprocessing=False
     
@@ -555,16 +554,16 @@ def presolve(tokamak, data, error, tvec, Tmat, dets,  normData,
     if hasattr(tokamak, 'MDSconn' ):
         del tokamak.MDSconn
         
-    if solver in r_[1:7]:  # MFI rapid, SVD,SVD2, QR, GEV,GSVD   #(numSteps > 10 and solver == 1) or solver == 2:
+    if solver in np.r_[1:7]:  # MFI rapid, SVD,SVD2, QR, GEV,GSVD   #(numSteps > 10 and solver == 1) or solver == 2:
         if G0 == None:
-            G0 = single(tokamak.emiss_0)
+            G0 = np.single(tokamak.emiss_0)
         time_0 = time.time()
-        nt = size(tvec)
+        nt = np.size(tvec)
         
         ind = [slice(i*nt//numSteps,(i+1)*nt//numSteps) for i in range(numSteps)]
-        sequence = array([(i,data[:,ii],error[:,ii],tvec[ii],Tmat,dets, normData[ii],G0.mean(-1),lam0[i], 
+        sequence = np.asarray([(i,data[:,ii],error[:,ii],tvec[ii],Tmat,dets, normData[ii],G0.mean(-1),lam0[i],
                          numSteps, False,inputs, tokamak,
-                        solver, ifishmax, time_0, postprocessing)  for i,ii in enumerate(ind)],copy=False,dtype=object) 
+                        solver, ifishmax, time_0, postprocessing)  for i,ii in enumerate(ind)],dtype=object) 
 
 
 
@@ -572,9 +571,9 @@ def presolve(tokamak, data, error, tvec, Tmat, dets,  normData,
         if  config.DEBUG:
             out = list(map(main_cycle, sequence))
         else:
-            numTasks = 1 if solid_parallel else int(ceil(numSteps/inputs['n_cpu']))
+            numTasks = 1 if solid_parallel else int(np.ceil(numSteps/inputs['n_cpu']))
 
-            sequence = array_split(sequence, numTasks)
+            sequence = np.array_split(sequence, numTasks)
 
             from tqdm import tqdm
             pool = Pool(min(inputs['n_cpu'],numSteps) )
@@ -592,9 +591,9 @@ def presolve(tokamak, data, error, tvec, Tmat, dets,  normData,
         if numSteps == 1:
             G0 =  out[0]['g'].T
         else:
-            G0 = concatenate([d['g'] for d in out],0).T
-        lam0 = concatenate([d['lam0'] for d in out],0)
-        retro = concatenate([d['retro'] for d in out],0)
+            G0 = np.concatenate([d['g'] for d in out],0).T
+        lam0 = np.concatenate([d['lam0'] for d in out],0)
+        retro = np.concatenate([d['retro'] for d in out],0)
 
         gc.collect()
         sys.stdout.write("\r PRESOLVE DONE\n")
@@ -604,7 +603,7 @@ def presolve(tokamak, data, error, tvec, Tmat, dets,  normData,
     if solver == 0:
         print("NO PRESOLVE")
         G0 = tokamak.emiss_0
-        G0*= mean(data)/mean(Tmat*G0) #make a size of profile more similar 
+        G0*= np.mean(data)/np.mean(Tmat*G0) #make a size of profile more similar 
         retro_fit = Tmat*G0
         
     if solver == 7:
@@ -617,8 +616,8 @@ def presolve(tokamak, data, error, tvec, Tmat, dets,  normData,
         
   
 
-        Tmat = array(Tmat.todense())
-        Tmat = sparse.csr_matrix(Tmat.reshape(-1,2,ny//2,2,nx//2,order='F').sum(3).sum(1).reshape(size(Tmat,0),-1,order='F'))
+        Tmat = np.array(Tmat.todense())
+        Tmat = sparse.csr_matrix(Tmat.reshape(-1,2,ny//2,2,nx//2,order='F').sum(3).sum(1).reshape(np.size(Tmat,0),-1,order='F'))
 
         from scipy.ndimage import zoom
         G0 = zoom(tokamak.emiss_0.reshape(ny,nx,order='F'),0.5).reshape(-1,1,order='F')
@@ -630,14 +629,14 @@ def presolve(tokamak, data, error, tvec, Tmat, dets,  normData,
         if tokamak.transform_index != 0:
             Warning('Presolving with nontrivial transformation is not yet supported')
             
-        tokamak_tmp.Transform = ones(1)  
+        tokamak_tmp.Transform = np.ones(1)  
         tokamak_tmp.transform_index = 0  
      
      
-        lam0 = 3*ones(numSteps)
+        lam0 = 3*np.ones(numSteps)
         time_0 = time.time()
         
-        nt = size(tvec)
+        nt = np.size(tvec)
         ind = [slice(i*nt//numSteps,(i+1)*nt//numSteps) for i in range(numSteps)]
         
         sequence = [(i,data[:,ii],error[:,ii],tvec[ii],Tmat,dets, normData[ii], G0,lam0[i],0, numSteps,
@@ -657,9 +656,9 @@ def presolve(tokamak, data, error, tvec, Tmat, dets,  normData,
         sys.stdout.write("\r DONE\n")
 
             
-        lam0 = concatenate([d['lam0'] for d in out],0)
-        G0 = concatenate([d['g'] for d in out],0).T
-        retro = concatenate([d['retro'] for d in out],0)
+        lam0 = np.concatenate([d['lam0'] for d in out],0)
+        G0 = np.concatenate([d['g'] for d in out],0).T
+        retro = np.concatenate([d['retro'] for d in out],0)
 
         G0 = G_interpolate(G0, nx/2, ny/2,  nx, ny)
         sys.stdout.write("\r\n")
@@ -713,11 +712,11 @@ def main_cycle(input):
 
     
     if G0.ndim >= 2 and solver!= 7:
-        G0 = mean(G0,-1)
+        G0 = np.mean(G0,-1)
         
      
  
-    lam0 = median(lam0)
+    lam0 = np.median(lam0)
     output = {}
 
     if solver in [0,1]:  #direct inversion
@@ -732,19 +731,19 @@ def main_cycle(input):
                 solver,  True,_ifishmax, _postprocessing)
     elif solver in [7,]: # no solver - return phantom. Useful for testing of the postprocessing methods
         if (G0.shape[-1] == 1 and  len(tvec)!= 1) or G0.ndim == 1:
-            g = tile(G0, (1,len(tvec)))
+            g = np.tile(G0, (1,len(tvec)))
         else: g = G0
         retro = (Tmat*G0).T
-        chi2 = linalg.norm((retro-data)/error,axis=1)**2/sum(isfinite(error),1)
-        bnd = tokamak.get_boundary(N=100,time=mean(tvec))
+        chi2 = linalg.norm((retro-data)/error,axis=1)**2/np.sum(np.isfinite(error),1)
+        bnd = tokamak.get_boundary(N=100,time=np.mean(tvec))
         bnd = [bnd]*len(tvec)
         SigmaGsample = G0
 
     else:
         raise Exception( "\n\n Missing solver %d"%solver)
 
-    if isscalar(chi2): chi2 = ones_like(tvec)*chi2
-    if isscalar(lam0): lam0 = ones_like(tvec)*lam0
+    if np.isscalar(chi2): chi2 = np.ones_like(tvec)*chi2
+    if np.isscalar(lam0): lam0 = np.ones_like(tvec)*lam0
 
     if tokamak.transform_index!=0 and solver!= 7:
         g = tokamak.Transform*g
@@ -759,7 +758,7 @@ def main_cycle(input):
     output['lam0'] = lam0
     output['bnd']  = bnd
     output['chi2'] = chi2
-    output['chi2_real'] = linalg.norm((retro-data)/error,axis=1)**2/sum(isfinite(error),1)
+    output['chi2_real'] = linalg.norm((retro-data)/error,axis=1)**2/np.sum(np.isfinite(error),1)
 
 
     #place for the varius post-processing evaluated in multithreading
@@ -786,12 +785,12 @@ def G_interpolate(g0, nx, ny,  nx_new, ny_new):
 
     from scipy.ndimage import zoom
     tsteps = g0.shape[-1]
-    g0 = reshape(g0, (ny,nx, tsteps), order='F')
+    g0 = np.reshape(g0, (ny,nx, tsteps), order='F')
 
 
-    g_new = empty((ny_new, nx_new, tsteps))
+    g_new = np.empty((ny_new, nx_new, tsteps))
     for i  in range(tsteps):
-        g_new[:,:,i] = zoom(squeeze( g0[:,:,i]),2)
+        g_new[:,:,i] = zoom(np.squeeze( g0[:,:,i]),2)
 
         
     g_new = g_new.reshape((nx_new*ny_new, tsteps), order='F')

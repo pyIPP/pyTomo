@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from numpy import *
+import numpy as np
 #from matplotlib.pyplot import *
 from scipy.io import loadmat 
 import os
@@ -17,7 +17,7 @@ from geom_mat_setting import geom_mat_setting
 from geometry import *
 from matplotlib import rcParams
 import gc
-from shared_modules import in1d, debug
+from shared_modules import debug
 from matplotlib import colors
 import config
 #from matplotlib.ticker import  MaxNLocator 
@@ -43,7 +43,7 @@ def loaddata(inputs, useCache = True, prepare_tokamak = False):
         resolution_changed  = inputs['nx'] != tok.nx or inputs['ny'] != tok.ny
 
         tok.set_resolution(inputs['nx'], inputs['ny'])
-        config.wrong_dets_pref = unique(r_[config.wrong_dets_defined,config.wrong_dets_pref])
+        config.wrong_dets_pref = np.unique(np.r_[config.wrong_dets_defined,config.wrong_dets_pref])
         if not tok_changed and not shot_changed and not resolution_changed:
             return tok
         
@@ -86,7 +86,7 @@ def loaddata(inputs, useCache = True, prepare_tokamak = False):
 
     # TEST OF USER SELECTED WRONG DETECTORS
 
-    if  ((not size(tok_.wrong_dets)==0) and all([i not in arange(size(tok_.Tmat,0)) for i in tok_.wrong_dets])):
+    if  ((not np.size(tok_.wrong_dets)==0) and np.all([i not in np.arange(np.size(tok_.Tmat,0)) for i in tok_.wrong_dets])):
         tok_.wrong_dets = []
         print("Incorrect wrong detectors!")
 
@@ -119,17 +119,17 @@ def preview(fig, inputs, tokamak, plot_2D = True, show_prew= False):
                  inputs['error_scale'],tokamak.prune_dets,False)
     
   
-    tsteps = sum((tvec >= inputs['tmin']) & (tvec <= inputs['tmax']))
+    tsteps = np.sum((tvec >= inputs['tmin']) & (tvec <= inputs['tmax']))
     data_undersampling_tmp = max(inputs['data_undersampling'], int(tsteps/500.0))
     
     
     inputs['tsteps'] = tsteps
  
-    wrong_dets = where( all(~isfinite(error), 0) )[0]
+    wrong_dets = np.where( np.all(~np.isfinite(error), 0) )[0]
  
  
     ind_correct = tokamak.get_correct_dets(data, wrong_dets = wrong_dets)
-    data = copy(data)
+    data = np.copy(data)
     nch = data.shape[0]
     
     from scipy.stats.mstats import mquantiles
@@ -145,17 +145,17 @@ def preview(fig, inputs, tokamak, plot_2D = True, show_prew= False):
     ax = fig.add_subplot(111)
     
     if len(tvec) > 1 :
-        data[~ind_correct, :] = nan
+        data[~ind_correct, :] = np.nan
 
         ind = slice(None,None, max(1, int(len(tvec)/1000)))
 
         data = data[:,ind]
         tvec = tvec[ind]
-        vmax = mquantiles(data[isfinite(data)], 0.99)[0]
+        vmax = mquantiles(data[np.isfinite(data)], 0.99)[0]
 
-    if nanmax(data) > 2e5:
+    if np.nanmax(data) > 2e5:
         fact,pre = 1e6, 'M'
-    elif nanmax(data) > 2e2:
+    elif np.nanmax(data) > 2e2:
         fact,pre = 1e3, 'k'
     else:
         fact,pre = 1e0, ''
@@ -199,20 +199,20 @@ def preview(fig, inputs, tokamak, plot_2D = True, show_prew= False):
         if len(tvec) == 1:
             """
             try:#TODO remove in future
-                ax.errorbar(arange(len(data[:,0]))[ind_correct]+1, data[ind_correct,0]/fact
+                ax.errorbar(np.arange(len(data[:,0]))[ind_correct]+1, data[ind_correct,0]/fact
                         ,yerr=error[ind_correct,0]/fact,fmt='-xb',lw=.5, pickradius=2)
-                ax.plot(arange(len(data[:,0]))[~ind_correct]+1, data[~ind_correct,0]/fact,'or', picker=2)
+                ax.plot(np.arange(len(data[:,0]))[~ind_correct]+1, data[~ind_correct,0]/fact,'or', picker=2)
             except: """
-            ax.errorbar(arange(len(data[:,0]))[ind_correct]+1, data[ind_correct,0]/fact
+            ax.errorbar(np.arange(len(data[:,0]))[ind_correct]+1, data[ind_correct,0]/fact
                     ,yerr=error[ind_correct,0]/fact,fmt='-xb',lw=.5,   picker=True)
-            ax.plot(arange(len(data[:,0]))[~ind_correct]+1, data[~ind_correct,0]/fact,'or' , picker=True)    
+            ax.plot(np.arange(len(data[:,0]))[~ind_correct]+1, data[~ind_correct,0]/fact,'or' , picker=True)    
             ax.xaxis.set_pickradius(5)
             ax.yaxis.set_pickradius(5.)   
                 
             ax.set_title('Input data, time: %g %s' % (tvec, tokamak.t_name),fontsize=font_size)
 
-            if not any(ind_correct): ind_correct[:] = True
-            ax.axis([0,nch+1, 0 , nanmax(data[ind_correct,0])/fact])
+            if not np.any(ind_correct): ind_correct[:] = True
+            ax.axis([0,nch+1, 0 , np.nanmax(data[ind_correct,0])/fact])
             ax.set_xlabel('Channel',fontsize=font_size)
 
         else:
@@ -233,8 +233,8 @@ def preview(fig, inputs, tokamak, plot_2D = True, show_prew= False):
         
     if plot_2D or len(tvec) == 1:
         for ind in tokamak.dets_index[:-1]:
-            ax.axvline(x=1.5+amax(ind), linestyle='-' ,color='k')
-            ax.axvline(x=1.5+amax(ind), linestyle='--',color='w')
+            ax.axvline(x=1.5+np.amax(ind), linestyle='-' ,color='k')
+            ax.axvline(x=1.5+np.amax(ind), linestyle='--',color='w')
 
 
     for label in (ax.get_xticklabels() + ax.get_yticklabels()):
