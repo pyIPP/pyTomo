@@ -76,7 +76,7 @@ class LogFormatterTeXExponent(FormatStrFormatter, object):
                 label_ = '10^{%d}'%int(label[2:])
             else:
                 label_ = re.sub(r'e(\S)0?(\d+)',r'\\cdot 10^{\1\2}',str(label))
-            label_.replace('.','\!.\!')
+            label_.replace('.',r'\!.\!')
 
             label_ = "$" + label_ + "$"
             label_ = label_.replace('+','')
@@ -1532,7 +1532,7 @@ def matplotlib_image(params):
                 if plot_details['plot_autoscale']:
                     prof_img.set_clim((gmin,gmax))
 
-            title=('#%d, t=%3.'+str(n_digit)+'f, $\chi^2$= %4.2f $\lambda$=%.2f')%(shot,tvec[ts],chi2[i],lam[i])
+            title=(r'#%d, t=%3.'+str(n_digit)+r'f, $\chi^2$= %4.2f $\lambda$=%.2f')%(shot,tvec[ts],chi2[i],lam[i])
 
             tlt.set_text(title)
             
@@ -1969,7 +1969,7 @@ def postprocessing_plot(input_data):
     # LAMBDA
     ylim = (0,1) if np.all((results['lam0']>=0)&(results['lam0']<=1)) else  (None,None)
      
-    plot_adv(tvec, [{'data':results['lam0'],'label':'$\lambda$','ylim':ylim}],
+    plot_adv(tvec, [{'data':results['lam0'],'label':r'$\lambda$','ylim':ylim}],
                 'lam'+'_'+shot,
                 title="Regularization level",
                 xlabel=t_label) 
@@ -1980,13 +1980,13 @@ def postprocessing_plot(input_data):
     
     try:
         plot_adv(tvec, [{'tvec':tvec, 'data':results['chi2_real'], 
-                            'ylabel':"$\chi^2/doF$ residuum",
+                            'ylabel':r"$\chi^2/doF$ residuum",
                             'xlabel':t_label,
                             'subplt':True,
                             'yscale':'log' , 
                             'label':'Real'},
         {'tvec':tvec, 'data':results['chi2'], 
-                            'ylabel':"$\chi ^2/doF$",
+                            'ylabel':r"$\chi ^2/doF$",
                             'xlabel':t_label,
                             'yscale':'log',
                             'label':'Guess'},
@@ -2196,11 +2196,11 @@ def postprocessing_plot(input_data):
         #Shafranov shift
         plot_adv(tvec, [{'data': shaf_shift_sxr*100,'label':'SXR'} ,{'data': shaf_shift_mag*100,
                 'label':'magnetics'}],'shafr_shift'+'_'+shot,title="Shafranov shift (only w/o asymmetries)",
-                xlabel=t_label,ylabel='$\Delta(0)$ [cm]',ylim=(0,np.median(shaf_shift_mag*100)*2))
+                xlabel=t_label,ylabel=r'$\Delta(0)$ [cm]',ylim=(0,np.median(shaf_shift_mag*100)*2))
         
         plot_adv(tvec, [{'data': elongation_sxr,'label':'SXR'} ,{'data': elongation_mag,
                 'label':'magnetics'}],'elongation'+'_'+shot,title="Elongation (only w/o asymmetries)",
-                xlabel=t_label,ylabel='$\kappa$ [-]',ylim=(1,1.7))
+                xlabel=t_label,ylabel=r'$\kappa$ [-]',ylim=(1,1.7))
         
  
     cmap = my_cmap
