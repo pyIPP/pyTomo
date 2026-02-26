@@ -434,7 +434,7 @@ def make_graphs(input_data, plot_svd = False):
             if G_samples is not None:
                 gres_samples_norm = np.maximum((1+gres_samples.max(0).max(0)),(1-gres_samples.min(0).min(0)))/65504
                 gres_samples /= gres_samples_norm[None, None]
-                gres_samples = gres_samples.astype(float16)
+                gres_samples = gres_samples.astype(np.float16)
             else:
                 gres_samples_norm = None
                 gres_samples  = None
@@ -442,7 +442,7 @@ def make_graphs(input_data, plot_svd = False):
             tokamak_tmp = inputs.pop('tokamak_tmp') #do not save it!
             inputs['impur_inject_t'] = tokamak.impur_inject_t
             name = 'Emissivity_%.3f-%.3f'%(tvec[0], tvec[-1])+base+str(shot)
-            np.savez_compressed(tmp_folder+'/'+name,gres=gres.astype(float16),tvec=tvec,\
+            np.savez_compressed(tmp_folder+'/'+name,gres=gres.astype(np.float16),tvec=tvec,\
                         rvec=xgrid,zvec=ygrid,inputs=inputs,gres_norm=gresnorm,BdMat=BdMat,
                         gres_samples=gres_samples, gres_samples_norm=gres_samples_norm)#,Rho=Rho)
             if inputs['enable_output']:
@@ -712,8 +712,8 @@ def make_graphs(input_data, plot_svd = False):
                  #os.system('mencoder "mf:/'+tmp_folder+'emissivity_*'+base+'.png" -o '   +output_path+'/movie_%d.avi  -ovc lavc -lavcopts vcodec=mpeg4:mbd=1:vbitrate=2800')
                  
             #except subprocess.CalledProcessError as e:
-                #print 'return code :',np.e.returncode
-                #print 'error message:',np.e.output
+                #print 'return code :',e.returncode
+                #print 'error message:',e.output
                 
                 
                 #os.system( 'mencoder "mf://'+tmp_folder+'/*1_rec_.png" -o movie_29624.avi -ovc lavc -lavcopts vcodec=mjpeg')
@@ -2355,7 +2355,7 @@ def postprocessing_plot(input_data):
         eq_out = np.c_[tvec,results['xmass'][:,1],results['ymass'][:,1],results['xmass_eq'][:,1],results['ymass_eq'][:,1],
                     elongation_sxr,elongation_mag,shaf_shift_sxr,shaf_shift_mag]
         np.savetxt(tmp_folder+'/equilibrium_'+shot+'.txt', eq_out,
-                    fmt=[ '%1.'+str(tvec_digits)+'np.e',]+['%.5e']*8,
+                    fmt=[ '%1.'+str(tvec_digits)+'e',]+['%.5e']*8,
         header='time [s]\tR 1/3 [m]\tz 1/3 [m]\t Rmag 1/3 [m]\tzmag 1/3 [m]\tSXR_elong\tmag_elong\tshaf_shioft_sxr\t shaf_shift_mag')
         
         output['elongation_sxr'] = elongation_sxr
@@ -2365,7 +2365,7 @@ def postprocessing_plot(input_data):
 
     np.savetxt(name, np.c_[tvec,results['xmass'],results['ymass'],results['xmass_eq'],
                     results['ymass_eq'] ,results['position'],results['power'],results['power']-results['power_div'] ],
-                    fmt=[ '%1.'+str(tvec_digits)+'np.e',]+['%.5e']*16,
+                    fmt=[ '%1.'+str(tvec_digits)+'e',]+['%.5e']*16,
             header='time [s]\tR 0/3 [m]\tR 1/3 [m]\tR 2/3 [m]\tz 0/3 [m]\tz 1/3 [m]\tz 2/3[m]'\
                     +'\t R_eq 0/3 [m]\tR_eq 1/3 [m]\tR_eq 2/3 [m]\tz_eq 0/3 [m]\t'\
                     +'z_eq 1/3 [m]\tz_eq 2/3[m]\t rmag [m]\tzmag [m]\tpower_tot[W]\tpower_core[W]')
@@ -2374,7 +2374,7 @@ def postprocessing_plot(input_data):
     np.savetxt(tmp_folder+'/emiss_profile0_%s.txt'%shot,profile0)
     
     np.savetxt(tmp_folder+'/emiss_profile_%s.txt'%shot, np.c_[tvec, profile],
-            fmt=['%1.'+str(tvec_digits)+'np.e']+['%1.4e',]*n_mag)
+            fmt=['%1.'+str(tvec_digits)+'e']+['%1.4e',]*n_mag)
     
     output['xmass'] = results['xmass']
     output['ymass'] = results['ymass']

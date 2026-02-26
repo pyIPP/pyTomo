@@ -1707,9 +1707,11 @@ class MainThread(QThread):
         self.setObjectName('PyTOMO') 
         self.progress = IterateProgress(self,parent.progressBar)
         self.parent = parent
+
     def prepare(self,setting, tokamak):
         self.setting = setting
         self.tokamak = tokamak
+
     def run(self):
         print('RUN')
 
@@ -1730,7 +1732,7 @@ class MainThread(QThread):
             
             return
         except Exception as e:
-            print("some error detected"+ str(np.e))
+            print("some error detected"+ str(e))
             self.failed.emit(1)
             self.newValue.emit(0)
             traceback.print_exc()
