@@ -371,9 +371,9 @@ def make_graphs(input_data, plot_svd = False):
         detectors_dict = tokamak.detectors_dict
         channels = [j for cam, ch in detectors_dict.items() for j in ch]
   
-    savez_compressed(tmp_folder+'/'+'data_'+str(shot),tvec=tvec, retro=retro, 
+    np.savez_compressed(tmp_folder+'/'+'data_'+str(shot),tvec=tvec, retro=retro, 
                 data=data, err=error,dets=dets,dets_dict=dets_dict,channels=channels)
-    savez_compressed(tmp_folder+'/'+'convergence_'+str(shot), tvec=tvec,chi2=chi2,lam=lam)
+    np.savez_compressed(tmp_folder+'/'+'convergence_'+str(shot), tvec=tvec,chi2=chi2,lam=lam)
     
     if inputs['enable_output']:
         copyfile(tmp_folder+'/'+'data_'+str(shot)+'.npz',output_path+'/data_'+str(shot)+'.npz')
@@ -442,7 +442,7 @@ def make_graphs(input_data, plot_svd = False):
             tokamak_tmp = inputs.pop('tokamak_tmp') #do not save it!
             inputs['impur_inject_t'] = tokamak.impur_inject_t
             name = 'Emissivity_%.3f-%.3f'%(tvec[0], tvec[-1])+base+str(shot)
-            savez_compressed(tmp_folder+'/'+name,gres=gres.astype(float16),tvec=tvec,\
+            np.savez_compressed(tmp_folder+'/'+name,gres=gres.astype(float16),tvec=tvec,\
                         rvec=xgrid,zvec=ygrid,inputs=inputs,gres_norm=gresnorm,BdMat=BdMat,
                         gres_samples=gres_samples, gres_samples_norm=gres_samples_norm)#,Rho=Rho)
             if inputs['enable_output']:
@@ -526,7 +526,7 @@ def make_graphs(input_data, plot_svd = False):
     if hasattr(tokamak, 'ICRH_rezonance'):
         plot_details['ICRH_position'] = tokamak.ICRH_rezonance
 
-    savez_compressed(tmp_folder+'/'+'mag_'+str(shot),magx=np.single(magx_all),magy = np.single(magy_all), tvec=tvec)
+    np.savez_compressed(tmp_folder+'/'+'mag_'+str(shot),magx=np.single(magx_all),magy = np.single(magy_all), tvec=tvec)
     
     
 
@@ -561,7 +561,7 @@ def make_graphs(input_data, plot_svd = False):
                 theta_star_contours_Z[it,i] = np.interp(theta,theta_star[i],np.squeeze(magy_[:,i]))
 
         plot_details['theta_star'] =  theta_star_contours_R,theta_star_contours_Z
-        savez_compressed(tmp_folder+'/theta_star', theta = np.single(THETA),
+        np.savez_compressed(tmp_folder+'/theta_star', theta = np.single(THETA),
                          magx=np.single(MAGX), magy = np.single(MAGY), rhop = rhop_, tvec=tvec )
     
     if (inputs['plot_all'] or tsteps == 1) and inputs['plot_surfaces']:
@@ -711,7 +711,7 @@ def make_graphs(input_data, plot_svd = False):
                  
                  #os.system('mencoder "mf:/'+tmp_folder+'emissivity_*'+base+'.png" -o '   +output_path+'/movie_%d.avi  -ovc lavc -lavcopts vcodec=mpeg4:mbd=1:vbitrate=2800')
                  
-            #except subprocess.CalledProcessError as np.e:
+            #except subprocess.CalledProcessError as e:
                 #print 'return code :',np.e.returncode
                 #print 'error message:',np.e.output
                 
@@ -1651,7 +1651,7 @@ def make_svd(inputs, tokamak,progress,results ):
     vr[:,0]*= v_sign
     vr = vr.T
 
-    savez_compressed(inputs['tmp_folder']+'/svd',u=ur,s=sr,v=vr)
+    np.savez_compressed(inputs['tmp_folder']+'/svd',u=ur,s=sr,v=vr)
 
 
     print("SVD done")
@@ -2368,7 +2368,7 @@ def postprocessing_plot(input_data):
                     fmt=[ '%1.'+str(tvec_digits)+'np.e',]+['%.5e']*16,
             header='time [s]\tR 0/3 [m]\tR 1/3 [m]\tR 2/3 [m]\tz 0/3 [m]\tz 1/3 [m]\tz 2/3[m]'\
                     +'\t R_eq 0/3 [m]\tR_eq 1/3 [m]\tR_eq 2/3 [m]\tz_eq 0/3 [m]\t'\
-                    +'z_eq 1/3 [m]\tz_eq 2/3[m]\t rmag [m]\tzmag\[m]\tpower_tot[W]\tpower_core[W]')
+                    +'z_eq 1/3 [m]\tz_eq 2/3[m]\t rmag [m]\tzmag [m]\tpower_tot[W]\tpower_core[W]')
 
 
     np.savetxt(tmp_folder+'/emiss_profile0_%s.txt'%shot,profile0)
@@ -2398,7 +2398,7 @@ def postprocessing_plot(input_data):
         output['fsa_emiss_cov'] = results['fsa_emiss_covar'].mean(0)
 
     post_process_path = tmp_folder+'/postprocessing_%s_%.3f-%.3f.npz'%(shot, tvec[0], tvec[-1])
-    savez_compressed(post_process_path,rho_lbl=tokamak.radial_coordinate,**output )
+    np.savez_compressed(post_process_path,rho_lbl=tokamak.radial_coordinate,**output )
 
 
     if inputs['enable_output']:
