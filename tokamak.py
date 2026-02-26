@@ -712,7 +712,7 @@ class Tokamak(object):
 
         data_reshaped = data_reshaped[:,:nt//du2*du2].reshape(-1,nt//du2,du2)
         data_reshaped = np.diff(data_reshaped, axis=2)
-        std_data = einsum('ijk,ijk->ij', data_reshaped,data_reshaped)/(du2-1)-data_reshaped.mean(2)**2
+        std_data = np.einsum('ijk,ijk->ij', data_reshaped,data_reshaped)/(du2-1)-data_reshaped.mean(2)**2
 
         std_tvec = tvec[:len(tvec)//du*du].reshape(len(tvec)//du,du)
         std_tvec = std_tvec.mean(-1)

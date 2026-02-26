@@ -1383,7 +1383,7 @@ class loader_SXR():
         self.hardcoded_corrections(tvec, data,data_error)
 
         
-        use_dets = ~in1d(self.dets, self.wrong_dets)
+        use_dets = ~isin(self.dets, self.wrong_dets)
         offset = tvec < .1
 
 
