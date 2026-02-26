@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from numpy import *
+import numpy as np
+import numpy.ma as ma
 import config
 import time
 import sys,os
@@ -109,13 +110,13 @@ class symlogNorm(Normalize):
             vmax = float(vmax)
             if clip:
                 mask = ma.getmask(result)
-                result = ma.array(clip(result.filled(vmax), vmin, vmax),
+                result = ma.array(np.clip(result.filled(vmax), vmin, vmax),
                                   mask=mask)
             # ma division is very slow; we can take a shortcut
             resdat = result.data;   resdat/=self.linthresh
-            resdat = arcsinh(resdat,out=resdat)
-            vmin = arcsinh(vmin/self.linthresh)
-            vmax = arcsinh(vmax/self.linthresh)
+            resdat = np.arcsinh(resdat,out=resdat)
+            vmin = np.arcsinh(vmin/self.linthresh)
+            vmax = np.arcsinh(vmax/self.linthresh)
             resdat-= vmin
             resdat/= vmax-vmin
   
@@ -130,12 +131,12 @@ class symlogNorm(Normalize):
         if not self.scaled():
             raise ValueError("Not invertible until scaled")
         vmin, vmax = self.vmin, self.vmax
-        vmin = arcsinh(vmin/self.linthresh)
-        vmax = arcsinh(vmax/self.linthresh)
-        val = asarray(value)
+        vmin = np.arcsinh(vmin/self.linthresh)
+        vmax = np.arcsinh(vmax/self.linthresh)
+        val = np.asarray(value)
         try:
             val*=(vmax-vmin);  val+= vmin
-            val = sinh(val,out= val)
+            val = np.sinh(val,out= val)
             val*= self.linthresh
             return ma.asarray(val)
         except:
@@ -170,11 +171,11 @@ def save_slice_fast(data, path):
     
     # Normalize entire volume at once (vectorized)
     max_val = data.max()
-    normalized = clip(data / max_val, 0, 1)
+    normalized = np.clip(data / max_val, 0, 1)
     
     # Apply inferno colormap (returns RGBA float 0-1)
     colormap = cm.get_cmap('inferno')
-    colored = (colormap(normalized) * 255).astype(uint8)  # shape: H x W x slices x 4
+    colored = (colormap(normalized) * 255).astype(np.uint8)  # shape: H x W x slices x 4
     
     def save_single(i):
         # Take RGB only (drop alpha), shape: H x W x 3
@@ -221,7 +222,7 @@ def make_graphs(input_data, plot_svd = False):
     #NOTE for transparent cmaps 
     #from matplotlib.colors import ListedColormap
     ## Get the colormap colors
-    #my_cmap = my_cmap_(arange(my_cmap_.N))
+    #my_cmap = my_cmap_(np.arange(my_cmap_.N))
 
     ## Set alpha
     #my_cmap[0,-1] = 0
@@ -264,13 +265,13 @@ def make_graphs(input_data, plot_svd = False):
          
     data[:,results['dets']]  = results['data']  #include data correction (bacground substraction) done during preprocessing  
     error[:,results['dets']] = results['error']  #include data correction (bacground substraction) done during preprocessing  
-    retro = zeros_like(data)
+    retro = np.zeros_like(data)
     retro[:,results['dets']] = results['retro']
     
     chi2 = results['chi2']
     lam = results['lam0']
 
-    rem_dets = where(~in1d(arange(data.shape[1]), results['dets']))[0]
+    rem_dets = np.where(~np.isin(np.arange(data.shape[1]), results['dets']))[0]
  
     try:
         retro[:,rem_dets] = (Tmat[rem_dets]*G).T
@@ -314,12 +315,12 @@ def make_graphs(input_data, plot_svd = False):
     if inputs['rem_back']:  # remove background
         print("REMOVING BACKGROUND !!!")
 
-        subst_ind = slice(None,int(ceil(tsteps*inputs['bcg_subst_fract'])))
-        data_0 = average(data[subst_ind,:],weights=1/error[subst_ind,:]**2+1e-6,axis=0)
+        subst_ind = slice(None,int(np.ceil(tsteps*inputs['bcg_subst_fract'])))
+        data_0 = np.average(data[subst_ind,:],weights=1/error[subst_ind,:]**2+1e-6,axis=0)
         dets_ = results['dets']
         try:
             #data from the phantom
-            Emiss0 = load(tmp_folder+'/Emiss0.npz')
+            Emiss0 = np.load(tmp_folder+'/Emiss0.npz')
             G0 = Emiss0['G'].reshape(tokamak.ny*tokamak.nx,tsteps, order='F')
             #normalize it to one!
             vmax = G0.max()
@@ -331,11 +332,11 @@ def make_graphs(input_data, plot_svd = False):
 
             print('remove phantom')
         except:
-            G0 = mean( G[:,subst_ind],axis=1)[:,None]
-            data0 = median(data[subst_ind],axis=0)[None,:]
+            G0 = np.mean( G[:,subst_ind],axis=1)[:,None]
+            data0 = np.median(data[subst_ind],axis=0)[None,:]
             
             
-        retro0 =  median(retro[subst_ind,:],axis=0)[None,:]
+        retro0 =  np.median(retro[subst_ind,:],axis=0)[None,:]
 
 
  
@@ -343,8 +344,8 @@ def make_graphs(input_data, plot_svd = False):
         retro -= retro0
         retro[:,dets_] += (retro0-data0)[:,dets_]
         G  -= G0
-        savez(tmp_folder+'/'+'data0_'+str(shot),data0=data_0)
-        savez(tmp_folder+'/'+'G0_'+str(shot),  G0=G0)
+        np.savez(tmp_folder+'/'+'data0_'+str(shot),data0=data_0)
+        np.savez(tmp_folder+'/'+'G0_'+str(shot),  G0=G0)
     #from IPython import embed
     #embed()
     gres=G.reshape(tokamak.ny,tokamak.nx,tsteps, order='F')
@@ -356,12 +357,12 @@ def make_graphs(input_data, plot_svd = False):
         n_svd_rem = 1
         ur,sr,vr = fast_svd(G,n_svd_rem)
 
-        G0 = dot(ur*sr,vr)
+        G0 = np.dot(ur*sr,vr)
         retro0 = (tokamak.Tmat*G0).T
         G_svd = G-G0
         data -= retro0
         retro -= retro0
-        gres=reshape(G_svd,(tokamak.ny,tokamak.nx,tsteps), order='F')
+        gres=np.reshape(G_svd,(tokamak.ny,tokamak.nx,tsteps), order='F')
         plot_autoscale=False
         
 
@@ -381,31 +382,31 @@ def make_graphs(input_data, plot_svd = False):
         
 
     #what was this step for???  it is usually doing nothing
-    xslice  = slice( max(0, int(round((tokamak.plot_coord[0] - tokamak.xmin)/tokamak.dx)) ), min(tokamak.nx, int(round((tokamak.plot_coord[1]-tokamak.xmin)/tokamak.dx)) ) )
-    yslice  = slice( max(0, int(round((tokamak.plot_coord[2] - tokamak.ymin)/tokamak.dy)) ), min(tokamak.ny, int(round((tokamak.plot_coord[3]-tokamak.ymin)/tokamak.dy)) ) )
+    xslice  = slice( max(0, int(np.round((tokamak.plot_coord[0] - tokamak.xmin)/tokamak.dx)) ), min(tokamak.nx, int(np.round((tokamak.plot_coord[1]-tokamak.xmin)/tokamak.dx)) ) )
+    yslice  = slice( max(0, int(np.round((tokamak.plot_coord[2] - tokamak.ymin)/tokamak.dy)) ), min(tokamak.ny, int(np.round((tokamak.plot_coord[3]-tokamak.ymin)/tokamak.dy)) ) )
     gres = gres[yslice, xslice]
     if G_samples is not None:
         gres_samples = gres_samples[yslice, xslice]
 
     
-    ny, nx, nt = shape(gres)
+    ny, nx, nt = np.shape(gres)
     xmin, xmax, ymin, ymax = tokamak.plot_coord
     
-    xpix=linspace(xmin,xmax, nx)/tokamak.norm
-    ypix=linspace(ymin,ymax, ny)/tokamak.norm
+    xpix=np.linspace(xmin,xmax, nx)/tokamak.norm
+    ypix=np.linspace(ymin,ymax, ny)/tokamak.norm
     rhop,magx_all, magy_all = tokamak.mag_equilibrium(tvec,return_mean=True)
 
 
     ##============store equilibrium =================
     #print 'save HR equilibrium ' fc
 
-    #rho = linspace(0,1.005, 200)
+    #rho = np.linspace(0,1.005, 200)
     #magx, magy = tokamak.mag_equilibrium(tvec,return_mean=True,n_rho=200,n_theta=200,rho=rho)
 
     #theta_star = tokamak.mag_theta_star(tvec.mean(), rho, magx, magy, rz_grid=False )
     #theta_star_rz = tokamak.mag_theta_star(tvec.mean(), rho[:-1], magx[:,:-1], magy[:,:-1], rz_grid=True )
 
-    #M = get_rho_field_mat(tokamak,  mean(tvec) )
+    #M = get_rho_field_mat(tokamak,  np.mean(tvec) )
 
     #savez_compressed(local_path+'tmp/'+'mag_'+str(shot),magx=magx[:,:-1],magy = magy[:,:-1], 
           #theta_star=theta_star[:-1], rho_pol=M,theta_star_rz=theta_star_rz,BdMat=BdMat)
@@ -427,11 +428,11 @@ def make_graphs(input_data, plot_svd = False):
             
             xgrid = (tokamak.xgrid+tokamak.dx/2)/tokamak.norm  #centers of the pixels
             ygrid = (tokamak.ygrid+tokamak.dy/2)/tokamak.norm  #centers of the pixels
-            gresnorm = maximum((1+gres.max(0).max(0)),(1-gres.min(0).min(0)))/65504
+            gresnorm = np.maximum((1+gres.max(0).max(0)),(1-gres.min(0).min(0)))/65504
             gres/= gresnorm[None,None,:]
 
             if G_samples is not None:
-                gres_samples_norm = maximum((1+gres_samples.max(0).max(0)),(1-gres_samples.min(0).min(0)))/65504
+                gres_samples_norm = np.maximum((1+gres_samples.max(0).max(0)),(1-gres_samples.min(0).min(0)))/65504
                 gres_samples /= gres_samples_norm[None, None]
                 gres_samples = gres_samples.astype(float16)
             else:
@@ -463,23 +464,23 @@ def make_graphs(input_data, plot_svd = False):
 
     #add padding to to graphs
     nx_new = (nx*(ymax-ymin)/(xmax-xmin))
-    padding_size = int(max(round((nx_new-nx+1)/2), 0))
-    padding = zeros((ny, padding_size),dtype=gres.dtype)
-    padding*= nan
+    padding_size = int(max(np.round((nx_new-nx+1)/2), 0))
+    padding = np.zeros((ny, padding_size),dtype=gres.dtype)
+    padding*= np.nan
     
     nx += padding_size*2
     #correction for the padding
     xmin -= padding_size*tokamak.dx
     xmax += padding_size*tokamak.dx
-    xpix = linspace(xmin,xmax, nx)/tokamak.norm
-    ypix = linspace(ymin,ymax, ny)/tokamak.norm
+    xpix = np.linspace(xmin,xmax, nx)/tokamak.norm
+    ypix = np.linspace(ymin,ymax, ny)/tokamak.norm
     
 
 
     #dictionary with all setings for plotting
     plot_details = {}
-    plot_details['geometry'] = array((xmin,xmax,ymin,ymax))/tokamak.norm
-    plot_details['mat_size'] = array((nx,ny))
+    plot_details['geometry'] = np.array((xmin,xmax,ymin,ymax))/tokamak.norm
+    plot_details['mat_size'] = np.array((nx,ny))
     plot_details['output_path'] = inputs['output_path']
     plot_details['local_path'] = inputs['local_path']
     plot_details['enable_output'] = inputs['enable_output']
@@ -525,7 +526,7 @@ def make_graphs(input_data, plot_svd = False):
     if hasattr(tokamak, 'ICRH_rezonance'):
         plot_details['ICRH_position'] = tokamak.ICRH_rezonance
 
-    savez_compressed(tmp_folder+'/'+'mag_'+str(shot),magx=single(magx_all),magy = single(magy_all), tvec=tvec)
+    savez_compressed(tmp_folder+'/'+'mag_'+str(shot),magx=np.single(magx_all),magy = np.single(magy_all), tvec=tvec)
     
     
 
@@ -540,34 +541,34 @@ def make_graphs(input_data, plot_svd = False):
             #============store equilibrium =================
         
 
-        rho = linspace(0,1.005, 200)**3
-        n_rho = sum(rho<=1.)
-        theta_star_contours_R = zeros((tsteps,n_rho, 20))
-        theta_star_contours_Z = zeros((tsteps,n_rho, 20))
+        rho = np.linspace(0,1.005, 200)**3
+        n_rho = np.sum(rho<=1.)
+        theta_star_contours_R = np.zeros((tsteps,n_rho, 20))
+        theta_star_contours_Z = np.zeros((tsteps,n_rho, 20))
         from tqdm import tqdm,trange
         for it in trange(tsteps,desc='Calculate theta star: '):
             rhop_,magx_, magy_ = tokamak.mag_equilibrium(tvec[it],return_mean=True,n_theta=200,rho=rho)
 
-            theta_star = tokamak.mag_theta_star(tvec[it], rhop_, squeeze(magx_),squeeze(magy_), rz_grid=False )
+            theta_star = tokamak.mag_theta_star(tvec[it], rhop_, np.squeeze(magx_),np.squeeze(magy_), rz_grid=False )
             
             THETA.append(theta_star)
             MAGX.append(magx_)
             MAGY.append(magy_)
 
-            theta = linspace(0,2*pi, 20, endpoint=False)
+            theta = np.linspace(0,2*np.pi, 20, endpoint=False)
             for i in range(n_rho):
-                theta_star_contours_R[it,i] = interp(theta,theta_star[i],squeeze(magx_[:,i]))
-                theta_star_contours_Z[it,i] = interp(theta,theta_star[i],squeeze(magy_[:,i]))
+                theta_star_contours_R[it,i] = np.interp(theta,theta_star[i],np.squeeze(magx_[:,i]))
+                theta_star_contours_Z[it,i] = np.interp(theta,theta_star[i],np.squeeze(magy_[:,i]))
 
         plot_details['theta_star'] =  theta_star_contours_R,theta_star_contours_Z
-        savez_compressed(tmp_folder+'/theta_star', theta = single(THETA),
-                         magx=single(MAGX), magy = single(MAGY), rhop = rhop_, tvec=tvec )
+        savez_compressed(tmp_folder+'/theta_star', theta = np.single(THETA),
+                         magx=np.single(MAGX), magy = np.single(MAGY), rhop = rhop_, tvec=tvec )
     
     if (inputs['plot_all'] or tsteps == 1) and inputs['plot_surfaces']:
 
         
         if 'magx' in results:
-            skip_mag = max(size(results['magx'], 1)//10, 1)    #use at most 10 lines in the graph
+            skip_mag = max(np.size(results['magx'], 1)//10, 1)    #use at most 10 lines in the graph
             ind = slice(skip_mag-1,None,skip_mag)
             magx_all = results['magx'][:,ind].T
             magy_all = results['magy'][:,ind].T
@@ -581,7 +582,7 @@ def make_graphs(input_data, plot_svd = False):
 
         if 'plot_surfaces_outer' in inputs and inputs['plot_surfaces_outer'] and tokamak.use_pfm:
 
-            rho_out = linspace(1,1.1,5)
+            rho_out = np.linspace(1,1.1,5)
             magr_out, magz_out = tokamak.get_mag_contours(tvec,rho_out)
             plot_details['mag_out'] = magr_out, magz_out
   
@@ -598,8 +599,8 @@ def make_graphs(input_data, plot_svd = False):
     if inputs['plot_loglin']: 
         #estimate a normalization
         ind = slice(None,None) if tsteps < 1000 else random.randint(tsteps,size=1000)       
-        data_norm = median(abs(data[:,results['dets']]).mean(0))/2/inputs['loglin_threshold']
-        prof_norm = std(G[:,ind])/inputs['loglin_threshold']
+        data_norm = np.median(np.abs(data[:,results['dets']]).mean(0))/2/inputs['loglin_threshold']
+        prof_norm = np.std(G[:,ind])/inputs['loglin_threshold']
 
     vmin,vmax = mquantiles(gres.max(0).max(0), (0.02, 0.98))
     vmin = min(0, vmin)
@@ -626,27 +627,27 @@ def make_graphs(input_data, plot_svd = False):
 
         try:
             if not rem_back:
-                vmax = load(tmp_folder+'/Emiss0.npz')['G0'].max()
+                vmax = np.load(tmp_folder+'/Emiss0.npz')['G0'].max()
         except: 
             pass 
             
-        data_min,data_max = mquantiles(data[:,dets][isfinite(error[:,dets])],[.01,.99])
+        data_min,data_max = mquantiles(data[:,dets][np.isfinite(error[:,dets])],[.01,.99])
         glim = vmin, vmax
-        limit = min(0,data_min), max(data_max,amax(retro))
+        limit = min(0,data_min), max(data_max,np.amax(retro))
   
 
 
         if 'mag_field' in plot_details: #BUG is ot working if False
-            mag_field = array((magx_all,magy_all),copy=False)
+            mag_field = np.array((magx_all,magy_all),copy=False)
             mag_field/= tokamak.norm
         else:
-            mag_field = nan*ones(tsteps)
+            mag_field = np.nan*np.ones(tsteps)
             
         #high quality matplotlib output
         n_split = 1 if tsteps < 2*inputs['n_cpu'] else 2*inputs['n_cpu']
         ind = [slice(i*tsteps//n_split,(i+1)*tsteps//n_split) for i in range(n_split)]
 
-        args = [(r_[ii],gres[...,ii],padding,data[ii,:], error[ii,:],retro[ii,:],dets
+        args = [(np.r_[ii],gres[...,ii],padding,data[ii,:], error[ii,:],retro[ii,:],dets
                 ,tvec,my_cmap,mag_field[...,ii],chi2[ii],lam[ii],tsteps,tokamak.rho_label,
                 base,(data_norm,prof_norm),(limit,glim),plot_details) for ii in ind]
             
@@ -710,9 +711,9 @@ def make_graphs(input_data, plot_svd = False):
                  
                  #os.system('mencoder "mf:/'+tmp_folder+'emissivity_*'+base+'.png" -o '   +output_path+'/movie_%d.avi  -ovc lavc -lavcopts vcodec=mpeg4:mbd=1:vbitrate=2800')
                  
-            #except subprocess.CalledProcessError as e:
-                #print 'return code :',e.returncode
-                #print 'error message:',e.output
+            #except subprocess.CalledProcessError as np.e:
+                #print 'return code :',np.e.returncode
+                #print 'error message:',np.e.output
                 
                 
                 #os.system( 'mencoder "mf://'+tmp_folder+'/*1_rec_.png" -o movie_29624.avi -ovc lavc -lavcopts vcodec=mjpeg')
@@ -721,14 +722,14 @@ def make_graphs(input_data, plot_svd = False):
     if  tsteps > 1:
         #try: #cut throught magnetics axis
         Rc,Zc = magx_all[:,0].mean(), magy_all[:,0].mean()
-        xfract = int_((Rc-(xmin+padding_size*tokamak.dx))/(xmax-padding_size*tokamak.dx-(xmin+padding_size*tokamak.dx))*(nx-2*padding_size))
-        yfract = int_((Zc-ymin)/(ymax-ymin)*ny)
+        xfract = np.int_((Rc-(xmin+padding_size*tokamak.dx))/(xmax-padding_size*tokamak.dx-(xmin+padding_size*tokamak.dx))*(nx-2*padding_size))
+        yfract = np.int_((Zc-ymin)/(ymax-ymin)*ny)
 
-        g_profilx = gres[yfract,:,arange(tsteps)]     
-        g_profily = gres[:,xfract,arange(tsteps)].T
+        g_profilx = gres[yfract,:,np.arange(tsteps)]     
+        g_profily = gres[:,xfract,np.arange(tsteps)].T
     
-        converged = '     Converged: %d/%d'%(sum(abs(chi2) < 0.1), tsteps)
-        mean_chi =  '     Mean Chi2: %.2f' % exp(nansum(log(chi2))/len(chi2))
+        converged = '     Converged: %d/%d'%(np.sum(np.abs(chi2) < 0.1), tsteps)
+        mean_chi =  '     Mean Chi2: %.2f' % np.exp(np.nansum(np.log(chi2))/len(chi2))
         name = ('previewA'+str(shot)+base, 'previewB'+str(shot)+base)
         norm = Normalize()
         if inputs['plot_loglin']:
@@ -793,13 +794,13 @@ def matplotlib_preview(g_profilx, g_profily, padding, data,dets, titleX, titleY,
 
     g_profilx = g_profilx[::under,:]
     g_profily = g_profily[::under,:]
-    padding = tile(padding[0,:], (g_profilx.shape[0],1))
-    g_profilx = concatenate([padding, g_profilx, padding], axis=1)
+    padding = np.tile(padding[0,:], (g_profilx.shape[0],1))
+    g_profilx = np.concatenate([padding, g_profilx, padding], axis=1)
     
-    if all(g_profilx==0) or all(g_profily==0):
+    if np.all(g_profilx==0) or np.all(g_profily==0):
         raise Exception('Zero cut of the emissivity profile')
     
-    gmax = max(nanmax(g_profilx), nanmax(g_profily))
+    gmax = max(np.nanmax(g_profilx), np.nanmax(g_profily))
     if gmax > 3e5:
         fact,pre = 1e6, 'M'
     elif gmax> 3e2:
@@ -910,8 +911,8 @@ def matplotlib_data_tg(params):
         
     n_col = len(cam_ind)
     n_row = 1
-    resid0 = inf
-    for i_col in range(int(ceil(sqrt(len(cam_ind))))+1):
+    resid0 = np.inf
+    for i_col in range(int(np.ceil(np.sqrt(len(cam_ind))))+1):
         for i_row in range(i_col+1):
             resid = (i_col+1)*(i_row+1) - len(cam_ind)
             if resid < 0: continue
@@ -940,7 +941,7 @@ def matplotlib_data_tg(params):
         if plot_details['input_diagn'] == 'AXUV' and plot_details['name']=='ASDEX':
             ax.set_xlim(-1.2,1.2)
 
-        fcmax = abs(Fc).max()  
+        fcmax = np.abs(Fc).max()  
         if  fcmax > 2e8:
             fac,pre = 1,''
         elif fcmax > 2e5:
@@ -958,7 +959,7 @@ def matplotlib_data_tg(params):
             
         
         if not plot_details['plot_autoscale']:
-            ax.set_ylim((-amax(Fc[:,dets])*.05+dmin)/fac ,dmax/fac)
+            ax.set_ylim((-np.amax(Fc[:,dets])*.05+dmin)/fac ,dmax/fac)
             
         if plot_details['rem_back'] or (plot_details['rem_fsa'] and plot_details['transform_index']==1) or plot_details['plot_svd']:
             ax.set_ylim(dmin/fac,dmax/fac)
@@ -1018,8 +1019,8 @@ def matplotlib_data_tg(params):
         error = Error[it]
         
 
-        scaling = array([plot_details['dx']  ,plot_details['dy']  ])
-        offset  = array([plot_details['xmin'],plot_details['ymin']])+scaling/2
+        scaling = np.array([plot_details['dx']  ,plot_details['dy']  ])
+        offset  = np.array([plot_details['xmin'],plot_details['ymin']])+scaling/2
         
         ax = list(axis.keys())[0]
         vmax = 0
@@ -1029,35 +1030,35 @@ def matplotlib_data_tg(params):
             ax = list(axis.keys())[i]
             rho_tg_cam = []
             retro_interp_cam = []
-            ind_ = hstack(inds)
-            #orientation = sign(mean(tokamak.Ychords[-1,ind_]-tokamak.Ychords[0,ind_]))
+            ind_ = np.hstack(inds)
+            #orientation = np.sign(np.mean(tokamak.Ychords[-1,ind_]-tokamak.Ychords[0,ind_]))
             #orientation = 1d
             for j,ind in enumerate(inds):
-                orientation = sign(mean(plot_details['Ychords'][-1,ind]-plot_details['Ychords'][0,ind]))
+                orientation = np.sign(np.mean(plot_details['Ychords'][-1,ind]-plot_details['Ychords'][0,ind]))
 
-                correct = in1d(ind, dets)&isfinite(error[ind])
+                correct = np.isin(ind, dets)&np.isfinite(error[ind])
                 rhotg = orientation*rho_tangent[ind]
                 axis[ax]['retro_points'][j].set_data(rhotg, fc[ind]/fac)
             
                 #calculate interpolated retrofits in between the measurements
-                x = (arange(unsample*len(ind))-unsample/2)*1./unsample
-                X = extrap1d(arange(len(ind)),chordsx[:,ind].T)(x) #0.8ms
-                Y = extrap1d(arange(len(ind)),chordsy[:,ind].T)(x) #0.8ms
+                x = (np.arange(unsample*len(ind))-unsample/2)*1./unsample
+                X = extrap1d(np.arange(len(ind)),chordsx[:,ind].T)(x) #0.8ms
+                Y = extrap1d(np.arange(len(ind)),chordsy[:,ind].T)(x) #0.8ms
 
-                coords = c_[X.ravel(),Y.ravel()]#0.1ms
+                coords = np.c_[X.ravel(),Y.ravel()]#0.1ms
                 
                 idx = (coords-offset)/scaling#0.6ms
                 
                 interpG = map_coordinates(G[...,it].T,idx.T,order=2).reshape(X.shape)  #2.4ms
 
-                ifc = (hypot(gradient(X)[1], gradient(Y)[1])*interpG).sum(1) #0.8ms #make line integration
+                ifc = (np.hypot(np.gradient(X)[1], np.gradient(Y)[1])*interpG).sum(1) #0.8ms #make line integration
                 
 
-                retro_interp = MovingAveradge(copy(ifc),unsample) #broadenning due a to a finite width of LOS
+                retro_interp = MovingAveradge(np.copy(ifc),unsample) #broadenning due a to a finite width of LOS
                 
                 #retrofit will go now exactly through real retrofit values!
-                retro_interp-= interp(ind[0]+x,ind,interp(ind,ind[0]+x,retro_interp))
-                retro_interp+= interp(ind[0]+x,ind,Fc[it,ind])
+                retro_interp-= np.interp(ind[0]+x,ind,np.interp(ind,ind[0]+x,retro_interp))
+                retro_interp+= np.interp(ind[0]+x,ind,Fc[it,ind])
      
                 
 
@@ -1086,14 +1087,14 @@ def matplotlib_data_tg(params):
                     update_errorbar(axis[ax]['resid'][j], x,y,yerr)#0.4ms
                     
             #averadge profile over almost identical cameras
-            Rho = linspace(amin(hstack(rho_tg_cam)),amax(hstack(rho_tg_cam)),200)
-            W = zeros_like(Rho)
-            Retro = zeros_like(Rho)
+            Rho = np.linspace(np.amin(np.hstack(rho_tg_cam)),np.amax(np.hstack(rho_tg_cam)),200)
+            W = np.zeros_like(Rho)
+            Retro = np.zeros_like(Rho)
             for rho,retro in zip(rho_tg_cam,retro_interp_cam ):
-                sort_ind = argsort(rho)
-                w = interp(Rho,rho[sort_ind],ones_like(rho), left=0,right=0)
+                sort_ind = np.argsort(rho)
+                w = np.interp(Rho,rho[sort_ind],np.ones_like(rho), left=0,right=0)
                 W+= w
-                Retro+= interp(Rho,rho[sort_ind],retro[sort_ind])*w
+                Retro+= np.interp(Rho,rho[sort_ind],retro[sort_ind])*w
             #W==0 => gap between detector arrays
             Retro[W!=0]/= W[W!=0]            
             axis[ax]['retro_spline'].set_data(Rho[W!=0], Retro[W!=0]/fac)
@@ -1102,7 +1103,7 @@ def matplotlib_data_tg(params):
         if plot_details['plot_autoscale']:
             ax.set_ylim(-vmax/fac*.05 ,vmax/fac*1.1)
             if plot_details['rem_back'] or plot_details['plot_svd']:
-                vmax = amax(abs(fc[dets]))/fac*1.1
+                vmax = np.amax(np.abs(fc[dets]))/fac*1.1
                 ax.set_ylim(-vmax ,vmax)
     
             if plot_loglin:
@@ -1124,7 +1125,7 @@ def matplotlib_data_tg(params):
 
     
     try:
-        sys.stdout.write("\r %2.1f %% fps:%2.1f" %((ntvec[-1])*100./tsteps/2, size(ntvec)/(time.time()-T)))
+        sys.stdout.write("\r %2.1f %% fps:%2.1f" %((ntvec[-1])*100./tsteps/2, np.size(ntvec)/(time.time()-T)))
         sys.stdout.flush()  # maybe problem with paralelization ??
     except:
         pass
@@ -1169,7 +1170,7 @@ def matplotlib_data(params):
     T = time.time()
 
 
-    Ndets = size(data,1)
+    Ndets = np.size(data,1)
     fig = Figure((1.33*img_size,img_size))
     FigureCanvas(fig)
     ax = fig.add_subplot(111)
@@ -1181,12 +1182,12 @@ def matplotlib_data(params):
     ax.axhline(0, c='k')
 
     for di in plot_details['dets_index'][:-1]:
-        ax.axvline(x=0.5+amax(di), ls='--')
+        ax.axvline(x=0.5+np.amax(di), ls='--')
 
 
     #upper axis with detectors names 
     if plot_details['detectors_dict'] is not None:
-        xlabels = [median(ind) for ind in plot_details['dets_index']]
+        xlabels = [np.median(ind) for ind in plot_details['dets_index']]
         labels = list(plot_details['detectors_dict'].keys())
         ax2 = ax.twiny()
         ax2.set_xticks(xlabels)
@@ -1228,7 +1229,7 @@ def matplotlib_data(params):
         ylabel.set_text('Brightness [%sW/m$^2$] '%pre)
         ax.set_ylim(dmin/fact,dmax/fact)
 
-        ind = isfinite(error[i,dets])
+        ind = np.isfinite(error[i,dets])
         x = dets[ind]
         y = data[i,x]/fact
         yerr = error[i,x]/fact
@@ -1236,15 +1237,15 @@ def matplotlib_data(params):
         update_errorbar(errorbar1, x,y,yerr)
 
         #do the same for wrong detectors
-        wrong_dets = ~in1d(arange(Ndets), dets)
-        wrong_dets|= ~isfinite(error[i,:])
-        x = where(wrong_dets)[0]
+        wrong_dets = ~np.isin(np.arange(Ndets), dets)
+        wrong_dets|= ~np.isfinite(error[i,:])
+        x = np.where(wrong_dets)[0]
         y = data[i,wrong_dets]/fact
         yerr = error[i,wrong_dets]/fact
         
         update_errorbar(errorbar2, x,y,yerr)
 
-        retrofit.set_data(arange(Ndets),fc[i,:]/fact)
+        retrofit.set_data(np.arange(Ndets),fc[i,:]/fact)
         
         if tsteps > 1 and False:
             time_line2.set_xdata([tvec[ts],tvec[ts]])
@@ -1264,7 +1265,7 @@ def matplotlib_data(params):
             
 
     try:
-        sys.stdout.write("\r %2.1f %% fps:%2.1f" %((ntvec[-1])*100./tsteps, size(ntvec)/(time.time()-T)))
+        sys.stdout.write("\r %2.1f %% fps:%2.1f" %((ntvec[-1])*100./tsteps, np.size(ntvec)/(time.time()-T)))
         sys.stdout.flush()  # maybe problem with paralelization ??
     except:
         pass
@@ -1329,7 +1330,7 @@ def matplotlib_image(params):
     T = time.time()
 
 
-    Ndets = size(data,1)
+    Ndets = np.size(data,1)
 
     fig = Figure((8*img_size/6.,img_size))
     FigureCanvas(fig)
@@ -1362,7 +1363,7 @@ def matplotlib_image(params):
         norm = symlogNorm(linthresh[1]/8.5,vmin=gmin,vmax=gmax)
         unit = 'W'
         
-        ticks = [10**ceil(log10(gmax))]
+        ticks = [10**np.ceil(np.log10(gmax))]
         for i in range(3):
             ticks = [float('%.1g' % (ticks[0]/10))]+ticks
         if sym_colorbar:
@@ -1404,7 +1405,7 @@ def matplotlib_image(params):
         ax.axis(geometry)
         if plot_contours:
             gmin = 0
-            levels = norm.inverse(linspace(norm(gmin),norm(gmax),n_contours))
+            levels = norm.inverse(np.linspace(norm(gmin),norm(gmax),n_contours))
             prof_img = ax.contourf(gprof[:,:,0]*fact,norm=norm,#vmin=gmin,vmax=gmax,
                                    levels=levels,extent=area_tight,cmap=cmap_typ[0],
                                    extend=extend)
@@ -1412,7 +1413,7 @@ def matplotlib_image(params):
             CS2 = ax.contour(prof_img, levels=prof_img.levels,colors = 'k',linewidths=.2,  origin='lower')#, hold='on')
         else:
             
-            prof_tmp = concatenate([padding, gprof[:,:,0]*fact, padding], axis=1)
+            prof_tmp = np.concatenate([padding, gprof[:,:,0]*fact, padding], axis=1)
             prof_img= ax.imshow(prof_tmp,cmap= cmap_typ[0],extent=area,norm=norm,#vmin=gmin,vmax=gmax,
                 interpolation='nearest',aspect = str((ymax-ymin)/(xmax-xmin)), origin='lower')
             prof_img.set_clim((gmin,gmax)) 
@@ -1448,7 +1449,7 @@ def matplotlib_image(params):
             if 'R2D' in plot_details["ICRH_position"]:
                 v_line, = ax.plot([],[],ls='--',c='0.5',lw=1.5)
             else:
-                Nlines = size(plot_details["ICRH_position"]['R'],1)
+                Nlines = np.size(plot_details["ICRH_position"]['R'],1)
                 v_line = [ax.axvline(x=0,ls='--',c='0.5',lw=1.5) for i in range(Nlines)]
 
 
@@ -1466,8 +1467,8 @@ def matplotlib_image(params):
                     
 
         if tsteps> 1:
-            dt = abs(mean(diff(tvec)))
-            n_digit = max(0, -int(floor(log10(dt))))
+            dt = np.abs(np.mean(np.diff(tvec)))
+            n_digit = max(0, -int(np.floor(np.log10(dt))))
         else:
             n_digit = 3
         
@@ -1475,8 +1476,8 @@ def matplotlib_image(params):
             
             
             if plot_details['plot_autoscale']:
-                vmax = amax(gprof[:,:,i])
-                vmin = min(0,amin(gprof[:,:,i] ))
+                vmax = np.amax(gprof[:,:,i])
+                vmin = min(0,np.amin(gprof[:,:,i] ))
                 gmax = vmax*fact
                 gmin = vmin*fact
   
@@ -1505,13 +1506,13 @@ def matplotlib_image(params):
                     try:    ax.collections.remove(coll)
                     except ValueError: pass#Everything is not removed for some reason!    
                 
-                centerng = array((0,0, 0, -dym))
+                centerng = np.array((0,0, 0, -dym))
 
                 dlev = (norm(gmax)-norm(gmin))/n_contours
-                levels = norm.inverse(linspace(norm(gmin),norm(gmax),n_contours))
+                levels = norm.inverse(np.linspace(norm(gmin),norm(gmax),n_contours))
  
 
-                prof_img = ax.contourf( prof,extent=array(area_tight),
+                prof_img = ax.contourf( prof,extent=np.array(area_tight),
                             norm=norm,vmin=gmin,vmax=gmax,levels=levels,origin='lower',extend=extend,cmap=cmap_typ[0])
                             #aspect = str((ymax-ymin)/(xmax-xmin)))
                 
@@ -1526,7 +1527,7 @@ def matplotlib_image(params):
                 
 
             else:
-                prof_tmp = concatenate([padding, gprof[:,:,i]*fact, padding], axis=1)
+                prof_tmp = np.concatenate([padding, gprof[:,:,i]*fact, padding], axis=1)
                 prof_img.set_data(prof_tmp)
                 if plot_details['plot_autoscale']:
                     prof_img.set_clim((gmin,gmax))
@@ -1554,15 +1555,15 @@ def matplotlib_image(params):
                                     plot_details['theta_star'][1][ts,:,j])
         
             if 'ICRH_position' in  plot_details:
-                ind = argmin(abs(tvec[ts]-plot_details["ICRH_position"]['tvec']))
+                ind = np.argmin(np.abs(tvec[ts]-plot_details["ICRH_position"]['tvec']))
                 ricrh = plot_details["ICRH_position"]['R'][ind]
-                if 'R2D' in plot_details["ICRH_position"] and any(isfinite(ricrh)):
+                if 'R2D' in plot_details["ICRH_position"] and np.any(np.isfinite(ricrh)):
                     #take in account plasma diamagnetics
-                    ind = argmin(abs(tvec[ts]-plot_details["ICRH_position"]['timeR2D']))
+                    ind = np.argmin(np.abs(tvec[ts]-plot_details["ICRH_position"]['timeR2D']))
                     rhoR2D = plot_details["ICRH_position"]['rhoR2D'][ind][::-1]
                     R2D = plot_details["ICRH_position"]['R2D'][:,ind][::-1]
-                    rho = linspace(0,1,mag_field.shape[2])
-                    B_Bc = interp(rho, rhoR2D,R2D)/mag_field[0,:,:,i]
+                    rho = np.linspace(0,1,mag_field.shape[2])
+                    B_Bc = np.interp(rho, rhoR2D,R2D)/mag_field[0,:,:,i]
 
                     try: 
                         #countour = cntr.Cntr(mag_field[0,:,:,i],mag_field[1,:,:,i],B_Bc )
@@ -1574,10 +1575,10 @@ def matplotlib_image(params):
                         lines = contour_generator(mag_field[0,:,:,i],mag_field[1,:,:,i],B_Bc)
 
 
-                    lines = vstack(lines)
-                    lines = lines[argsort(lines[:,1])]
+                    lines = np.vstack(lines)
+                    lines = lines[np.argsort(lines[:,1])]
                     v_line.set_data( lines[:,0], lines[:,1])
-                elif  any(isfinite(ricrh)):
+                elif  np.any(np.isfinite(ricrh)):
                     for r,v in zip(ricrh,v_line): v.set_xdata([r,r])
 
 
@@ -1606,7 +1607,7 @@ def matplotlib_image(params):
                 ax.set_position(ax_bbox)
 
     try:
-        sys.stdout.write("\r %2.1f %% fps:%2.1f" %((ntvec[-1])*100./tsteps/2+50, size(ntvec)/(time.time()-T)))
+        sys.stdout.write("\r %2.1f %% fps:%2.1f" %((ntvec[-1])*100./tsteps/2+50, np.size(ntvec)/(time.time()-T)))
         sys.stdout.flush()  # maybe problem with paralelization ??
     except:
         pass
@@ -1633,7 +1634,7 @@ def make_svd(inputs, tokamak,progress,results ):
         return 
 
     geometry = tokamak.area_axis
-    boundary = tokamak.get_boundary(100,time=mean(tvec))
+    boundary = tokamak.get_boundary(100,time=np.mean(tvec))
 
     import matplotlib.gridspec as gridspec
 
@@ -1645,7 +1646,7 @@ def make_svd(inputs, tokamak,progress,results ):
 
 
     ur,sr,vr = fsvd(G_tmp, n_svd_show,i=2)
-    v_sign = sign(mean(vr[:,0]))
+    v_sign = np.sign(np.mean(vr[:,0]))
     ur[:,0]*= v_sign
     vr[:,0]*= v_sign
     vr = vr.T
@@ -1660,7 +1661,7 @@ def make_svd(inputs, tokamak,progress,results ):
 
     rhop,magx, magy  = tokamak.mag_equilibrium(tvec,n_rho=11, return_mean=True)
     if len(rhop)!= 11:
-        skip_mag = max(size(magx, 1)/10, 1)    #use maximaly 10 lines in the graph
+        skip_mag = max(np.size(magx, 1)/10, 1)    #use maximaly 10 lines in the graph
         ind = slice(skip_mag-1,None,skip_mag)
         rhop,magx, magy = rhop[ind],magx[:,ind], magy[:,ind]
     
@@ -1684,7 +1685,7 @@ def make_svd(inputs, tokamak,progress,results ):
         vmin = min(-vr[i,:].max(),vr[i,:].min())
 
         ax.plot(boundary[:,0]/tokamak.norm, boundary[:,1]/tokamak.norm, '0.6', linewidth=1)
-        ax.imshow(reshape(vr[i,:],(tokamak.ny,tokamak.nx),order='F'),cmap=inputs['cmap_neg'],extent=geometry
+        ax.imshow(np.reshape(vr[i,:],(tokamak.ny,tokamak.nx),order='F'),cmap=inputs['cmap_neg'],extent=geometry
                 ,origin='lower',vmin=vmin,vmax=vmax)
         
         if i: ax.yaxis.set_major_formatter( NullFormatter() )
@@ -1700,12 +1701,12 @@ def make_svd(inputs, tokamak,progress,results ):
 
     M_norm = sp.linalg.norm((G_tmp.flatten()))
 
-    ur = dot(vr, G.T).T
+    ur = np.dot(vr, G.T).T
     from scipy.signal import welch
 
     ax = None
     ymax = 0
-    ymin = inf
+    ymin = np.inf
     for i in range(n_svd_show):
         ax =  fig.add_subplot(gs[n_svd_show+i],sharey=ax)
 
@@ -1796,7 +1797,7 @@ def plot_adv(tvec, data, name, save_data = True,**kwarg):
         else:
             ax.errorbar(xvec,d.pop('data'),label=d.pop('label'),yerr=d.pop('yerr'))
             
-        ax.set_xlim(amin(xvec), amax(xvec))
+        ax.set_xlim(np.amin(xvec), np.amax(xvec))
         ax.yaxis.set_major_locator(MaxNLocator(6))
         if xvec is tvec and not tokamak.impur_inject_t is None:
             for lbo in tokamak.impur_inject_t:
@@ -1839,7 +1840,7 @@ def plot_2D_adv(yvec,xvec,data,name,plot_type=0,cmap=my_cmap_,norm=Normalize(),s
     inputs['blacken_negative']
     
     
-    vmin,vmax = mquantiles(data[isfinite(data)],(0.01, 0.99))
+    vmin,vmax = mquantiles(data[np.isfinite(data)],(0.01, 0.99))
     vmin =  min(0,vmin) 
     
     extend = 'neither'
@@ -1856,13 +1857,13 @@ def plot_2D_adv(yvec,xvec,data,name,plot_type=0,cmap=my_cmap_,norm=Normalize(),s
     FigureCanvas(fig)
 
     ax = fig.add_subplot(111)
-    extent = (amin(yvec),amax(yvec), amin(xvec), amax(xvec))
+    extent = (np.amin(yvec),np.amax(yvec), np.amin(xvec), np.amax(xvec))
     c = None
     if plot_type == 0:
         im = ax.imshow(data, interpolation='bilinear', origin='lower', cmap =cmap, extent=extent,norm=norm)
 
         if isinstance(norm, symlogNorm):
-            ticks = norm.inverse(linspace(0,1,7,endpoint=True))
+            ticks = norm.inverse(np.linspace(0,1,7,endpoint=True))
             ticks = [float('%.1g' % (t)) for t in ticks] 
         else:
             ticks = None
@@ -1880,7 +1881,7 @@ def plot_2D_adv(yvec,xvec,data,name,plot_type=0,cmap=my_cmap_,norm=Normalize(),s
             im.set_clim([min(vmin,-vmax), max(-vmin, vmax)])
         else:
             im.set_clim([vmin,vmax])
-        levels = linspace(vmin,nanmax(data),30)
+        levels = np.linspace(vmin,np.nanmax(data),30)
 
         ax.contour( data, levels=levels, linewidths=.1,  colors='k',extent=extent)
         ax.xaxis.set_major_locator(MaxNLocator(5))
@@ -1951,22 +1952,22 @@ def postprocessing_plot(input_data):
     profile = results['fsa_emiss']
 
 
-    m_negative = sum(G<0)
-    if  m_negative > 0:   print('negative values in the G  %.3f%%'%(m_negative*100./size(G)))
+    m_negative = np.sum(G<0)
+    if  m_negative > 0:   print('negative values in the G  %.3f%%'%(m_negative*100./np.size(G)))
       
     resid = results['retro']-results['data'] 
     resid/= results['error']
     
     #
-    xcpix=linspace(tokamak.xmin+tokamak.dx/2,tokamak.xmax+tokamak.dx/2, tokamak.nx)/tokamak.norm
-    ycpix=linspace(tokamak.ymin+tokamak.dy/2,tokamak.ymax+tokamak.dy/2, tokamak.ny)/tokamak.norm   #raise
+    xcpix=np.linspace(tokamak.xmin+tokamak.dx/2,tokamak.xmax+tokamak.dx/2, tokamak.nx)/tokamak.norm
+    ycpix=np.linspace(tokamak.ymin+tokamak.dy/2,tokamak.ymax+tokamak.dy/2, tokamak.ny)/tokamak.norm   #raise
 
 
     gres = G.reshape(tokamak.ny, tokamak.nx, tsteps, order='F')
 
 
     # LAMBDA
-    ylim = (0,1) if all((results['lam0']>=0)&(results['lam0']<=1)) else  (None,None)
+    ylim = (0,1) if np.all((results['lam0']>=0)&(results['lam0']<=1)) else  (None,None)
      
     plot_adv(tvec, [{'data':results['lam0'],'label':'$\lambda$','ylim':ylim}],
                 'lam'+'_'+shot,
@@ -1989,11 +1990,11 @@ def postprocessing_plot(input_data):
                             'xlabel':t_label,
                             'yscale':'log',
                             'label':'Guess'},
-        {'tvec':results['dets'], 'data':mean(resid,0), 'yerr': std(resid,0) ,
+        {'tvec':results['dets'], 'data':np.mean(resid,0), 'yerr': np.std(resid,0) ,
                             'label':'mean residuum for each detector' ,
                             'ylabel':"Normalised residuum",\
                             'xlabel':'Detector' ,
-                            'ylim': (-1.5*amax(abs(mean(resid,0))),1.5*amax(abs(mean(resid,0)))), 
+                            'ylim': (-1.5*np.amax(np.abs(np.mean(resid,0))),1.5*np.amax(np.abs(np.mean(resid,0)))), 
                             'subplt':True} ], 
             'chi2'+'_'+shot)
 
@@ -2014,12 +2015,12 @@ def postprocessing_plot(input_data):
             from contourpy import contour_generator
         magx, magy = results['magx'].T,results['magy'].T
 
-        R,Z = meshgrid(tokamak.xgrid+tokamak.dx/2,tokamak.ygrid+tokamak.dy/2)
+        R,Z = np.meshgrid(tokamak.xgrid+tokamak.dx/2,tokamak.ygrid+tokamak.dy/2)
 
-        shaf_shift_mag = zeros(tsteps)
-        shaf_shift_sxr = zeros(tsteps)
-        elongation_sxr = zeros(tsteps)
-        elongation_mag = zeros(tsteps)
+        shaf_shift_mag = np.zeros(tsteps)
+        shaf_shift_sxr = np.zeros(tsteps)
+        elongation_sxr = np.zeros(tsteps)
+        elongation_mag = np.zeros(tsteps)
         elong_all,Rc_all,Zc_all = [],[],[]
         lim = [.15**2,.8]
         lim = [0.1,1]
@@ -2032,18 +2033,18 @@ def postprocessing_plot(input_data):
         for it in trange(tsteps,desc='Computing emiss. contours: '): 
 
 
-            r_a = hypot(magx[:,:,it]-magx[:,(0,),it],magy[:,:,it]-magy[:,(0,),it]).mean(0)
+            r_a = np.hypot(magx[:,:,it]-magx[:,(0,),it],magy[:,:,it]-magy[:,(0,),it]).mean(0)
             r_a/= r_a[-1]
-            r_a_eq = linspace(1./n_mag ,1-1./n_mag,n_mag)
+            r_a_eq = np.linspace(1./n_mag ,1-1./n_mag,n_mag)
 
-            levels = interp(fun(r_a_eq),r_a, profile[it])
+            levels = np.interp(fun(r_a_eq),r_a, profile[it])
 
 
             #contour searching routine from matplotlib     
             try: 
 
                 #c = cntr.Cntr(R,Z, gres[:,:,it])
-                gen = _contour.QuadContourGenerator(R,Z, gres[:,:,it],bool_(Z*0), False, 0)
+                gen = _contour.QuadContourGenerator(R,Z, gres[:,:,it],np.bool_(Z*0), False, 0)
 
             except:
                 gen = contour_generator(R,Z, gres[:,:,it])
@@ -2061,7 +2062,7 @@ def postprocessing_plot(input_data):
 
                 #lines = nlist[:len(nlist)//2]
                 if len(lines) == 0:
-                    lines = [empty((0,2)),]
+                    lines = [np.empty((0,2)),]
                 line = []
                 #choose the longest line
                 for l in lines:
@@ -2071,9 +2072,9 @@ def postprocessing_plot(input_data):
                 
             from shared_modules import   fitEllipse
    
-            elong = ones(len(rho_contours))*nan
-            Rc = ones(len(rho_contours))*nan
-            Zc = ones(len(rho_contours))*nan
+            elong = np.ones(len(rho_contours))*np.nan
+            Rc = np.ones(len(rho_contours))*np.nan
+            Zc = np.ones(len(rho_contours))*np.nan
             for ic, C in enumerate(rho_contours):
                 try:
                     x,y = C.T
@@ -2085,16 +2086,16 @@ def postprocessing_plot(input_data):
                 except:
                     continue
 
-            a,b = polyfit(fun(r_a_eq), Rc,1)
+            a,b = np.polyfit(fun(r_a_eq), Rc,1)
             shaf_shift_sxr[it] = -a
 
             ind = (fun(r_a)<lim[1])&(fun(r_a)> lim[0])
-            a,b = polyfit(r_a[ind]**2,magx[:,ind,it].mean(0),1)
+            a,b = np.polyfit(r_a[ind]**2,magx[:,ind,it].mean(0),1)
             shaf_shift_mag[it] = -a
 
             
-            elongation_sxr[it] = nanmedian(elong)
-            elongation_mag[it] = nanmedian(magy[:,ind,it].std(0)/magx[:,ind,it].std(0))
+            elongation_sxr[it] = np.nanmedian(elong)
+            elongation_mag[it] = np.nanmedian(magy[:,ind,it].std(0)/magx[:,ind,it].std(0))
             
             
             elong_all.append(elong)
@@ -2104,16 +2105,16 @@ def postprocessing_plot(input_data):
                 
 
 
-        elong_all = vstack(elong_all)
-        Rc_all = vstack(Rc_all)
-        Zc_all = vstack(Zc_all)
+        elong_all = np.vstack(elong_all)
+        Rc_all = np.vstack(Rc_all)
+        Zc_all = np.vstack(Zc_all)
 
-        Rm = ones(n_mag)*nan
-        Zm = ones(n_mag)*nan
-        elongm = ones(n_mag)*nan
+        Rm = np.ones(n_mag)*np.nan
+        Zm = np.ones(n_mag)*np.nan
+        elongm = np.ones(n_mag)*np.nan
         for ir in range(1,n_mag):
             try:
-                a = fitEllipse(double(magx[:,ir].mean(-1)),double(magy[:,ir].mean(-1)))
+                a = fitEllipse(np.double(magx[:,ir].mean(-1)),np.double(magy[:,ir].mean(-1)))
                 Rm[ir],Zm[ir] = ellipse_center(a)
                 Rm[ir]*= 0.999  #correction estimated from the comparism with the phantoms
                 a,b = ellipse_axis_length(a)
@@ -2125,12 +2126,12 @@ def postprocessing_plot(input_data):
         FigureCanvas(fig)
         
         fig.subplots_adjust(hspace=0.1, wspace = 0.07)
-        fig.suptitle('SXR/equilibrium comparism, Discharge: %s, t = %.3s'%(shot, mean(tvec)))
+        fig.suptitle('SXR/equilibrium comparism, Discharge: %s, t = %.3s'%(shot, np.mean(tvec)))
 
         ax = fig.add_subplot(221)
-        ax.plot( fun(r_a_eq), nanmean(elong_all,axis=0))
-        ax.fill_between(fun(r_a_eq), nanmean(elong_all,axis=0) - nanstd(elong_all,axis=0),
-                        nanmean(elong_all,axis=0) + nanstd(elong_all,axis=0)  ,alpha=.2, facecolor='b', edgecolor='None')
+        ax.plot( fun(r_a_eq), np.nanmean(elong_all,axis=0))
+        ax.fill_between(fun(r_a_eq), np.nanmean(elong_all,axis=0) - np.nanstd(elong_all,axis=0),
+                        np.nanmean(elong_all,axis=0) + np.nanstd(elong_all,axis=0)  ,alpha=.2, facecolor='b', edgecolor='None')
         ax.set_ylabel('Elongation')
         ax.text(0.1, 0.9, 'SXR', transform=ax.transAxes,color='b')
         ax.text(0.1, 0.83, 'equilibrium', transform=ax.transAxes,color='g')
@@ -2140,9 +2141,9 @@ def postprocessing_plot(input_data):
 
         ax = fig.add_subplot(222)
 
-        ax.plot( fun(r_a_eq), nanmean(Rc_all,axis=0))
-        ax.fill_between(fun(r_a_eq), nanmean(Rc_all,axis=0) - nanstd(Rc_all,axis=0),
-                        nanmean(Rc_all,axis=0) + nanstd(Rc_all,axis=0),alpha=.2,facecolor='b', edgecolor='None')
+        ax.plot( fun(r_a_eq), np.nanmean(Rc_all,axis=0))
+        ax.fill_between(fun(r_a_eq), np.nanmean(Rc_all,axis=0) - np.nanstd(Rc_all,axis=0),
+                        np.nanmean(Rc_all,axis=0) + np.nanstd(Rc_all,axis=0),alpha=.2,facecolor='b', edgecolor='None')
         ax.text(0.7, 0.9, 'SXR', transform=ax.transAxes,color='b')
         ax.text(0.7, 0.83, 'equilibrium', transform=ax.transAxes,color='g')
 
@@ -2154,9 +2155,9 @@ def postprocessing_plot(input_data):
 
         ax = fig.add_subplot(223)
 
-        ax.plot( fun(r_a_eq), nanmean(Zc_all,axis=0))
-        ax.fill_between(fun(r_a_eq), nanmean(Zc_all,axis=0) - nanstd(Zc_all,axis=0),
-                        nanmean(Zc_all,axis=0) + nanstd(Zc_all,axis=0),alpha=.2, 
+        ax.plot( fun(r_a_eq), np.nanmean(Zc_all,axis=0))
+        ax.fill_between(fun(r_a_eq), np.nanmean(Zc_all,axis=0) - np.nanstd(Zc_all,axis=0),
+                        np.nanmean(Zc_all,axis=0) + np.nanstd(Zc_all,axis=0),alpha=.2, 
                         facecolor='b', edgecolor='None')
         ax.text(0.1, 0.2, 'SXR', transform=ax.transAxes,color='b')
         ax.text(0.1, 0.13, 'equilibrium', transform=ax.transAxes,color='g')
@@ -2195,7 +2196,7 @@ def postprocessing_plot(input_data):
         #Shafranov shift
         plot_adv(tvec, [{'data': shaf_shift_sxr*100,'label':'SXR'} ,{'data': shaf_shift_mag*100,
                 'label':'magnetics'}],'shafr_shift'+'_'+shot,title="Shafranov shift (only w/o asymmetries)",
-                xlabel=t_label,ylabel='$\Delta(0)$ [cm]',ylim=(0,median(shaf_shift_mag*100)*2))
+                xlabel=t_label,ylabel='$\Delta(0)$ [cm]',ylim=(0,np.median(shaf_shift_mag*100)*2))
         
         plot_adv(tvec, [{'data': elongation_sxr,'label':'SXR'} ,{'data': elongation_mag,
                 'label':'magnetics'}],'elongation'+'_'+shot,title="Elongation (only w/o asymmetries)",
@@ -2211,24 +2212,24 @@ def postprocessing_plot(input_data):
     
 
     bcg_subst_fract = inputs['bcg_subst_fract']
-    subst_ind = slice(None,int(ceil(tsteps*bcg_subst_fract))) 
+    subst_ind = slice(None,int(np.ceil(tsteps*bcg_subst_fract))) 
     n_mag = profile.shape[1]
-    profile0 = zeros(n_mag)
+    profile0 = np.zeros(n_mag)
     if  inputs['rem_back']:
         power-= power[subst_ind].mean()
         profile0 = profile[subst_ind].mean(0)
         profile-= profile0
 
-    if nanmax(power) > 1e5:
+    if np.nanmax(power) > 1e5:
         fact,pre = 1e6, 'M'
-    elif nanmax(power) > 1e2:
+    elif np.nanmax(power) > 1e2:
         fact,pre = 1e3, 'k'
     else:
         fact,pre = 1e0, ''
     
     # POWER
     #gres is in W/m^3
-    #dV = 2*pi*xcpix*dx*dy  #volume of the single pixel
+    #dV = 2*np.pi*xcpix*dx*dy  #volume of the single pixel
     power_list = []
 
     if hasattr(tokamak,'total_rad'):
@@ -2247,18 +2248,18 @@ def postprocessing_plot(input_data):
     
     if hasattr(tokamak, 'pDiode'):
         diode = tokamak.pDiode
-        plot_adv(tvec, [{'tvec':diode[:,0], 'data':diode[:,1]*mquantiles(power[isfinite(power)], 0.95),\
+        plot_adv(tvec, [{'tvec':diode[:,0], 'data':diode[:,1]*mquantiles(power[np.isfinite(power)], 0.95),\
             'label':'Photodiode'}, { 'data':power, 'label':'Camera'}],'power'+'_'+shot,\
                 title="Radiated power",xlabel=t_label,ylabel='Power [%sW]'%pre, ylim=(0,None))
     else:
         plot_adv(tvec, power_list, 'power'+'_'+shot,  title="Radiated power", 
                  xlabel=t_label, ylabel='Power [%sW]'%pre,
-                 ylim=(0,amax(power/fact)*1.2), xlim=(tvec[0], tvec[-1]))
+                 ylim=(0,np.amax(power/fact)*1.2), xlim=(tvec[0], tvec[-1]))
 
 
-    if nanmax(profile) > 1e5:
+    if np.nanmax(profile) > 1e5:
         fact,pre = 1e6, 'M'
-    elif nanmax(profile) > 1e2:
+    elif np.nanmax(profile) > 1e2:
         fact,pre = 1e3, 'k'
     else:
         fact,pre = 1e0, ''
@@ -2267,9 +2268,9 @@ def postprocessing_plot(input_data):
     units = '[%sW/m$^3$]'%pre
     norm = Normalize()
     if inputs['plot_loglin']:
-        vmax = amax(abs(profile))
+        vmax = np.amax(np.abs(profile))
         vmin = 0 if not inputs['rem_back'] and not  inputs['plot_svd'] and not inputs['rem_fsa'] else -vmax
-        norm = symlogNorm(std(profile)/10,vmin=vmin,vmax=vmax)
+        norm = symlogNorm(np.std(profile)/10,vmin=vmin,vmax=vmax)
         units = '[W/m$^3$]'
         fact = 1
 
@@ -2305,13 +2306,13 @@ def postprocessing_plot(input_data):
                          
         
     if hasattr(tokamak, 'mag_axis'):
-        if any(tokamak.mag_axis['tvec']<tvec.min()):
-            ind_min = where(tokamak.mag_axis['tvec']<tvec.min())[0][-1]
+        if np.any(tokamak.mag_axis['tvec']<tvec.min()):
+            ind_min = np.where(tokamak.mag_axis['tvec']<tvec.min())[0][-1]
         else:  ind_min = None
             
         
-        if any(tokamak.mag_axis['tvec']>tvec.max()):
-            ind_max = where(tokamak.mag_axis['tvec']>tvec.max())[0][0]+1 
+        if np.any(tokamak.mag_axis['tvec']>tvec.max()):
+            ind_max = np.where(tokamak.mag_axis['tvec']>tvec.max())[0][0]+1 
         else: ind_max = None
 
         mag_ind=slice(ind_min,ind_max)
@@ -2335,26 +2336,26 @@ def postprocessing_plot(input_data):
 
 
     
-    plot_adv(tvec,[{'tvec':mag_tvec,'data':Rmag+mean(inputs['magfield_shift_core'][0]),\
+    plot_adv(tvec,[{'tvec':mag_tvec,'data':Rmag+np.mean(inputs['magfield_shift_core'][0]),\
         'label':'Magnetics'}]+emiss_x_dicts+mag_x_dicts,'xmass'+'_'+shot,\
             ylim=(rmin,rmax),title="Center of mass in R coordinate",\
         xlabel=t_label,ylabel='R [m]',xlim=(tvec.min(),tvec.max()))
-    plot_adv(tvec,[{'tvec':mag_tvec,'data':Zmag+mean(inputs['magfield_shift_core'][1]),\
+    plot_adv(tvec,[{'tvec':mag_tvec,'data':Zmag+np.mean(inputs['magfield_shift_core'][1]),\
         'label':'Magnetics'}]+emiss_y_dicts+mag_y_dicts,'ymass'+'_'+shot,\
             ylim=(zmin,zmax),title="Center of mass in Z coordinate",\
         xlabel=t_label,ylabel='Z [m]',xlim=(tvec.min(),tvec.max()))
 
 
     name = tmp_folder+'/plasma_parameters_'+shot+'.txt'
-    tvec_digits = int(max(0,-ceil(log10(mean(diff(tvec))))))+1
+    tvec_digits = int(max(0,-np.ceil(np.log10(np.mean(np.diff(tvec))))))+1
 
     output = {}
 
     if inputs['post_proces_equi']:
-        eq_out = c_[tvec,results['xmass'][:,1],results['ymass'][:,1],results['xmass_eq'][:,1],results['ymass_eq'][:,1],
+        eq_out = np.c_[tvec,results['xmass'][:,1],results['ymass'][:,1],results['xmass_eq'][:,1],results['ymass_eq'][:,1],
                     elongation_sxr,elongation_mag,shaf_shift_sxr,shaf_shift_mag]
-        savetxt(tmp_folder+'/equilibrium_'+shot+'.txt', eq_out,
-                    fmt=[ '%1.'+str(tvec_digits)+'e',]+['%.5e']*8,
+        np.savetxt(tmp_folder+'/equilibrium_'+shot+'.txt', eq_out,
+                    fmt=[ '%1.'+str(tvec_digits)+'np.e',]+['%.5e']*8,
         header='time [s]\tR 1/3 [m]\tz 1/3 [m]\t Rmag 1/3 [m]\tzmag 1/3 [m]\tSXR_elong\tmag_elong\tshaf_shioft_sxr\t shaf_shift_mag')
         
         output['elongation_sxr'] = elongation_sxr
@@ -2362,29 +2363,29 @@ def postprocessing_plot(input_data):
         output['shaf_shift_sxr'] = shaf_shift_sxr
         output['shaf_shift_mag'] = shaf_shift_mag
 
-    savetxt(name, c_[tvec,results['xmass'],results['ymass'],results['xmass_eq'],
+    np.savetxt(name, np.c_[tvec,results['xmass'],results['ymass'],results['xmass_eq'],
                     results['ymass_eq'] ,results['position'],results['power'],results['power']-results['power_div'] ],
-                    fmt=[ '%1.'+str(tvec_digits)+'e',]+['%.5e']*16,
+                    fmt=[ '%1.'+str(tvec_digits)+'np.e',]+['%.5e']*16,
             header='time [s]\tR 0/3 [m]\tR 1/3 [m]\tR 2/3 [m]\tz 0/3 [m]\tz 1/3 [m]\tz 2/3[m]'\
                     +'\t R_eq 0/3 [m]\tR_eq 1/3 [m]\tR_eq 2/3 [m]\tz_eq 0/3 [m]\t'\
                     +'z_eq 1/3 [m]\tz_eq 2/3[m]\t rmag [m]\tzmag\[m]\tpower_tot[W]\tpower_core[W]')
 
 
-    savetxt(tmp_folder+'/emiss_profile0_%s.txt'%shot,profile0)
+    np.savetxt(tmp_folder+'/emiss_profile0_%s.txt'%shot,profile0)
     
-    savetxt(tmp_folder+'/emiss_profile_%s.txt'%shot, c_[tvec, profile],
-            fmt=['%1.'+str(tvec_digits)+'e']+['%1.4e',]*n_mag)
+    np.savetxt(tmp_folder+'/emiss_profile_%s.txt'%shot, np.c_[tvec, profile],
+            fmt=['%1.'+str(tvec_digits)+'np.e']+['%1.4e',]*n_mag)
     
     output['xmass'] = results['xmass']
     output['ymass'] = results['ymass']
     output['xmass_eq'] = results['xmass_eq']
     output['ymass_eq'] = results['ymass_eq']
     output['ymass_eq'] = results['ymass_eq']
-    output['power'] = single(results['power'])
+    output['power'] = np.single(results['power'])
         
     if 'power_div' in results:
         output['power_div'] = results['power_div']
-    output['position'] = single(results['position'])
+    output['position'] = np.single(results['position'])
     output['rho'] = results['mag_rho']
     output['tvec'] = tvec
     output['fsa_emiss0'] = profile0
@@ -2447,40 +2448,40 @@ def CalcPoloidalModeSpectrum(input_data):
 
     theta   = tokamak.mag_theta_star(tvec.mean(),rhop,magr,magz,rz_grid=False)
 
-    n_mag = size(magr,1)
+    n_mag = np.size(magr,1)
     n_modes = 7
 
-    scaling = array([tokamak.dx,tokamak.dy])
-    offset = array([tokamak.xmin,tokamak.ymin])+scaling/2
+    scaling = np.array([tokamak.dx,tokamak.dy])
+    offset = np.array([tokamak.xmin,tokamak.ymin])+scaling/2
     
     from scipy.ndimage.interpolation import map_coordinates
     
     gres_mean = gres.mean(-1)
-    theta0 = linspace(0,2*pi, theta.shape[1], endpoint=False)
-    coords = c_[magr.ravel(),magz.ravel()].T
+    theta0 = np.linspace(0,2*np.pi, theta.shape[1], endpoint=False)
+    coords = np.c_[magr.ravel(),magz.ravel()].T
     idx = (coords-offset[:,None])/ scaling[:,None]
 
-    complex_profile = zeros((n_mag, n_modes-1,tsteps),dtype=complex64)
+    complex_profile = np.zeros((n_mag, n_modes-1,tsteps),dtype=np.complex64)
 
     
     map_prof0 = map_coordinates(gres_mean.T,idx,order=2)
     map_prof0 = map_prof0.reshape(magz.shape)
 
-    for j in range(n_mag): map_prof0[:,j] = interp(theta0,theta[j],map_prof0[:,j])
+    for j in range(n_mag): map_prof0[:,j] = np.interp(theta0,theta[j],map_prof0[:,j])
     
     
   
-    A = exp(1j*outer(arange(1, n_modes),theta0) )
+    A = np.exp(1j*np.outer(np.arange(1, n_modes),theta0) )
     for it in trange(tsteps,desc='Poloidal modes: '): 
         map_prof = map_coordinates((gres[...,it]/(gres_mean+1e-6)).T-1,idx,order=2)
         map_prof = map_prof.reshape(magz.shape)
         for j in range(n_mag):
-            map_prof[:,j] = interp(theta0,theta[j,:],  map_prof[:,j])
+            map_prof[:,j] = np.interp(theta0,theta[j,:],  map_prof[:,j])
         complex_profile[:,:,it] = fft.rfft(map_prof,axis=0)[1:n_modes].T
 
     
-    profile = mean(abs(complex_profile/n_theta)**2, -1)
-    phase = sign(median(diff(angle(complex_profile),axis=-1),axis=-1))
+    profile = np.mean(np.abs(complex_profile/n_theta)**2, -1)
+    phase = np.sign(np.median(np.diff(np.angle(complex_profile),axis=-1),axis=-1))
 
             
     fig = Figure((img_size,img_size))
@@ -2510,8 +2511,8 @@ def plot3Dprofile(G, tokamak):
     fig = Figure()
     FigureCanvas(fig)
     ax = fig.add_subplot(111, projection='3d')
-    G[G==0] = nan
-    R,Z = meshgrid(tokamak.xgrid, tokamak.ygrid)
+    G[G==0] = np.nan
+    R,Z = np.meshgrid(tokamak.xgrid, tokamak.ygrid)
     fig.set_size_inches(8,6)
     ax = fig.gca(projection='3d')
     ax.pbaspect = [2.0, 0.6, 0.9]
@@ -2568,24 +2569,24 @@ def colorLOS_plot(time,data,error, magx_all,magy_all,extent,G,show_background=Fa
     
     if hasattr(tokamak,'struct_dict'):
         for _,struct in tokamak.struct_dict.items():
-            if size(struct)>1:
+            if np.size(struct)>1:
                 ax.plot(struct[0], struct[1], line_c,lw=.5)
        
     from geom_mat_setting import loadgeometry
     xchords, ychords, distance, nl,virt_chord  = loadgeometry(tokamak.geometry_path, list(tokamak.detectors_dict.keys()), 1)   
   
         
-    lengths = hypot(xchords[-1]-xchords[0],ychords[-1]-ychords[0])
+    lengths = np.hypot(xchords[-1]-xchords[0],ychords[-1]-ychords[0])
 
-    data[isinf(error)| (error < 1)]= nan
+    data[np.isinf(error)| (error < 1)]= np.nan
     data = data/lengths
-    data = data/amax(data[isfinite(data)])
+    data = data/np.amax(data[np.isfinite(data)])
 
     dxm=tokamak.dx/tokamak.norm
     dym=tokamak.dy/tokamak.norm
     for d,x,y in zip(data, xchords.T,ychords.T):
         #YlOrRd_r
-        if isnan(d): continue
+        if np.isnan(d): continue
         plt.plot(x,y,c=cm.jet(d),alpha=.9,lw=3)
 
     plt.axes().set_aspect('equal')
@@ -2604,10 +2605,10 @@ def colorLOS_plot(time,data,error, magx_all,magy_all,extent,G,show_background=Fa
 if __name__ == "__main__":
 
     global inputs, plot_details,tokamak
-    input = load('input.npz')['input']
-    inputs= load('input.npz')['inputs'].item()
-    plot_details= load('input.npz')['plot_details'].item()
-    tokamak= load('input.npz')['tokamak'].item()
+    input = np.load('input.npz')['input']
+    inputs= np.load('input.npz')['inputs'].item()
+    plot_details= np.load('input.npz')['plot_details'].item()
+    tokamak= np.load('input.npz')['tokamak'].item()
 
     matplotlib_data_tg2(input)
 
