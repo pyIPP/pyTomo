@@ -4,7 +4,7 @@
 # Create environment with: conda env create -f environment.yaml
 # Activate with: conda activate pytomo
 
-name: pytomo
+name: pytomo_2_0
 
 channels:
   - conda-forge
