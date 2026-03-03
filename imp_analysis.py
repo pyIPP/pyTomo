@@ -240,7 +240,7 @@ def imp_analysis( input_data):
     for l in leg.legendHandles:  l.set_linewidth(10)
     ax[0].yaxis.set_major_locator(MaxNLocator(5))
         
-    ax[1].set_ylabel('$10^4\ c_W$',fontsize=13)
+    ax[1].set_ylabel('$10^4 c_W$',fontsize=13)
     ax[1].set_xlabel(tokamak.rho_label ,fontsize=15)
     ax[1].yaxis.set_major_locator(MaxNLocator(5))
     
@@ -300,7 +300,7 @@ def imp_analysis( input_data):
                 cw_plot.set_ydata(cw[it])
             
             
-            ax[1].set_ylabel('$10^4\ c_W$',fontsize=13)
+            ax[1].set_ylabel('$10^4 c_W$',fontsize=13)
             ax[1].set_xlabel(tokamak.rho_label,fontsize=15)
             ax[1].yaxis.set_major_locator(MaxNLocator(5))
             if plot_loglin:

@@ -503,7 +503,7 @@ def generate_matrix(xchords, ychords, distance,virt_chord,nl,nx, ny,  tokamak):
             fk = fk/sum(fk)
         else:
             debug( 'virt_chord_profile not availible')
-        
+    
     try:
         Tmat,Xchords,Ychords = gen_cython(xchords, ychords, distance,nx, ny, tokamak,fk)
     except:
@@ -541,7 +541,7 @@ def gen_cython(xchords, ychords, distance,nx, ny, Tok,chord_profile):
         from geom_mat_gen_cython import geom_mat_gen_cython
 
 
-    
+
     Tmat,Xchords,Ychords = geom_mat_gen_cython(xchords,ychords,distance, Tok,  nx, ny,chord_profile)
 
 

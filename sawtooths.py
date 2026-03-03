@@ -234,7 +234,7 @@ def sawtooths_detection(input_data):
     dt = diff(sawtooths)*1e3
     axis[1,0].plot((sawtooths[1:]+sawtooths[:-1])/2,dt,'x')
     axis[1,0].set_xlabel('time [s]')
-    axis[1,0].set_ylabel('$\Delta$ t [ms]')
+    axis[1,0].set_ylabel(r'$\Delta$ t [ms]')
     axis[1,0].grid(True)
     axis[1,0].set_ylim(0.,mquantiles(diff(tvec[i_sawtooth])*1e3,0.95)[0]*1.3)
     axis[1,0].set_xlim(tvec[0],tvec[-1])

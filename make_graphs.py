@@ -28,7 +28,8 @@ except:
     pass
 
 import matplotlib
-
+matplotlib.rcParams['lines.scale_dashes'] = False
+matplotlib.rcParams['font.size'] = 12
 
 try:
     from scipy.stats import nanmedian,nanstd
@@ -638,7 +639,7 @@ def make_graphs(input_data, plot_svd = False):
 
 
         if 'mag_field' in plot_details: #BUG is ot working if False
-            mag_field = np.array((magx_all,magy_all),copy=False)
+            mag_field = np.array((magx_all,magy_all))
             mag_field/= tokamak.norm
         else:
             mag_field = np.nan*np.ones(tsteps)
@@ -1430,11 +1431,12 @@ def matplotlib_image(params):
         #BUG hardcoded :(
         c.ax.set_position((0.76, 0.10, 0.03, 0.8))
         c.set_label('Emissivity [%sm$^{-3}$]'%unit, labelpad=4)
-
+      
         if 'mag_field' in plot_details: #BUG is not working if False
             mag_surfs=ax.plot(mag_field[0,:,:,0],mag_field[1,:,:,0],'--',c='0.75',lw=.5)
+            #mag_surfs=ax.plot(mag_field[0,:,:,0],mag_field[1,:,:,0],'--',c='k')
             
-        if 'mag_out' in plot_details:
+        if 'mag_out' in plot_details and False:
             magr_out,magz_out = plot_details['mag_out']
             mag_surfs_out = [ax.plot(r,z,':',c='0.75',lw=.5)[0] for r,z in zip(magr_out[0],magz_out[0])]
 
@@ -1586,7 +1588,7 @@ def matplotlib_image(params):
                         
             if tsteps==1: name = 'previewB'+str(shot)+base 
             filename = tmp_folder+'/' + name + '.png'
-            ax.set_aspect('equal', 'datalim')
+            ax.set_aspect('equal', adjustable='box')
 
             
             if typ != 'bw':   
