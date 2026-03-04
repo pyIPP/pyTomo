@@ -14,7 +14,7 @@ from .geom_mat_setting import geom_mat_setting
 #from prepare_data_compass import COMPASS
 #from prepare_data_ToreSupra import ToreSupra
 #from prepare_data_ASDEX import ASDEX
-from geometry import *
+from .geometry import *
 from matplotlib import rcParams
 import gc
 from .shared_modules import debug

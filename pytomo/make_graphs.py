@@ -7,7 +7,7 @@ import time
 import sys,os
 import scipy as sp
 from scipy.stats.mstats import mquantiles
-from tqdm import trange
+from .tqdm import trange
 from shutil import copyfile
 from scipy.interpolate import interp1d
 from matplotlib.ticker import MaxNLocator,FormatStrFormatter,ScalarFormatter,NullFormatter
@@ -546,7 +546,7 @@ def make_graphs(input_data, plot_svd = False):
         n_rho = np.sum(rho<=1.)
         theta_star_contours_R = np.zeros((tsteps,n_rho, 20))
         theta_star_contours_Z = np.zeros((tsteps,n_rho, 20))
-        from tqdm import tqdm,trange
+        from .tqdm import tqdm,trange
         for it in trange(tsteps,desc='Calculate theta star: '):
             rhop_,magx_, magy_ = tokamak.mag_equilibrium(tvec[it],return_mean=True,n_theta=200,rho=rho)
 
@@ -664,7 +664,7 @@ def make_graphs(input_data, plot_svd = False):
     
 
         else:
-            from tqdm import tqdm
+            from .tqdm import tqdm
             for a in tqdm(args,desc='single thread plotting: '):
                 plot_method(a)
                 matplotlib_image(a)
@@ -2072,7 +2072,7 @@ def postprocessing_plot(input_data):
                         line = l
                 rho_contours.append(line)    
                 
-            from shared_modules import   fitEllipse
+            from .shared_modules import fitEllipse
    
             elong = np.ones(len(rho_contours))*np.nan
             Rc = np.ones(len(rho_contours))*np.nan
@@ -2574,7 +2574,7 @@ def colorLOS_plot(time,data,error, magx_all,magy_all,extent,G,show_background=Fa
             if np.size(struct)>1:
                 ax.plot(struct[0], struct[1], line_c,lw=.5)
        
-    from geom_mat_setting import loadgeometry
+    from .geom_mat_setting import loadgeometry
     xchords, ychords, distance, nl,virt_chord  = loadgeometry(tokamak.geometry_path, list(tokamak.detectors_dict.keys()), 1)   
   
         

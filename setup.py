@@ -66,4 +66,9 @@ setup(
         "netCDF4",
         "scikit-sparse>=0.4.4",
     ],
+    entry_points={
+        'console_scripts': [
+            'pytomo=pytomo.pytomo:main',
+        ],
+    },
 )

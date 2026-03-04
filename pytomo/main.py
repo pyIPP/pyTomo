@@ -121,7 +121,7 @@ def tomography(inputs, tokamak, progress = None):
 
         if str(use_phantom_data) == "None": use_phantom_data = 'Asymmetric'
 
-        from phantom_generator import phantom_generator
+        from .phantom_generator import phantom_generator
         nx_new = max(min(100, 4*nx),nx)
         ny_new = max(min(150, 4*ny),ny)
         nx_new = 200
@@ -328,7 +328,7 @@ def tomography(inputs, tokamak, progress = None):
             currentThread = None
      
         try:
-            from tqdm import tqdm
+            from .tqdm import tqdm
             if not progress is None: progress.setNumSubSteps(len(sequence))
             for seq in tqdm(sequence,desc='Main cycle: '):
                 if currentThread is not None:
@@ -575,7 +575,7 @@ def presolve(tokamak, data, error, tvec, Tmat, dets,  normData,
 
             sequence = np.array_split(sequence, numTasks)
 
-            from tqdm import tqdm
+            from .tqdm import tqdm
             pool = Pool(min(inputs['n_cpu'],numSteps) )
 
             for seq in tqdm(sequence,desc='Presolver: '):
@@ -720,7 +720,7 @@ def main_cycle(input):
     output = {}
 
     if solver in [0,1]:  #direct inversion
-        from minfisher import minfisher
+        from .minfisher import minfisher
         tvec, g,retro, chi2, lam0,bnd,SigmaGsample = minfisher(data, error,tvec,Tmat,dets,
                         normData, G0,lam0, tokamak, reg_params, boundary,
                         regularization,_ifishmax, _postprocessing)

@@ -7,7 +7,7 @@ import time
 #TODO geometry for all diags
 from collections import OrderedDict
 try:
-    import config
+    from .... import config
 except:
     import  config_loc  as config
 
@@ -1203,7 +1203,7 @@ class loader_SXR():
             nt = len(tvec)
             ind_t = slice(0,nt)
             if nt > 2000:  ind_t = r_[0, unique(randint(nt,size=1000)),nt-1]
-            from shared_modules import fast_svd
+            from ...shared_modules import fast_svd
             U,S,V = fast_svd(data[ind_t],min(30,nt//3))
 
             #assume that the differnce between data and SVD retrofit is only noise 

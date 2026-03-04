@@ -413,7 +413,7 @@ class Equlibrium:
         args = [(self.eqm,rho, theta, t) for t in t_sequence]
         
         
-        import config
+        from ... import config
         #from shared_modules import debug
 
         if config.DEBUG:

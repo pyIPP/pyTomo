@@ -8,7 +8,7 @@ from scipy.signal import argrelmin, find_peaks_cwt, medfilt, argrelmax
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.interpolate import interp1d
 from scipy.stats.mstats import mquantiles ,skew
-from tqdm import trange
+from .tqdm import trange
 from .shared_modules import  fsvd, poly_min
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvas as FigureCanvas
@@ -110,7 +110,7 @@ def sawtooths_detection(input_data):
 
     input_parameters, tokamak, progress,results = input_data
 
-    from shared_modules import read_config
+    from .shared_modules import read_config
     
     local_path = input_parameters['local_path']
     tmp_folder = input_parameters['tmp_folder']

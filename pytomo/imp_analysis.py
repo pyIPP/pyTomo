@@ -271,7 +271,7 @@ def imp_analysis( input_data):
            
 
     if input_parameters['plot_all'] or len(tvec)== 1:
-        from tqdm import tqdm,trange
+        from .tqdm import tqdm,trange
         for it in trange(len(tvec),desc='Plotting impurity analysis: '):
             txt.set_text("time %.3fs"%tvec[it])
             

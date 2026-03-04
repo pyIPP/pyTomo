@@ -13,7 +13,7 @@ from scipy.interpolate import interpolate
 from scipy.signal import medfilt, convolve
 import urllib
 from copy import deepcopy
-from tokamak import Tokamak
+from ...tokamak import Tokamak
 from scipy.stats.mstats import mquantiles
 
 

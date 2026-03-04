@@ -1085,7 +1085,7 @@ class MainWindow(QMainWindow):
         self.tokamak = tokamak
         self.tokamak2 = tokamak
 
-        from data_preprocessing import DataSettingWindow
+        from .data_preprocessing import DataSettingWindow
         win=DataSettingWindow(self)
         win.show()
         self.setValues()
@@ -1786,7 +1786,7 @@ class MainThread(QThread):
                 self.progress.iterateStep()
             
             if self.setting['asymmetry'] and self.setting['reconstruct']:
-                from asymmetries import  EvalAsymmetry
+                from .asymmetries import  EvalAsymmetry
                 EvalAsymmetry(  output_list)
                 self.progress.iterateStep()
 

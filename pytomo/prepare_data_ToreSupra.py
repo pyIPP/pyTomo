@@ -71,7 +71,7 @@ class ToreSupra(Tokamak):
             raise
 
         #CREATE GEOMETRIC MATRIX
-        from annulus import get_bd_mat
+        from .annulus import get_bd_mat
         self.BdMat = get_bd_mat(self)     #detection of boundary, g_model(sum(T)==0) = 0 is not correct
 
         from geom_mat_setting import geom_mat_setting

@@ -235,7 +235,7 @@ class Tokamak(object):
         debug('prepare_tokamak')
 
         if True or not 'Tmat' in vars(self) or np.size(self.Tmat,1) != self.nx*self.ny :
-            from geom_mat_setting import geom_mat_setting
+            from .geom_mat_setting import geom_mat_setting
             self.Tmat , self.Xchords, self.Ychords = geom_mat_setting(self,self.nx,  self.ny, self.virt_chord)
         
         self.correction_matrix = np.ones(self.npix)  # correction of artifacts in creation of the weigthing matrix 
@@ -623,7 +623,7 @@ class Tokamak(object):
         
     def prepare_emiss0(self, time):
         
-        from phantom_generator import phantom_generator
+        from .phantom_generator import phantom_generator
         self.emiss_0 = phantom_generator(self,np.asarray(time), self.nx, self.ny, 
                                         profile = self.rad_profile )[3]
 

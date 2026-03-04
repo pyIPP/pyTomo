@@ -637,7 +637,7 @@ def plotG_chi2(TT, Ts,  H, fs,  BdMat, lam_prew, factor, Tok,lam_,chi2,g):
     import sys
     t = time.time()
     T = time.time()
-    from tqdm import trange
+    from .tqdm import trange
 
 
     D =  []

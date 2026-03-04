@@ -18,7 +18,7 @@ import sys,os
 parent_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 #print parent_path
 sys.path.append(parent_path)
-import tqdm
+import ...tqdm
 
 def mds_load(connect, nodes,chns, chnfmt=None, tmin=-inf,tmax=inf,step=1,raw=True,
              remove_offset=False,offset_time_min = -inf, offset_time_max=0):
@@ -162,7 +162,7 @@ def mds_load(connect, nodes,chns, chnfmt=None, tmin=-inf,tmax=inf,step=1,raw=Tru
     tvec = tvec[t_ind]
     #data = []
     
-    from tqdm import tqdm, trange
+    from ...tqdm import tqdm, trange
     #print chn
     n_sigs = [len(chn) for chn in chns]
     Nch = sum(n_sigs)

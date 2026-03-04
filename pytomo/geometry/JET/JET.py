@@ -8,12 +8,12 @@ import sys
 from scipy.io import loadmat, savemat
 #from matplotlib.pyplot import *
 from numpy.matlib import repmat
-from shared_modules import in1d, debug
-from orthogonal_trans import *
+from ...shared_modules import in1d, debug
+from ...orthogonal_trans import *
 import time
-from tokamak import Tokamak
+from ...tokamak import Tokamak
 from scipy.stats.mstats import mquantiles
-import config
+from ... import config
 from collections import OrderedDict
 
 class JET(Tokamak):
@@ -628,7 +628,7 @@ class JET(Tokamak):
 
                 #for j in range(len(tsurf_new)):
                     #print "loading field", tsurf_new[j]
-                from tqdm import trange
+                from ...tqdm import trange
                 for j in trange(len(tsurf_new),desc='Loading magnetic data: '):
                     for i in range(len(psisur)):
 

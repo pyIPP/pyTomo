@@ -3,9 +3,9 @@
 from numpy import *
 import sys,os
 from matplotlib.pyplot import *
-from tokamak import Tokamak
+from ...tokamak import Tokamak
 from collections import OrderedDict
-import config
+from ... import config
 #AUTOR: Tomas Odstrcil  tomas.odstrcil@ipp.mpg.de
 
 #BUG xtomo ignuruje ten čas začátku a konce!!

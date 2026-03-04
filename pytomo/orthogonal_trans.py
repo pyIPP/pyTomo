@@ -153,8 +153,8 @@ def generalized_abel_transform(tokamak,tvec,N_r,N_a,cos_com,sin_com):
 
 def global_basis_transform(basis,tokamak, tvec, N_r,N_a,cos_com,sin_com):
 
-    from zernike import zernike, bessel, polynom
-    from annulus import get_bd_mat
+    from .zernike import zernike, bessel, polynom
+    from .annulus import get_bd_mat
     transform = eval(basis)
 
 

@@ -601,7 +601,7 @@ class JET(Tokamak):
 		rsurf   =   zeros((N_points ,len(psisur), len(tsurf_new)))
 		zsurf   =   zeros((N_points ,len(psisur), len(tsurf_new)))
 		pmds.mdsconnect('mdsplus.jet.efda.org')
-		from tqdm import trange
+		from .tqdm import trange
 		for j in trange(len(tsurf_new),desc='Loading magnetic data: '):
 
 		    for i in range(len(psisur)):

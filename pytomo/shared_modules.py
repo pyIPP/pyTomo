@@ -64,7 +64,7 @@ def prepare_inputs(Tok, data, error_all, dets, tvec, Tmat, normData, G0, reg_par
     
  
     #remove elements of the projection matrix ot of the boundary
-    from geom_mat_setting import prune_geo_matrix
+    from .geom_mat_setting import prune_geo_matrix
     
     bd_len = int(2*pi*sqrt(nx*nx))
     bnd = Tok.get_boundary( bd_len,time=tvec.mean())
@@ -904,7 +904,7 @@ def denoise(img, sigma, distr= 'gauss2', boundary = False, boundary_mask= None):
  
 def read_config(path, file = ""):
     """Read data configuration from the fileobject and return it as a dictionary"""
-    from . import configparser
+    import configparser
 
     config = configparser.RawConfigParser()
     config_dict = dict()

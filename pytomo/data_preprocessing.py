@@ -374,7 +374,7 @@ class SVDFilter():
 
 
         self.data = empty((iimax-iimin,self.ndets ), dtype=single)
-        from tqdm import tqdm
+        from .tqdm import tqdm
         for det_data,i,det in tqdm(list(zip(self.data_list,self.dets,self.SXR_detectors))):
             self.data[:,i:i+det_data.shape[1]] = det_data[ind]
 
@@ -509,7 +509,7 @@ class SVDFilter():
         cmpl_exp_i = ones_like(cmpl_exp)
         phi = ones((nt-(f_bank.shape[1]+1)//2)//downsample+1)
         t = time.time()
-        from tqdm  import trange
+        from .tqdm  import trange
         for i_harm in trange(self.n_harm):
         
             #filter out the choosen harmonics
@@ -2060,7 +2060,7 @@ class DataSettingWindow(QMainWindow):
         try:
             ##===========make preview ============
             self.setting['tokamak_tmp'] = self.tokamak
-            from prepare_data import loaddata, preview
+            from .prepare_data import loaddata, preview
             self.tokamak = loaddata(self.setting)
             preview(self.fig_data, self.setting, self.tokamak, self.plot_2D)
             self.canvas_data.draw()

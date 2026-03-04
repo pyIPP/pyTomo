@@ -56,7 +56,7 @@ def loader(dets,pulse ):
 
 
 
-        from tqdm import trange
+        from ...tqdm import trange
         #for seq in trange(sequence,desc='Main cycle: '):
         for i in trange(N,desc='Loading SXR dat'+str(pulse)+': '):
             #print name2[i]

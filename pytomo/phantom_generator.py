@@ -147,7 +147,7 @@ def phantom_generator(tokamak, tvec_new, nx_new=100, ny_new=100, profile = 'Gaus
     
     print('phantom_generator '+ profile)
 
-    from annulus import get_rho_field_mat, get_bd_mat
+    from .annulus import get_rho_field_mat, get_bd_mat
     
     M = get_rho_field_mat(tokamak, mean(tvec_new), nx_new, ny_new )
     M = tile(M, (size(tvec_new),1,1))
@@ -417,7 +417,7 @@ def phantom_generator(tokamak, tvec_new, nx_new=100, ny_new=100, profile = 'Gaus
         emissivity[:] = interp(M,x,P).T
 
 
-    from geom_mat_setting import geom_mat_setting
+    from .geom_mat_setting import geom_mat_setting
 
     if nx_new == tokamak.nx and ny_new == tokamak.ny:
         Tmat = tokamak.Tmat

@@ -560,7 +560,7 @@ class loader_BOLO():
         print('Done')
         #import IPython
         #IPython.embed()
-        from shared_modules import MovingAveradge
+        from ....shared_modules import MovingAveradge
         downsample = 40
         
         self.tvec = t.reshape()
@@ -605,7 +605,7 @@ class loader_BOLO():
         import IPython
         IPython.embed()
         
-        from shared_modules import MovingAveradge
+        from ....shared_modules import MovingAveradge
         downsample = round(mean(diff(self.tvec))/mean(diff(t3)))
         x3 =  MovingAveradge(copy(x3.T),downsample).T
         t3 =  MovingAveradge(copy(t3),downsample)
@@ -1050,7 +1050,7 @@ class loader_BOLO():
         likely_invalid =  (data_err[0]  <1 ) |(mdata < np.median(mdata)/10)#(mdata <  data_err[0] *  
         
         try:
-            import config
+            from .... import config
             config.wrong_dets_pref = np.where(likely_invalid)[0]
         except: 
             pass
@@ -1154,7 +1154,7 @@ class loader_BOLO():
        # plt.show()
         
         try:
-            import config
+            from .... import config
             config.wrong_dets_pref = np.where(likely_invalid)[0]
         except: 
             pass

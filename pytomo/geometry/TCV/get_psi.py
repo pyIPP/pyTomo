@@ -9,9 +9,9 @@ from matplotlib.pylab import *
 import os.path 
 import sys,os
 sys.path.append(os.path.abspath('../../'))
-import tqdm
+import ...tqdm
 from scipy.io import loadmat
-from shared_modules import inside_convex_hull
+from ...shared_modules import inside_convex_hull
 
 
 

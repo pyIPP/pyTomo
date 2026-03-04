@@ -13,7 +13,7 @@ from orthogonal_trans import *
 import time
 from tokamak import Tokamak
 from scipy.stats.mstats import mquantiles
-import config
+from ... import config
 
 class JET(Tokamak):
     """

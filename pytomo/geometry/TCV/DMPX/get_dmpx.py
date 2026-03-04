@@ -26,7 +26,7 @@ sys.path.append(os.path.abspath(parent_path))
 #print parent_path
 #sys.path.append(parent_path)
 #import tqdm
-from tqdm import tqdm, trange
+from ....tqdm import tqdm, trange
 
 
 

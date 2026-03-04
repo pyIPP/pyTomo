@@ -3,7 +3,7 @@
 import os,sys
 from numpy import *
 import time
-import config
+from ... import config
 from collections import OrderedDict
 from scipy.interpolate import interp1d
 from scipy.stats.mstats import mquantiles
@@ -11,8 +11,8 @@ import threading
 from shutil import copyfile
 
 
-from tokamak import Tokamak
-from shared_modules import in1d,fast_svd,read_config, warning
+from ...tokamak import Tokamak
+from ...shared_modules import in1d,fast_svd,read_config, warning
 
 
 sys.path.append('/afs/ipp/aug/ads-diags/common/python/lib/')

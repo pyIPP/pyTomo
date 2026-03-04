@@ -185,7 +185,7 @@ s
         copyfile(cfg_path,os.path.join(local_path,cfg_file+'.cfg'))
         
         print('Config file was copied from '+cfg_path)
-    from shared_modules import read_config
+    from .shared_modules import read_config
     print('Load config from: ', local_path+cfg_file+".cfg")
     inputs = read_config(local_path+cfg_file+".cfg")
  
@@ -643,7 +643,7 @@ def startCUI(inputs, tok):
         
         print('Reconstruction of shot '+str(inputs['shot'])+' started')
         output = tomography(inputs, tok)
-        from make_graphs import make_graphs
+        from .make_graphs import make_graphs
 
         make_graphs(output)
 
@@ -651,27 +651,27 @@ def startCUI(inputs, tok):
             make_graphs(output,True)
                         
         if inputs['postprocessing'] and inputs['tsteps']>1:
-            from make_graphs import postprocessing_plot
+            from .make_graphs import postprocessing_plot
             postprocessing_plot(output)
             
         if inputs['plot_poloidal_spectrum'] and inputs['tsteps']>1:
-            from make_graphs import CalcPoloidalModeSpectrum
+            from .make_graphs import CalcPoloidalModeSpectrum
             CalcPoloidalModeSpectrum(output)
                         
         if inputs['sawtooths'] and inputs['tsteps']>1:
-            from sawtooths import sawtooths_detection
+            from .sawtooths import sawtooths_detection
             sawtooths_detection(output)
 
         if inputs['impurities'] :
-            from imp_analysis import imp_analysis
+            from .imp_analysis import imp_analysis
             imp_analysis(output)
         
         if inputs['plot_svd'] :
-            from make_graphs import make_svd
+            from .make_graphs import make_svd
             make_svd(*output)
         
         if inputs['asymmetry']:
-            from asymmetries import  EvalAsymmetry
+            from .asymmetries import  EvalAsymmetry
             EvalAsymmetry(  output)
 
             

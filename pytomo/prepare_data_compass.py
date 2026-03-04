@@ -526,7 +526,7 @@ class COMPASS(Tokamak):
 	#print center
 	#exit()
 
-	from distorsion import  coord_distort
+	from .distorsion import  coord_distort
 	[xend, yend]  = coord_distort(xgrid, ygrid, center, distorsion)
 	#  pootoceni kamery !!  funguje !!!!!!
 	#plot(xend, yend, 'b.')

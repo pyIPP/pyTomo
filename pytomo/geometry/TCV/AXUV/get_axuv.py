@@ -18,7 +18,7 @@ from scipy.io import loadmat
 parent_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 print(parent_path)
 sys.path.append(parent_path)
-import tqdm
+import ....tqdm
 
 
 """

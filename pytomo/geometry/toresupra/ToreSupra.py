@@ -9,9 +9,9 @@ import sys
 from scipy.io import loadmat, savemat
 from matplotlib.pyplot import *
 from numpy.matlib import repmat
-from tokamak import Tokamak
-import config
-from shared_modules import blur_image, nanmedian
+from ...tokamak import Tokamak
+from ... import config
+from ...shared_modules import blur_image, nanmedian
 
 class ToreSupra(Tokamak):
 

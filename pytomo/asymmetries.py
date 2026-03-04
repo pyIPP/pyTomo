@@ -686,7 +686,7 @@ def EvalAsymmetry(input_data):
 
 
     lin_treshold = mean(abs(G))/10
-    from annulus import get_bd_mat
+    from .annulus import get_bd_mat
     BdMat = get_bd_mat(tokamak,time=tvec.mean())
     
 

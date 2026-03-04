@@ -1,9 +1,9 @@
 import sys, os
 import MDSplus as mds
 #sys.path.append("/fusion/projectEs/codes/pytomo/geometry/DIIID")
-from geometry.DIIID.mag_equ import  Equlibrium
+from .geometry.DIIID.mag_equ import  Equlibrium
 from numpy import *
-from geometry.DIIID import map_equ
+from .geometry.DIIID import map_equ
 
 def main():
     

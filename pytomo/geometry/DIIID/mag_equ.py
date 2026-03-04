@@ -522,7 +522,7 @@ class Equlibrium:
         #self.eqm.rhoTheta2rz(rho, theta,t_eq[0], n_line=100)
 
         #exit()
-        import config
+        from ... import config
         #from shared_modules import debug
 
     #if config.DEBUG:

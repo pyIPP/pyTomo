@@ -319,7 +319,7 @@ def plot_projection_space(tokamak,xchords, ychords, virt_chord,nl):
     plt.show()
 
 
-    from phantom_generator import phantom_generator
+    from .phantom_generator import phantom_generator
     print('ready')
 
     _,_,_,G0 = phantom_generator(tokamak, array(4), profile = 'Gaussian', hollowness = 0.98,edge = 0.7)
@@ -514,7 +514,7 @@ def generate_matrix(xchords, ychords, distance,virt_chord,nl,nx, ny,  tokamak):
         
         else:
         
-            from geom_mat_gen import geom_mat_gen
+            from .geom_mat_gen import geom_mat_gen
             Tmat = geom_mat_gen(xchords,ychords,tokamak, nx, ny).T
             Tmat = sparse.csc_matrix(Tmat)
 
@@ -1656,7 +1656,7 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
     #zoom = tokamak.pixel_zoom
     #cam_zoom = tokamak.cam_zoom
     if zoom > 1:
-        from orthogonal_trans import zoom_matrix
+        from .orthogonal_trans import zoom_matrix
         Q = zoom_matrix(tokamak.nx, tokamak.ny, zoom)
         #print shape(Q.T), shape(Tmat)
         Tmat = Q.T*Tmat
@@ -1664,7 +1664,7 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
         del Q
         
     if cam_zoom > 1:
-        from orthogonal_trans import zoom_matrix
+        from .orthogonal_trans import zoom_matrix
         Q = zoom_matrix(tokamak.camera_res[0], tokamak.camera_res[1], cam_zoom)
         #print shape(Tmat), shape(Q)
         Tmat = Tmat*Q
@@ -1820,7 +1820,7 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
         save(name, Tmat_1)
 
     if cam_zoom > 1:
-        from orthogonal_trans import zoom_matrix
+        from .orthogonal_trans import zoom_matrix
         Q = zoom_matrix(tokamak.camera_res[0], tokamak.camera_res[1], cam_zoom)
         Tmat_1 = Tmat_1*Q
         X = X[:,::cam_zoom]
@@ -1847,7 +1847,7 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
         save(name, Tmat_2)
         
     if zoom > 1:
-        from orthogonal_trans import zoom_matrix
+        from .orthogonal_trans import zoom_matrix
         Q = zoom_matrix(tokamak.nx, tokamak.ny, zoom)
         Tmat_2 = Tmat_2*Q
         del Q

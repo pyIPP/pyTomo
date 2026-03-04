@@ -5,12 +5,12 @@
 import numpy as np
 import sys,os
 from matplotlib.pyplot import *
-from tokamak import Tokamak
+from ...tokamak import Tokamak
 from collections import OrderedDict
-import config
+from ... import config
 from shutil import copyfile
 from scipy.interpolate import interp1d
-from shared_modules import read_config, warning, debug
+from ...shared_modules import read_config, warning, debug
 
 import time 
 #from matplotlib.pylab import *
@@ -571,7 +571,7 @@ np.sqrt(max(data))
         ind  = slice(max(0,np.searchsorted( self.tsurf, tvec.min()-self.mag_dt*2)-1), 
                      min(len(self.tsurf),np.searchsorted( self.tsurf, tvec.max()+self.mag_dt*2)+1))
 
-        from shared_modules import MovingAveradge
+        from ...shared_modules import MovingAveradge
 
         theta = np.linspace(-np.pi,np.pi,n_theta)
         fast_tvec = self.mag_axis['tvec']
