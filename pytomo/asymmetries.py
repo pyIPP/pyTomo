@@ -10,13 +10,13 @@ from scipy.stats.mstats import mquantiles
 from matplotlib.colors import LogNorm,NoNorm
 from matplotlib import colors
 import os, sys
-from shared_modules import MovingAveradge
+from .shared_modules import MovingAveradge
 from time import time
-import config
-import fconf
+from . import config
+from . import fconf
 from matplotlib.ticker import MaxNLocator,LogFormatter,ScalarFormatter,NullFormatter
 from matplotlib.transforms import Bbox
-from shared_modules import debug
+from .shared_modules import debug
 import matplotlib.cm as cm
 from matplotlib.figure import Figure
 from matplotlib import rcParams,colorbar
@@ -32,7 +32,7 @@ except:
     pass
 
 
-from make_graphs  import my_cmap_
+from .make_graphs  import my_cmap_
 my_cmap1 = my_cmap_
 my_cmap2 = cm.get_cmap('RdBu')
 my_cmap2._init()

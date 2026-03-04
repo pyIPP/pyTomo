@@ -4,7 +4,7 @@ from numpy import *
 from matplotlib.pyplot import *
 from scipy.io import loadmat, savemat
 from scipy import sparse
-import config
+from . import config
 from scipy.special import erfc
 import os 
 

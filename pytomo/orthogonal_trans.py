@@ -4,11 +4,11 @@
 import numpy as np
 #from  matplotlib.pyplot import *
 from  scipy import sparse
-from annulus import get_rho_field_mat
-from mat_deriv_B import calculate_theta_angle, get_coord
+from .annulus import get_rho_field_mat
+from .mat_deriv_B import calculate_theta_angle, get_coord
 from scipy.linalg import qr, solve_triangular
 from scipy import sparse
-from shared_modules import delete_sparse, blur_image, debug
+from .shared_modules import delete_sparse, blur_image, debug
 from scipy.interpolate import interp2d
 import time
 

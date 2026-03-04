@@ -7,15 +7,15 @@ import numpy as np
 from matplotlib.pyplot import *
 import time
 from scipy import sparse
-from shared_modules import prepare_inputs, create_derivation_matrix, make_postprocessing, debug
+from .shared_modules import prepare_inputs, create_derivation_matrix, make_postprocessing, debug
 import scipy.ndimage as ndi
 from scipy.optimize import nnls, _nnls
-from annulus import get_bd_mat
+from .annulus import get_bd_mat
 from sksparse.cholmod import  cholesky,CholmodWarning,CholmodError
 #from scikits.sparse.cholmod import cholesky,CholmodWarning,CholmodError
 from  scipy.linalg import qr, qr_multiply, solve_triangular, cholesky_banded,eigh,svd, inv,lstsq,pinv
 from scipy.sparse.linalg import svds, eigsh
-from gsvd import gsvd
+from .gsvd import gsvd
 import warnings
 
 
@@ -2965,7 +2965,7 @@ def plot_tomo_error(tvec, E, V,norm,w,D,chi2 ):
 
     
     Sig = np.sqrt(np.diag(Cov))
-    from annulus import get_bd_mat, get_rho_field_mat
+    from .annulus import get_bd_mat, get_rho_field_mat
     bnd = tokamak.get_boundary( 100,time=tvec.mean())
     rho = get_rho_field_mat(tokamak,  tvec.mean())
     levels = .2, .4, .6,.8, 1

@@ -9,7 +9,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.interpolate import interp1d
 from scipy.stats.mstats import mquantiles ,skew
 from tqdm import trange
-from shared_modules import  fsvd, poly_min
+from .shared_modules import  fsvd, poly_min
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvas as FigureCanvas
 from matplotlib.ticker import MaxNLocator,NullFormatter

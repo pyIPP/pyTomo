@@ -4,14 +4,14 @@ import os,sys
 import numpy as np
 import matplotlib
 from scipy import sparse
-from shared_modules import debug,MovingAveradge,smooth
-from orthogonal_trans import *
+from .shared_modules import debug,MovingAveradge,smooth
+from .orthogonal_trans import *
 import time
 from scipy.stats.mstats import mquantiles
 from scipy.signal import medfilt
 #from copy import deepcopy
-import config
-from annulus import get_bd_mat
+from . import config
+from .annulus import get_bd_mat
 import gc
 from scipy.interpolate import splprep, splev
 from scipy.interpolate import interp1d

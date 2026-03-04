@@ -54,7 +54,7 @@ for tomography and command-line interface. All functions should be fully accesib
 
 
 
-import config
+from . import config
 
 import sys,os
 from numpy import *
@@ -252,13 +252,13 @@ class pytomo_class:
    
 
     def run(self):
-        #matplotlib.rcParams['backend'] = 'Qt5Agg'   
-        from prepare_data import loaddata
+        #matplotlib.rcParams['backend'] = 'Qt5Agg'
+        from .prepare_data import loaddata
         tok = loaddata(self.inputs, useCache=False, prepare_tokamak = False)
          
         tok.prepare_tokamak()
-         
-        from main import tomography
+
+        from .main import tomography
         inputs, tokamak, progress, output = tomography(self.inputs, tok)
 
         return  tokamak, output
@@ -322,8 +322,8 @@ def main():
 
     matplotlib.rcParams.update(params)
 
-    import main 
-    from prepare_data import loaddata
+    from . import main
+    from .prepare_data import loaddata
     inputs = loadSetting( )
 
     inputs['tmp_folder']  = os.path.expanduser(os.path.expandvars(inputs['tmp_folder' ]))
@@ -600,11 +600,11 @@ def startGUI(inputs, tok):
             
     try:
         import PyQt5.QtCore,  PyQt5.QtGui ,PyQt5.QtWidgets
-        import GUI
+        from . import GUI
     except ImportError as details:
         try:
-            import PyQt4.QtCore,PyQt4.QtGui 
-            import GUI
+            import PyQt4.QtCore,PyQt4.QtGui
+            from . import GUI
 
         except ImportError as details:
             print('Install PyQt4 or PyQt5!!!!  Fallback to noGUI version')
@@ -634,9 +634,9 @@ def startCUI(inputs, tok):
         
     if not os.path.isdir( output_path):
         os.mkdir(output_path)
-        
-    from main import tomography
-    
+
+    from .main import tomography
+
     inputs['postprocessing'] |= inputs['impurities']
     
     if inputs['reconstruct']:

@@ -13,11 +13,11 @@ from scipy.sparse import spdiags, eye
 from scipy.sparse.linalg import spsolve
 import os.path
 from scipy.io import loadmat, savemat
-import config
+from . import config
 from copy import deepcopy
 from scipy.signal import convolve, fftconvolve, medfilt2d, convolve2d,fftconvolve
 from scipy.optimize import minimize
-from annulus import get_bd_mat
+from .annulus import get_bd_mat
 from scipy.linalg import solve_triangular, sqrtm
 from matplotlib.pylab import *
 
@@ -904,7 +904,7 @@ def denoise(img, sigma, distr= 'gauss2', boundary = False, boundary_mask= None):
  
 def read_config(path, file = ""):
     """Read data configuration from the fileobject and return it as a dictionary"""
-    import configparser
+    from . import configparser
 
     config = configparser.RawConfigParser()
     config_dict = dict()

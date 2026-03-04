@@ -8,12 +8,12 @@ import sys
 from scipy.io import loadmat, savemat
 #from matplotlib.pyplot import *
 from numpy.matlib import repmat
-from shared_modules import in1d
-from orthogonal_trans import *
+from .shared_modules import in1d
+from .orthogonal_trans import *
 import time
-from tokamak import Tokamak
+from .tokamak import Tokamak
 from scipy.stats.mstats import mquantiles
-import config
+from . import config
 
 class JET(Tokamak):
     """

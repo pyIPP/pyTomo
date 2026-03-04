@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 from numpy import *
 #from matplotlib.pyplot import *
-from shared_modules import  debug,sigmoid, blur_image
+from .shared_modules import  debug,sigmoid, blur_image
 from scipy.sparse import spdiags, eye
 import time
-from annulus import get_rho_field_mat, get_rho_field_mat, get_bd_mat
-import config
+from .annulus import get_rho_field_mat, get_rho_field_mat, get_bd_mat
+from . import config
 
 class coord():
     pass

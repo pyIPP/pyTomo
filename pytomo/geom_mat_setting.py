@@ -7,10 +7,10 @@ import sys, os
 from numpy import *
 from scipy.sparse import spdiags, eye
 import gc
-from annulus import get_bd_mat
+from .annulus import get_bd_mat
 from scipy.linalg import solve
-from shared_modules import debug
-import config
+from .shared_modules import debug
+from . import config
 from scipy.signal import medfilt
 
 
@@ -531,14 +531,14 @@ def gen_cython(xchords, ychords, distance,nx, ny, Tok,chord_profile):
     # Try to import pre-compiled module first (built with setup.py)
     # This is required for multiprocessing to work correctly
     try:
-        from geom_mat_gen_cython import geom_mat_gen_cython
+        from .geom_mat_gen_cython import geom_mat_gen_cython
     except ImportError:
         # Fallback to pyximport for on-the-fly compilation
         # WARNING: This may not work with multiprocessing!
         import pyximport
         import numpy as np
         pyximport.install(setup_args={"include_dirs":np.get_include() })
-        from geom_mat_gen_cython import geom_mat_gen_cython
+        from .geom_mat_gen_cython import geom_mat_gen_cython
 
 
 
@@ -676,7 +676,7 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
     nx_tmp =  max(200, tok_nx)
     ny_tmp =  max(200, tok_ny)
 
-    from annulus import get_bd_mat
+    from .annulus import get_bd_mat
     BdMat_tmp = get_bd_mat(tokamak, nx_tmp , ny_tmp,time=(tokamak.tmin+tokamak.tmax)/2) 
     BdMat_tmp = reshape(BdMat_tmp, (ny_tmp, nx_tmp), order='F')
     

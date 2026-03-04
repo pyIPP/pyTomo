@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import numpy.ma as ma
-import config
+from . import config
 import time
 import sys,os
 import scipy as sp
@@ -18,8 +18,8 @@ from matplotlib.backends.backend_agg import FigureCanvas as FigureCanvas
 from matplotlib import colors,cbook,cm
 from matplotlib.colors import Normalize
 
-from shared_modules import fsvd,fast_svd,debug, get_rho_tan
-from annulus import get_bd_mat, get_rho_field_mat
+from .shared_modules import fsvd,fast_svd,debug, get_rho_tan
+from .annulus import get_bd_mat, get_rho_field_mat
 try:
     from multiprocessing import Process, Pool
     import threading

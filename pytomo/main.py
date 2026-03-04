@@ -14,11 +14,11 @@ from scipy.sparse import spdiags, eye
 from copy import deepcopy, copy
 import gc
 import multiprocessing 
-from prepare_data import * 
-from shared_modules import debug
-import  config
-from shared_modules import make_postprocessing
-from asymmetries import CalcAsymNew
+from .prepare_data import *
+from .shared_modules import debug
+from . import config
+from .shared_modules import make_postprocessing
+from .asymmetries import CalcAsymNew
 
     
 

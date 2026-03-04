@@ -11,7 +11,7 @@ from scipy.sparse.linalg import factorized
 import os
 from scipy.interpolate import *
 #import config 
-from shared_modules import prepare_inputs, create_derivation_matrix, debug
+from .shared_modules import prepare_inputs, create_derivation_matrix, debug
 
 
 #AUTOR: Tomas Odstrcil  tomas.odstrcil@ipp.mpg.de

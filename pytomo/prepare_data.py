@@ -8,7 +8,7 @@ import warnings
 import time
 from scipy import sparse
 from scipy.sparse import spdiags, eye
-from geom_mat_setting import geom_mat_setting
+from .geom_mat_setting import geom_mat_setting
 #from  prepare_data_golem import Golem
 #from prepare_data_JET import JET
 #from prepare_data_compass import COMPASS
@@ -17,9 +17,9 @@ from geom_mat_setting import geom_mat_setting
 from geometry import *
 from matplotlib import rcParams
 import gc
-from shared_modules import debug
+from .shared_modules import debug
 from matplotlib import colors
-import config
+from . import config
 #from matplotlib.ticker import  MaxNLocator 
  
 
@@ -110,7 +110,7 @@ def preview(fig, inputs, tokamak, plot_2D = True, show_prew= False):
     :param bool show_prew:  If ``True`` create new windows with plot. Cannot be used together with GUI.
     """
 
-    from make_graphs import my_cmap_
+    from .make_graphs import my_cmap_
 
     
    
@@ -178,7 +178,7 @@ def preview(fig, inputs, tokamak, plot_2D = True, show_prew= False):
         ax.set_title('Input data, number of time steps: %i' % tsteps,fontsize=font_size)
         #xlabel('Channel')
         ax.set_ylabel('Time ['+tokamak.t_name+']',fontsize=font_size)
-        from make_graphs import LogFormatterTeXExponent
+        from .make_graphs import LogFormatterTeXExponent
         cbar = fig.colorbar(im,format=LogFormatterTeXExponent('%.2e'))
         ax.axis((0.5, nch+.5,tvec[0],tvec[-1]))
         cbar.ax.tick_params(labelsize=font_size ) 

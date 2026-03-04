@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from numpy import *
 from matplotlib.pyplot import *
-from mat_deriv_B import mat_deriv_B
+from .mat_deriv_B import mat_deriv_B
 from scipy.stats.mstats import mquantiles
 
 

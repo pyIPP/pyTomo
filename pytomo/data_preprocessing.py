@@ -22,7 +22,7 @@ except:
         
 from matplotlib.figure import Figure
 import numpy as np
-import config
+from . import config
 
 
 #import matplotlib.pyplot as plt
@@ -41,7 +41,7 @@ from scipy.signal import argrelmax
 import scipy.sparse as sp
 from colorsys import hls_to_rgb
 from matplotlib.ticker import MaxNLocator
-import fconf
+from . import fconf
 
 import os
 from numpy import *

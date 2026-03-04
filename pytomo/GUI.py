@@ -22,17 +22,17 @@ except:
 
 
 sys.path.append('../')
-from make_graphs import *
-from sawtooths import sawtooths_detection
-from imp_analysis import imp_analysis
+from .make_graphs import *
+from .sawtooths import sawtooths_detection
+from .imp_analysis import imp_analysis
 import traceback
-from prepare_data import *
-from main import tomography
-import pytomo
+from .prepare_data import *
+from .main import tomography
+from . import pytomo
 import time
-from shared_modules import debug
+from .shared_modules import debug
 import gc
-import config
+from . import config
 from matplotlib import rcParams
 
 """

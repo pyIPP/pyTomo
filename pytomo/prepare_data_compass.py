@@ -10,9 +10,9 @@ from scipy.io import loadmat, savemat
 #from matplotlib.pyplot import *
 from numpy.matlib import repmat
 from scipy.stats.mstats import mquantiles
-import config
+from . import config
 from emissivity_generator import emissivity_generator
-from tokamak import Tokamak
+from .tokamak import Tokamak
 from scipy.signal import  fftconvolve
 
 class COMPASS(Tokamak):
