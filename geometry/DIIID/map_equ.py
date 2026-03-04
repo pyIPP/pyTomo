@@ -78,7 +78,7 @@ class equ_map:
             atimes = self.sf.get('\\'+diag+'::TOP.RESULTS.aEQDSK.ATIME').data()/1000
             chi2 = self.sf.get('\\'+diag+'::TOP.RESULTS.aEQDSK.CHISQ').data()
             chi2_max = 200
-            self.valid = ~np.in1d(t_eq,atimes[chi2 > chi2_max])&(t_eq>0)
+            self.valid = ~np.isin(t_eq,atimes[chi2 > chi2_max])&(t_eq>0)
             #print len(t_eq), sum(self.valid)
             self.t_eq = t_eq[self.valid]
             if len(self.t_eq) < 2: raise Exception('too few valid timepoints in equlibrium')
@@ -224,7 +224,7 @@ class equ_map:
         self.vol  =  V0*self.sf.get(self.gEQDSK+'RHOVN').data()[self.valid].T**2
 
         #The toroidal flux PHI can be found by recognizing that the safety factor is the ratio of the differential toroidal and poloidal fluxes
-        self.tf = integrate.cumtrapz(np.sign(self.ip)*np.sign(self.Bt)*self.q,self.pf,initial=0,axis=0)
+        self.tf = integrate.cumulative_trapezoid(np.sign(self.ip)*np.sign(self.Bt)*self.q,self.pf,initial=0,axis=0)
         
         from scipy.constants import mu_0
 
@@ -1041,10 +1041,10 @@ class equ_map:
         
         theta = np.unwrap(theta - theta[:, (0, )], axis=1)
         
-        from scipy.integrate import cumtrapz
+        from scipy.integrate import cumulative_trapezoid
 
 # Definition of the theta star by integral
-        theta_star = cumtrapz(dtheta_star, theta, axis=1, initial=0)
+        theta_star = cumulative_trapezoid(dtheta_star, theta, axis=1, initial=0)
         correction = (n_theta - 1.)/n_theta
 
         theta_star/= theta_star[:, (-1, )]/(2*np.pi)/correction  #normalize to 2pi

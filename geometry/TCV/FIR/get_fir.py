@@ -60,7 +60,7 @@ def get_fir(connect, shot):
         #remove phase jumps and some low frequency information
         knots,vals = [],[]
         ind_knots = r_[list(range(0,len(tvec),20)),-1]
-        peaks = infty
+        peaks = inf
         ind = slice(None,None)
         dsig,tvec_ = sig,tvec
         for i in range(7):

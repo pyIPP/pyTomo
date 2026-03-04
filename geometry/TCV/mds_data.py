@@ -20,8 +20,8 @@ parent_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(_
 sys.path.append(parent_path)
 import tqdm
 
-def mds_load(connect, nodes,chns, chnfmt=None, tmin=-infty,tmax=infty,step=1,raw=True,
-             remove_offset=False,offset_time_min = -infty, offset_time_max=0):
+def mds_load(connect, nodes,chns, chnfmt=None, tmin=-inf,tmax=inf,step=1,raw=True,
+             remove_offset=False,offset_time_min = -inf, offset_time_max=0):
 
     #TODO načítat celé listy nodů?? 
 

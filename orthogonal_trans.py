@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from numpy import *
+import numpy as np
 #from  matplotlib.pyplot import *
 from  scipy import sparse
 from annulus import get_rho_field_mat
 from mat_deriv_B import calculate_theta_angle, get_coord
-from  scipy.linalg import *
+from scipy.linalg import qr, solve_triangular
 from scipy import sparse
 from shared_modules import delete_sparse, blur_image, debug
 from scipy.interpolate import interp2d
 import time
-from scipy.linalg import qr
 
 class QR_sparseT():  # it is much faster than to evaluate it directly 
         def __init__(self,A,B):
@@ -28,29 +27,29 @@ class QR_sparse:  # it is much faster than to evaluate it directly
         
         self.r = sparse.csc_matrix(r)
         
-        corr_ind = where(abs(self.r.diagonal())>1e-2)[0]
+        corr_ind = np.where(np.abs(self.r.diagonal())>1e-2)[0]
 
         self.r = self.r[corr_ind][:,corr_ind]
                                                                                                                                                                                                             
         if not permut is None:
             permut = permut[corr_ind ]
 
-        ir = solve_triangular(self.r.todense(),eye(*self.r.shape),check_finite=False,overwrite_b=True)
+        ir = solve_triangular(self.r.todense(),np.eye(*self.r.shape),check_finite=False,overwrite_b=True)
 
-        ind = argsort(permut)
-        self.A = sparse.csc_matrix(A)[:,sort(permut)]
+        ind = np.argsort(permut)
+        self.A = sparse.csc_matrix(A)[:,np.sort(permut)]
 
         self.ir = ir[ind,:]
         
         self.permut = permut
         self.int_permut = ind
 
-        self.ir[abs(self.ir)<1e-10] = 0 #remove 'noise'
+        self.ir[np.abs(self.ir)<1e-10] = 0 #remove 'noise'
         self.ir = sparse.csc_matrix(self.ir)
         
-        self.A.data = self.A.data.astype(single,copy=False)
-        self.r.data = self.r.data.astype(single,copy=False)
-        self.ir.data = self.ir.data.astype(single,copy=False)
+        self.A.data = self.A.data.astype(np.single,copy=False)
+        self.r.data = self.r.data.astype(np.single,copy=False)
+        self.ir.data = self.ir.data.astype(np.single,copy=False)
 
         
         self.T = QR_sparseT(self.ir.T,self.A.T)
@@ -70,15 +69,15 @@ class QR_sparse:  # it is much faster than to evaluate it directly
 def generalized_abel_transform(tokamak,tvec,N_r,N_a,cos_com,sin_com):
     
     extrapolate = 1.01
-    M = get_rho_field_mat(tokamak, mean(tvec), extrapolate=extrapolate)
+    M = get_rho_field_mat(tokamak, np.mean(tvec), extrapolate=extrapolate)
 
-    R,Z = meshgrid(tokamak.xgrid, tokamak.ygrid)
+    R,Z = np.meshgrid(tokamak.xgrid, tokamak.ygrid)
     rhop,rc, zc = tokamak.mag_equilibrium(tvec,return_mean=True,surf_slice=slice(0,1))
-    rc,zc = mean(rc),mean(zc)
-    theta = arctan2(Z-zc,R-rc)
+    rc,zc = np.mean(rc),np.mean(zc)
+    theta = np.arctan2(Z-zc,R-rc)
     theta = theta.ravel(order='F')[:,None]
     #ensure that in the middle point will be only N pixels
-    M_min = sort(M.ravel())[N_a]  #else the problems with singularity of the transformation will rise. 
+    M_min = np.sort(M.ravel())[N_a]  #else the problems with singularity of the transformation will rise. 
     M-= M_min
     M[M<0] = 0
     
@@ -86,9 +85,9 @@ def generalized_abel_transform(tokamak,tvec,N_r,N_a,cos_com,sin_com):
     M[M==M.max()] = M[M!=M.max()].max()
 
     # interpolate on abel pixels
-    M /= amax(M)
+    M /= np.amax(M)
     c = 1.3
-    M = tan(M*c)/tan(c)
+    M = np.tan(M*c)/np.tan(c)
     M**= 0.7
 
 
@@ -97,11 +96,11 @@ def generalized_abel_transform(tokamak,tvec,N_r,N_a,cos_com,sin_com):
     M = M.ravel(order='F')
 
 
-    M_0 = floor(M)
+    M_0 = np.floor(M)
     M_1 = 1- M + M_0
     M_2 = M - M_0
 
-    n_mag = int(amax(M_0))
+    n_mag = int(np.amax(M_0))
     npix = tokamak.nx*tokamak.ny
 
     ##build a directly sparse transformation matrix 
@@ -112,23 +111,23 @@ def generalized_abel_transform(tokamak,tvec,N_r,N_a,cos_com,sin_com):
     
     for  i in range(n_mag):
         #function constant in angle but with triangular profile in radial direction
-        ind = where(M_0 == i)[0]
+        ind = np.where(M_0 == i)[0]
         i_ind.append(ind)
-        j1_ind.append(ones_like(ind)*max(0,i-1))
-        j2_ind.append(ones_like(ind)*i)
+        j1_ind.append(np.ones_like(ind)*max(0,i-1))
+        j2_ind.append(np.ones_like(ind)*i)
 
         data1.append(M_1[ind])
         data2.append(M_2[ind])
         
 
 
-    Transform = sparse.csc_matrix((hstack(data1), c_[hstack(i_ind),hstack(j1_ind)].T),shape=(npix, n_mag))
-    Transform = Transform+sparse.csc_matrix((hstack(data2), c_[hstack(i_ind),hstack(j2_ind)].T),shape=(npix, n_mag))
+    Transform = sparse.csc_matrix((np.hstack(data1), np.c_[np.hstack(i_ind),np.hstack(j1_ind)].T),shape=(npix, n_mag))
+    Transform = Transform+sparse.csc_matrix((np.hstack(data2), np.c_[np.hstack(i_ind),np.hstack(j2_ind)].T),shape=(npix, n_mag))
     Transform_N = [Transform, ]
     
     for  n in range(N_a):
-        if sin_com:Transform_N.append(sparse.spdiags(sin((n+1)*theta.T),(0,),npix, npix)*Transform)
-        if cos_com:Transform_N.append(sparse.spdiags(cos((n+1)*theta.T),(0,),npix, npix)*Transform)
+        if sin_com:Transform_N.append(sparse.spdiags(np.sin((n+1)*theta.T),(0,),npix, npix)*Transform)
+        if cos_com:Transform_N.append(sparse.spdiags(np.cos((n+1)*theta.T),(0,),npix, npix)*Transform)
  
     Transform = sparse.hstack(Transform_N)
   
@@ -141,9 +140,9 @@ def generalized_abel_transform(tokamak,tvec,N_r,N_a,cos_com,sin_com):
         if sparse.issparse(Transform):
             Transform = Transform.todense()
         r, = qr(Transform,overwrite_a=True,mode='r',check_finite=False)
-        r = single(r[:r.shape[1],:])
-        T = sparse.csc_matrix(single(Transform))
-        e = arange(r.shape[1])
+        r = np.single(r[:r.shape[1],:])
+        T = sparse.csc_matrix(np.single(Transform))
+        e = np.arange(r.shape[1])
         
     T = QR_sparse(r,Transform,e)
     return T
@@ -165,15 +164,15 @@ def global_basis_transform(basis,tokamak, tvec, N_r,N_a,cos_com,sin_com):
     ny = tokamak.ny
 
     rho = get_rho_field_mat(tokamak, tvec.mean(), extrapolate=extrapolate)
-    rho /= amax(rho)
+    rho /= np.amax(rho)
     
-    R,Z = meshgrid(tokamak.xgrid, tokamak.ygrid)
+    R,Z = np.meshgrid(tokamak.xgrid, tokamak.ygrid)
     rhop,rc, zc = tokamak.mag_equilibrium(tvec,return_mean=True,surf_slice=slice(0,1))
-    rc,zc = mean(rc),mean(zc)
-    theta = arctan2(Z-zc,R-rc)
+    rc,zc = np.mean(rc),np.mean(zc)
+    theta = np.arctan2(Z-zc,R-rc)
     
     BdMat = get_bd_mat(tokamak, time = tvec.mean())
-    mask = isnan(rho) | array(rho == amax(rho)) | BdMat.reshape(ny,nx,order='F')
+    mask = np.isnan(rho) | np.array(rho == np.amax(rho)) | BdMat.reshape(ny,nx,order='F')
 
 
     Transform = []
@@ -188,24 +187,24 @@ def global_basis_transform(basis,tokamak, tvec, N_r,N_a,cos_com,sin_com):
             
             for ir in range(N_r):
 
-                if basis == 'zernike' and ((ir-ia*isgn)%2!=0 or abs(ia)>ir):
+                if basis == 'zernike' and ((ir-ia*isgn)%2!=0 or np.abs(ia)>ir):
                     continue
                     
-                z = asarray(transform(ir,ia*isgn,rho,theta,N_r))
+                z = np.asarray(transform(ir,ia*isgn,rho,theta,N_r))
                 z[mask] = 0
 
                 z = z.ravel(order='F')
                 Transform.append(z)              
 
 
-    Transform = vstack(Transform).T
+    Transform = np.vstack(Transform).T
    
      # orthogonalize base, slow.. 
     Transform_,R = qr(Transform,overwrite_a=True,mode='economic',check_finite=False,pivoting=False)  
 
 
     Transform_ = Transform_.astype('single')
-    Transform_[:,abs(diag(R))>1e-6*R[0,0]]  #remove very colinear vectors
+    Transform_[:,np.abs(np.diag(R))>1e-6*R[0,0]]  #remove very colinear vectors
     Transform = sparse.csc_matrix(Transform_,copy=False)
 
     return Transform

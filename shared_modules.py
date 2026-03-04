@@ -77,7 +77,7 @@ def prepare_inputs(Tok, data, error_all, dets, tvec, Tmat, normData, G0, reg_par
     normData = single(normData)
     data = (data/normData[:,None]).T
   
-    error = ones(size(error_all,1))*infty
+    error = ones(size(error_all,1))*inf
      #BUG all or  any???? !!!
     ind = all(isfinite(error_all)&(error_all!= 0),0)
 
@@ -904,15 +904,13 @@ def denoise(img, sigma, distr= 'gauss2', boundary = False, boundary_mask= None):
  
 def read_config(path, file = ""):
     """Read data configuration from the fileobject and return it as a dictionary"""
-    try:
-        import configparser
-    except:
-        import ConfigParser as configparser
+    import configparser
 
-    #from collections import OrderedDict
     config = configparser.RawConfigParser()
     config_dict = dict()
-    config.readfp(open(path+file, 'r'))
+    # Use read_file() - modern replacement for deprecated readfp()
+    with open(path+file, 'r') as f:
+        config.read_file(f)
     for data_type in config.sections():
         config_dict.update(dict(config.items(data_type)))
         

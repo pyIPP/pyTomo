@@ -1110,7 +1110,7 @@ class loader_SXR():
  
 
     
-    def get_data_fast(self,tmin=-infty,tmax=infty,calib=True):
+    def get_data_fast(self,tmin=-inf,tmax=inf,calib=True):
     
         num_MDS_Tasks = 8
         MDSserver = self.MDSconn.hostspec
@@ -1226,7 +1226,7 @@ class loader_SXR():
 
         #calibrate raw signals
         if calib:
-            tvec_offset, data_offset,_ = self.get_data_fast(tmin=-infty,tmax=.2, calib=False)
+            tvec_offset, data_offset,_ = self.get_data_fast(tmin=-inf,tmax=.2, calib=False)
             data -= data_offset.mean(0)
             data_offset-= data_offset.mean(0)
             data_err+= data_offset.std(0)/10  
@@ -1339,7 +1339,7 @@ class loader_SXR():
             data[size(out[i]):,ch] = out[i][-1]
             if self.fast_data_downsapled and not isinstance(out[self.nl+i],str) and fetch_errors:
                 data_error[:size(out[i]),ch] = out[self.nl+i]
-            data_error[size(out[i]):,ch] = infty  #data from TA system are 2s longer than from PA system
+            data_error[size(out[i]):,ch] = inf  #data from TA system are 2s longer than from PA system
         
         data_error[:] = abs(data)*0.02+data.max(1)[:,None]*0.01
         
@@ -1383,7 +1383,7 @@ class loader_SXR():
         self.hardcoded_corrections(tvec, data,data_error)
 
         
-        use_dets = ~in1d(self.dets, self.wrong_dets)
+        use_dets = ~isin(self.dets, self.wrong_dets)
         offset = tvec < .1
 
 
@@ -1490,7 +1490,7 @@ class loader_SXR():
             else:
                 print('Warning: calibration for camera %s is not availible'%cam)
   
-        #data_error[overburned] = infty
+        #data_error[overburned] = inf
         
         
         #trick to replace missign fast channel by a slow data 
@@ -1530,7 +1530,7 @@ class loader_SXR():
         if not self.toroidal:
             
             
-            #data_err[:,self.cam_ind['90RM1a'][2]] = infty
+            #data_err[:,self.cam_ind['90RM1a'][2]] = inf
             if self.shot < 166887:  #od 167437 je to zase?
                 data[:,self.cam_ind['90RP1a'][15]] *= 1.1
 

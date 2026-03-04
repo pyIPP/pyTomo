@@ -475,7 +475,7 @@ class loader_BOLO():
       
       
       
-    def get_data_(self,tmin=-infty,tmax=infty):
+    def get_data_(self,tmin=-inf,tmax=inf):
         
         imin,imax = self.tvec.searchsorted((tmin, tmax))
         imax += 1
@@ -1009,7 +1009,7 @@ class loader_BOLO():
            #embed()
         return tvec, pwr
        
-    def get_data_realtime(self,tmin=-infty,tmax=infty):
+    def get_data_realtime(self,tmin=-inf,tmax=inf):
         print('Loading realtime bolometer data')
        
         data = []
@@ -1057,7 +1057,7 @@ class loader_BOLO():
         
         
        
-    def get_data(self,tmin=-infty,tmax=infty):
+    def get_data(self,tmin=-inf,tmax=inf):
          
         #try load realtime data 
         if self.real_time_data and not hasattr(self,'cache'):

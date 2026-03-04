@@ -105,7 +105,7 @@ def mat_deriv_B(Tok, tvec, regularization,reg_params, nx=None, ny=None):
 
         rhop,magx, magy = Tok.mag_equilibrium(tvec, return_mean = True,surf_slice=slice(-1,None),rho=1)
 
-        rho = get_rho_field_mat(Tok, mean(tvec),extrapolate = infty)
+        rho = get_rho_field_mat(Tok, mean(tvec),extrapolate = inf)
         BdMat = get_bd_mat(Tok, boundary=squeeze(c_[magx, magy]))
 
         BdMat = blur_image(BdMat.reshape(Tok.ny, Tok.nx,order='F'),Tok.nx/50.)

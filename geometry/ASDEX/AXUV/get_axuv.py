@@ -175,7 +175,7 @@ class loader_AXUV():
         
 
     
-    def get_data(self,tmin=-infty,tmax=infty):
+    def get_data(self,tmin=-inf,tmax=inf):
         """ Main diagnostics are diod Bolometers,
         """
 
@@ -226,7 +226,7 @@ class loader_AXUV():
 
         data_err = ones_like(data)
         data_err*= noise
-        data_err[(data>das_upper_limit*0.99 )|(data<=das_lower_limit*0.99)] = infty  
+        data_err[(data>das_upper_limit*0.99 )|(data<=das_lower_limit*0.99)] = inf  
         
     
         

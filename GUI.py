@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import numpy as np
 import pickle
 import sys
 import os
@@ -1155,7 +1156,7 @@ class MainWindow(QMainWindow):
             self.lambda_solver = str(self.man_regularization)
  
         if self.ratiosolver == 0 and self.tokamak.allow_self_calibration:
-            config.calb = ones(self.tokamak.Ndets)
+            config.calb = np.ones(self.tokamak.Ndets)
             for i in range(self.tokamak.Ndets):
                 try:
                     config.calb[i] = self.Calb_spins[i].value()
@@ -1258,11 +1259,11 @@ class MainWindow(QMainWindow):
             self.chooseLamSolver.setCurrentIndex(6) #manual
 
         self.Positivity.setChecked(self.positive_constrain)
-        self.mfi_positivity.setValue(-log10(self.rgmin))
+        self.mfi_positivity.setValue(-np.log10(self.rgmin))
 
 
         if hasattr(self,'Calb_spins'):
-            if all([ isscalar(i) for i in self.tokamak.calb_0]):
+            if np.all([ np.isscalar(i) for i in self.tokamak.calb_0]):
                 calb =         self.tokamak.get_calb()
                 for i in range(self.tokamak.Ndets):
                     self.Calb_spins[i].setValue(calb[i])
@@ -1299,7 +1300,7 @@ class MainWindow(QMainWindow):
         self.Precision_spin.setEnabled(self.boundary>=0)
         self.Precision_label.setEnabled(self.boundary>=0)
         self.Anis_spin.setValue(self.danis)
-        self.Precision_spin.setValue(double(self.boundary))
+        self.Precision_spin.setValue(np.double(self.boundary))
         self.Scale_spin.setValue(self.error_scale)
 
 
@@ -1313,11 +1314,11 @@ class MainWindow(QMainWindow):
         
         self.toggle_transform(self.transform_index)
 
-        self.tmin_spin.setRange(double(self.tokamak.min_tvec), double(self.tokamak.max_tvec))
-        self.tmax_spin.setRange(double(self.tokamak.min_tvec), double(self.tokamak.max_tvec))
+        self.tmin_spin.setRange(np.double(self.tokamak.min_tvec), np.double(self.tokamak.max_tvec))
+        self.tmax_spin.setRange(np.double(self.tokamak.min_tvec), np.double(self.tokamak.max_tvec))
 
-        self.tmin_spin.setValue(double(self.tmin))
-        self.tmax_spin.setValue(double(self.tmax))
+        self.tmin_spin.setValue(np.double(self.tmin))
+        self.tmax_spin.setValue(np.double(self.tmax))
 
     def changeStartButton(self, state=0):
         if state == 0:
@@ -1644,8 +1645,8 @@ class MainWindow(QMainWindow):
             #FreeMemory=int(os.popen("free -m").readlines()[2].split()[3])
         #except:
             #FreeMemory = 1e4
-        #if (double(steps)*double(self.nx*self.ny)*16.0  > FreeMemory*1e6 and self.reconstruct) and  not (self.solver == 2 and self.ratiosolver in [0,2]):   #limit of memory usage
-            #print('free memory ', FreeMemory*1e6, double(steps)*double(self.nx*self.ny)*16.0)
+        #if (np.double(steps)*np.double(self.nx*self.ny)*16.0  > FreeMemory*1e6 and self.reconstruct) and  not (self.solver == 2 and self.ratiosolver in [0,2]):   #limit of memory usage
+            #print('free memory ', FreeMemory*1e6, np.double(steps)*np.double(self.nx*self.ny)*16.0)
             #QMessageBox.warning(self,"Setting error", "Array is too big \n Use lower resolution or less timeslices"  ,QMessageBox.Ok)
             #return
       
@@ -1706,9 +1707,11 @@ class MainThread(QThread):
         self.setObjectName('PyTOMO') 
         self.progress = IterateProgress(self,parent.progressBar)
         self.parent = parent
+
     def prepare(self,setting, tokamak):
         self.setting = setting
         self.tokamak = tokamak
+
     def run(self):
         print('RUN')
 
@@ -1743,7 +1746,7 @@ class MainThread(QThread):
             make_graphs(output_list, False)        # gnuplot can plot in separated thread
             self.progress.iterateStep()
             if self.parent.plot_svd:
-                make_graphs(copy(output_list), True)
+                make_graphs(np.copy(output_list), True)
                 self.progress.iterateStep()
 
 

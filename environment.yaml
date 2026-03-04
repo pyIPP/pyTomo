@@ -1,0 +1,55 @@
+# pyTomo Conda Environment
+# All dependencies verified to be available on conda-forge
+#
+# Create environment with: conda env create -f environment.yaml
+# Activate with: conda activate pytomo
+
+name: pytomo_2_0
+
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  # Python version - require 3.8+ for modern features and security support
+  - python>=3.8
+
+  # ============================================================
+  # BUILD TOOLS (for compiling Cython extensions)
+  # ============================================================
+  - cython>=0.29
+  - gcc_linux-64  # C compiler for building extensions
+  - gxx_linux-64  # C++ compiler (may be needed by some dependencies)
+
+  # ============================================================
+  # CORE DEPENDENCIES (REQUIRED)
+  # ============================================================
+  - numpy>=1.15.0
+  - scipy>=1.1.0
+  - matplotlib>=3.0.0
+  - pillow>=5.0.0
+  - netcdf4
+
+  # Sparse matrix operations (all available on conda-forge)
+  - scikit-sparse>=0.4.4
+  - suitesparse  # System library required by scikit-sparse
+  - openblas
+  - lapack
+
+  # GUI support - required by GUI.py
+  - pyqt
+
+  # Interactive Python - used in multiple modules for debugging
+  - ipython
+
+  # ============================================================
+  # TOKAMAK/FUSION-SPECIFIC PACKAGES
+  # ============================================================
+  # MDS+ data access - required for tokamak data acquisition
+  - mdsplus
+
+# ============================================================
+# IMPORTANT NOTE
+# ============================================================
+# DO NOT install 'tqdm' package - pyTomo includes a custom local tqdm.py
+# Installing tqdm will cause import conflicts!

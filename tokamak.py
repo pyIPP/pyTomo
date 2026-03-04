@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os,sys
-from numpy import *
+import numpy as np
 import matplotlib
 from scipy import sparse
-from shared_modules import in1d, debug,MovingAveradge,smooth
+from shared_modules import debug,MovingAveradge,smooth
 from orthogonal_trans import *
 import time
 from scipy.stats.mstats import mquantiles
@@ -101,7 +101,7 @@ class Tokamak(object):
         self.min_error = min_error
         self.norm = norm
         self.t_name = 's'   # time in seconds
-        self.nl = NaN   # default number of chord is unknown
+        self.nl = np.nan   # default number of chord is unknown
         self.default_calb  = 'const'  # const, none, variable
         self.camera = False  # in the case of tangential  camera => True
         self.allow_negative = True  # negative values are most often unphysical but not always 
@@ -127,10 +127,10 @@ class Tokamak(object):
         self.boundary_lcfs = True# the boundary is given by the last closed flux surface
         if not hasattr(self,'vessel_boundary'):
             print('loading vessel')
-            self.vessel_boundary = loadtxt(self.geometry_path+'border.txt')
+            self.vessel_boundary = np.loadtxt(self.geometry_path+'border.txt')
         
-        if all(self.vessel_boundary[0,:] != self.vessel_boundary[-1,:]):   # first and last point are different            
-            self.vessel_boundary = r_[self.vessel_boundary, self.vessel_boundary[(0,),:]]
+        if np.all(self.vessel_boundary[0,:] != self.vessel_boundary[-1,:]):   # first and last point are different            
+            self.vessel_boundary = np.r_[self.vessel_boundary, self.vessel_boundary[(0,),:]]
             
         
         
@@ -149,7 +149,7 @@ class Tokamak(object):
         if os.path.isfile(os.path.join(self.geometry_path,'wrong_channels',str(self.shot))):
             with open(os.path.join(self.geometry_path,'wrong_channels',str(self.shot)),'r') as file:
                 wrong_dets_stored = [int(a) for a in file]
-                config.wrong_dets_pref  = unique(r_[wrong_dets_stored,config.wrong_dets_pref])
+                config.wrong_dets_pref  = np.unique(np.r_[wrong_dets_stored,config.wrong_dets_pref])
  
 
         
@@ -159,23 +159,23 @@ class Tokamak(object):
         self.npix = nx*ny
         
         #width of the pixels
-        self.dx =(self.xmax-self.xmin)/double(self.nx)
-        self.dy =(self.ymax-self.ymin)/double(self.ny)
+        self.dx =(self.xmax-self.xmin)/np.double(self.nx)
+        self.dy =(self.ymax-self.ymin)/np.double(self.ny)
 
         #NOTE coordinates of the lower left corner of the pixel! 
-        self.xgrid = linspace(self.xmin,self.xmax,self.nx,endpoint=False)
-        self.ygrid = linspace(self.ymin,self.ymax,self.ny,endpoint=False)
+        self.xgrid = np.linspace(self.xmin,self.xmax,self.nx,endpoint=False)
+        self.ygrid = np.linspace(self.ymin,self.ymax,self.ny,endpoint=False)
 
         
-        self.area_axis = r_[self.xmin,self.xmax, self.ymin, self.ymax]
+        self.area_axis = np.r_[self.xmin,self.xmax, self.ymin, self.ymax]
         # axis for geometry generation (camera)
-        self.geometry_axis = r_[self.xmin,self.xmax, self.ymin, self.ymax, -self.xmax, self.xmax]
+        self.geometry_axis = np.r_[self.xmin,self.xmax, self.ymin, self.ymax, -self.xmax, self.xmax]
 
 
     def generate_transform(self, tvec):
 
 
-        tvec = asarray(tvec.mean())
+        tvec = np.asarray(tvec.mean())
         debug('Transformation : ' + str(self.transform_index) ) 
         params = [self,tvec, self.transform_order_r,self.transform_order_a,
                          self.cos_com, self.sin_com]
@@ -197,7 +197,7 @@ class Tokamak(object):
             raise Exception("missing transform")
             return        
 
-        self.npix = size(Transform,1)
+        self.npix = np.size(Transform,1)
 
         debug('Transform done')
         
@@ -210,19 +210,19 @@ class Tokamak(object):
             if self.boundary_lcfs and not time is None and self.boundary > 0:
                 #get the separatrix
                 rho,magr,magz=self.mag_equilibrium(time,surf_slice=[-1,],rho=1)
-                coords = hstack((magr,magz))[:,:,0]
+                coords = np.hstack((magr,magz))[:,:,0]
             else:
                 coords = self.vessel_boundary
       
-        if any(coords[-1,:] != coords[0,:]) and linalg.norm(coords[-1,:]-coords[0,:])<1e-10:
+        if np.any(coords[-1,:] != coords[0,:]) and np.linalg.norm(coords[-1,:]-coords[0,:])<1e-10:
             #rounding error
             coords[0,:] = coords[-1,:]
-        elif any(coords[-1,:] != coords[0,:]):
-            coords = r_[coords, coords[(0,),:]]
+        elif np.any(coords[-1,:] != coords[0,:]):
+            coords = np.r_[coords, coords[(0,),:]]
         
         try:
             tckp,u = splprep(coords.T,s=1e-5,k=k, per=1)
-            boundary_p = array(splev(linspace(0,1,N),tckp)).T
+            boundary_p = np.array(splev(np.linspace(0,1,N),tckp)).T
         except:
             return coords
 
@@ -234,11 +234,11 @@ class Tokamak(object):
     def prepare_tokamak(self):
         debug('prepare_tokamak')
 
-        if True or not 'Tmat' in vars(self) or size(self.Tmat,1) != self.nx*self.ny :
+        if True or not 'Tmat' in vars(self) or np.size(self.Tmat,1) != self.nx*self.ny :
             from geom_mat_setting import geom_mat_setting
             self.Tmat , self.Xchords, self.Ychords = geom_mat_setting(self,self.nx,  self.ny, self.virt_chord)
         
-        self.correction_matrix = ones(self.npix)  # correction of artifacts in creation of the weigthing matrix 
+        self.correction_matrix = np.ones(self.npix)  # correction of artifacts in creation of the weigthing matrix 
 
         # First guess of emissivity, can improve first step and convergence ??
         print("===========create tokamak===========")
@@ -249,7 +249,7 @@ class Tokamak(object):
         debug( "object tokamak done")
 
 
-    def get_data(self, failsave = True,tmin = -infty,tmax = infty,return_err=False,tind=None):
+    def get_data(self, failsave = True,tmin = -np.inf,tmax = np.inf,return_err=False,tind=None):
         """
         Returns loaded data from cache -> prevents memory issues
         """        
@@ -260,7 +260,7 @@ class Tokamak(object):
             
             
             debug( 'load from cache')
-            d = load(self.geometry_path+'data_cache.npz')
+            d = np.load(self.geometry_path+'data_cache.npz')
 
             if d['shot'] != self.shot:
                 raise  Exception('wrong shot number')
@@ -276,8 +276,8 @@ class Tokamak(object):
             data = d['data']
             tvec = d['tvec']
 
-            assert shape(data)[0] == len(tvec), "Wrong size of saved data,\
-                regenerate data !!" + str(shape(data)) + " "+str(shape(self.dets))
+            assert np.shape(data)[0] == len(tvec), "Wrong size of saved data,\
+                regenerate data !!" + str(np.shape(data)) + " "+str(np.shape(self.dets))
                 
             t_ind = slice(*tvec.searchsorted([tmin,tmax]))
    
@@ -304,27 +304,27 @@ class Tokamak(object):
         class tokamak. The expected errors are partially constant and partialy depends on emissivity
         """
         N,ndet = data.shape
-        error  = fabs(data)+1e-10
+        error  = np.fabs(data)+1e-10
         std_offset,saturated = self.get_data(return_err=True)
         std_offset = std_offset[t_ind]
         
-        if std_offset is None or size(std_offset) == 1: #not defined
-            std_offset = zeros_like(data[0])
+        if std_offset is None or np.size(std_offset) == 1: #not defined
+            std_offset = np.zeros_like(data[0])
 
-        if saturated is None or size(saturated) == 1: #not defined
-            saturated = zeros_like(data,dtype='bool')
+        if saturated is None or np.size(saturated) == 1: #not defined
+            saturated = np.zeros_like(data,dtype='bool')
         else:
             saturated = saturated[t_ind]
   
-        saturated |= data < - abs(mean(data))*0.1  #sometimes are saturated channels negative
-        std_offset[isnan(std_offset)] = 0   #error from the remooving of the offset
+        saturated |= data < - np.abs(np.mean(data))*0.1  #sometimes are saturated channels negative
+        std_offset[np.isnan(std_offset)] = 0   #error from the remooving of the offset
         
    
 
         ind = slice(None,None)   if N < 1000 else random.randint(N,size=1000)
         tmp_error = error[ind]
         if N>10:  m = mquantiles(tmp_error, 0.9,axis=0)
-        else:     m = nanmean(tmp_error,axis=0)
+        else:     m = np.nanmean(tmp_error,axis=0)
 
         
         Nsmooth = max(1,N//20)
@@ -332,20 +332,20 @@ class Tokamak(object):
 
         error = (1/error[:(N/Nsmooth)*Nsmooth].reshape(N//Nsmooth, Nsmooth,ndet)).mean(1)
         error[error!= 0] = error[error!= 0]
-        error[error== 0] = infty
-        error = 1/repeat(c_[error.T, error.T[:,-1]], Nsmooth, 1)[:,:N].T        
+        error[error== 0] = np.inf
+        error = 1/np.repeat(np.c_[error.T, error.T[:,-1]], Nsmooth, 1)[:,:N].T        
 
-        error[(data.mean(0) <= 1e-6)|isnan(error)] = infty
-        error[saturated] = infty
+        error[(data.mean(0) <= 1e-6)|np.isnan(error)] = np.inf
+        error[saturated] = np.inf
 
-        error = sqrt(error, out = error)   # ugly fix for old  numpy
+        error = np.sqrt(error, out = error)   # ugly fix for old  numpy
  
-        error *= self.sigma*sqrt(abs(m))
+        error *= self.sigma*np.sqrt(np.abs(m))
 
-        error += self.min_error * nanmean(data.ravel())
+        error += self.min_error * np.nanmean(data.ravel())
         error += std_offset
 
-        if any(isnan(error)):
+        if np.any(np.isnan(error)):
             print('nans in errors')
 
         return error
@@ -379,7 +379,7 @@ class Tokamak(object):
             try:
                 assert  preferCache, 'Load regulary data'   #  (self.name == "JET" and self.local_network)
                 
-                d = load( mag_path )
+                d = np.load( mag_path )
                 
 
                 self.tsurf = d['tsurf']
@@ -395,10 +395,10 @@ class Tokamak(object):
                 if self.name == 'JET':   
                     #Correction of wrong equilibria from JET!!!
 
-                    R = mean(std(magx, axis = 0), axis = 1)
-                    ind  = argsort(R)
-                    self.magx = zeros((ntheta,nrho+1,nt))
-                    self.magy = zeros((ntheta,nrho+1,nt))
+                    R = np.mean(np.std(magx, axis = 0), axis = 1)
+                    ind  = np.argsort(R)
+                    self.magx = np.zeros((ntheta,nrho+1,nt))
+                    self.magy = np.zeros((ntheta,nrho+1,nt))
 
                     self.magx[:,1:,:] = magx[:,ind,:]
                     self.magy[:,1:,:] = magy[:,ind,:]
@@ -420,7 +420,7 @@ class Tokamak(object):
                 self.load_mag_equilibrium()
                 
         
-        rho = linspace(0,1,self.magx.shape[1])[surf_slice]
+        rho = np.linspace(0,1,self.magx.shape[1])[surf_slice]
         magx = self.magx[:,surf_slice,:]
         magy = self.magy[:,surf_slice,:]
 
@@ -428,8 +428,8 @@ class Tokamak(object):
         if not dryRun:
             # FIXME in case when the data are out of intepolation range
 
-            tvec = copy(tvec)
-            tvec = reshape(tvec, (-1))
+            tvec = np.copy(tvec)
+            tvec = np.reshape(tvec, (-1))
 
             tvec[tvec < self.tsurf[0]] = self.tsurf[0]
             tvec[tvec > self.tsurf[-1]] = self.tsurf[-1]
@@ -444,11 +444,11 @@ class Tokamak(object):
 
             else:
                 # save memory usage
-                ind = slice(max(0,self.tsurf.searchsorted(amin(tvec))-1), 
-                            self.tsurf.searchsorted(amax(tvec)))
+                ind = slice(max(0,self.tsurf.searchsorted(np.amin(tvec))-1), 
+                            self.tsurf.searchsorted(np.amax(tvec)))
 
-                magx = mean(magx[:,:,ind],2)   #take mean field during tvec and omitted the center of field [:,0]
-                magy = mean(magy[:,:,ind],2)
+                magx = np.mean(magx[:,:,ind],2)   #take mean field during tvec and omitted the center of field [:,0]
+                magy = np.mean(magy[:,:,ind],2)
         
             from shared_modules import read_config
 
@@ -465,17 +465,17 @@ class Tokamak(object):
                 x_shift = self.magfield_shift[0]+rho*(self.magfield_shift_lcfs[0]-self.magfield_shift[0])
                 y_shift = self.magfield_shift[1]+rho*(self.magfield_shift_lcfs[1]-self.magfield_shift[1])
 
-                if ndim(magx) == 3:
+                if np.ndim(magx) == 3:
                     magx += x_shift[:,None]*self.norm
                     magy += y_shift[:,None]*self.norm
                 else:
                     magx += x_shift*self.norm
                     magy += y_shift*self.norm
                     
-        if self.radial_coordinate == 'r_a'  and size(rho)>1:
+        if self.radial_coordinate == 'r_a'  and np.size(rho)>1:
             rho,magx, magy = self.convert_rho_2_r_a(rho, magx,magy)
         
-        if self.radial_coordinate == 'r_V'  and size(rho)>1:
+        if self.radial_coordinate == 'r_V'  and np.size(rho)>1:
             rho,magx, magy = self.convert_rho_2_r_V(rho, magx,magy)
  
                     
@@ -484,36 +484,36 @@ class Tokamak(object):
                  
     def convert_rho_2_r_a(self, rho, magx,magy ):
         #convert from rho_pol to r/a 
-        r_a  = hypot(magx-magx[:,(0,)], magy-magy[:,(0,)]).mean(0)
-        lfs = amax(magx,axis=0)
-        hfs = amin(magx,axis=0)
+        r_a  = np.hypot(magx-magx[:,(0,)], magy-magy[:,(0,)]).mean(0)
+        lfs = np.amax(magx,axis=0)
+        hfs = np.amin(magx,axis=0)
         r_a = (lfs-hfs)/2
 
         i_rho_sep = rho.searchsorted(1)
         r_a /= r_a[(i_rho_sep,)]
         if magx.ndim == 2:
-            r_a = squeeze(r_a)
-            magx[:] = interp1d(r_a, magx,axis=1,assume_sorted=True)(minimum(rho, r_a[-1]))
-            magy[:] = interp1d(r_a, magy,axis=1,assume_sorted=True)(minimum(rho, r_a[-1]))
+            r_a = np.squeeze(r_a)
+            magx[:] = interp1d(r_a, magx,axis=1,assume_sorted=True)(np.minimum(rho, r_a[-1]))
+            magy[:] = interp1d(r_a, magy,axis=1,assume_sorted=True)(np.minimum(rho, r_a[-1]))
         else:
             for it in range(magx.shape[2]): #slowest
-                magx[:,:,it] = interp1d(r_a[:,it], magx[:,:,it],axis=1,assume_sorted=True)(minimum(rho, r_a[-1,it]))
-                magy[:,:,it] = interp1d(r_a[:,it], magy[:,:,it],axis=1,assume_sorted=True)(minimum(rho, r_a[-1,it]))
+                magx[:,:,it] = interp1d(r_a[:,it], magx[:,:,it],axis=1,assume_sorted=True)(np.minimum(rho, r_a[-1,it]))
+                magy[:,:,it] = interp1d(r_a[:,it], magy[:,:,it],axis=1,assume_sorted=True)(np.minimum(rho, r_a[-1,it]))
   
     def convert_rho_2_r_V(self,rho, magx,magy, ):
         #convert from rho_pol to r_V
         i_rho_sep = rho.searchsorted(1)
 
-        V = sum(2*pi*((magx[1:]+roll(magx[1:],1,0))/2)**2*(magy[1:]-roll(magy[1:],1,0)),0)/2
-        r_V = sqrt(maximum(0,V/V[i_rho_sep]))
+        V = np.sum(2*np.pi*((magx[1:]+np.roll(magx[1:],1,0))/2)**2*(magy[1:]-np.roll(magy[1:],1,0)),0)/2
+        r_V = np.sqrt(np.maximum(0,V/V[i_rho_sep]))
        
         if magx.ndim == 2:
-            magx[:] = interp1d(r_V, magx,axis=1,assume_sorted=True)(minimum(rho, r_V[-1]))
-            magy[:] = interp1d(r_V, magy,axis=1,assume_sorted=True)(minimum(rho, r_V[-1]))
+            magx[:] = interp1d(r_V, magx,axis=1,assume_sorted=True)(np.minimum(rho, r_V[-1]))
+            magy[:] = interp1d(r_V, magy,axis=1,assume_sorted=True)(np.minimum(rho, r_V[-1]))
         else:
             for it in range(magx.shape[2]): #slowest
-                magx[:,:,it] = interp1d(r_V[:,it], magx[:,:,it],axis=1,assume_sorted=True)(minimum(rho, r_V[-1,it]))
-                magy[:,:,it] = interp1d(r_V[:,it], magy[:,:,it],axis=1,assume_sorted=True)(minimum(rho, r_V[-1,it]))
+                magx[:,:,it] = interp1d(r_V[:,it], magx[:,:,it],axis=1,assume_sorted=True)(np.minimum(rho, r_V[-1,it]))
+                magy[:,:,it] = interp1d(r_V[:,it], magy[:,:,it],axis=1,assume_sorted=True)(np.minimum(rho, r_V[-1,it]))
 
 
 
@@ -523,10 +523,10 @@ class Tokamak(object):
             raise Exception('for r_a coordinate is not posssible to calculate mag_theta_star!!')
             
         n_theta, n_rho = magr.shape
-        theta = linspace(0,2*pi,n_theta,endpoint=False)
+        theta = np.linspace(0,2*np.pi,n_theta,endpoint=False)
 
         #is it OK?
-        magr, magz = copy(magr.T), copy(magz.T)
+        magr, magz = np.copy(magr.T), np.copy(magz.T)
         
         r0,z0 = magr[0].mean(), magz[0].mean()
         #calculate gradient of Phi with resoect to R and z
@@ -534,13 +534,13 @@ class Tokamak(object):
         magz[0] +=  (magz[1]-magz[0])/100
 
 
-        drdrho,drtheta = gradient(magr)
-        dzdrho,dztheta = gradient(magz)
-        dpsidrho,dpsitheta = gradient(tile(rho**2, (n_theta,1)).T )
+        drdrho,drtheta = np.gradient(magr)
+        dzdrho,dztheta = np.gradient(magz)
+        dpsidrho,dpsitheta = np.gradient(np.tile(rho**2, (n_theta,1)).T )
 
-        grad_rho = dstack((drdrho,dzdrho,dpsidrho ))
-        grad_theta = dstack((drtheta,dztheta,dpsitheta))
-        normal = cross(grad_rho,grad_theta,axis=-1)
+        grad_rho = np.dstack((drdrho,dzdrho,dpsidrho ))
+        grad_theta = np.dstack((drtheta,dztheta,dpsitheta))
+        normal = np.cross(grad_rho,grad_theta,axis=-1)
 
                 
 
@@ -550,21 +550,21 @@ class Tokamak(object):
     #WARNING not defined on the magnetics axis
 
         dtheta_star = ((magr-r0)**2+(magz-z0)**2)/(dpsi_dz*(magz-z0)+dpsi_dr*(magr-r0))/magr
-        theta = arctan2(magz-z0,-magr+r0)
+        theta = np.arctan2(magz-z0,-magr+r0)
 
         
-        theta = unwrap(theta-theta[:,(0,)],axis=1)
+        theta = np.unwrap(theta-theta[:,(0,)],axis=1)
 
 
         
-        from scipy.integrate import cumtrapz
+        from scipy.integrate import cumulative_trapezoid
 
         #definition of the thetat star by integral
-        theta_star = cumtrapz(dtheta_star,theta,axis=1,initial=0)
+        theta_star = cumulative_trapezoid(dtheta_star,theta,axis=1,initial=0)
         correction = (n_theta-1.)/n_theta
-        if all(magr[:,0]==magr[:,-1]) and all(magz[:,0]==magz[:,-1]):
+        if np.all(magr[:,0]==magr[:,-1]) and np.all(magz[:,0]==magz[:,-1]):
             correction = 1
-        theta_star/= theta_star[:,(-1,)]/(2*pi)/correction     #normalize to 2pi
+        theta_star/= theta_star[:,(-1,)]/(2*np.pi)/correction     #normalize to 2pi
             
             
         if not rz_grid:
@@ -573,48 +573,48 @@ class Tokamak(object):
         
         from scipy.interpolate import LinearNDInterpolator, NearestNDInterpolator
         if not (self.boundary_lcfs and self.boundary) or rho.max() < 1:
-            bdx,bdy = self.get_boundary(size(magr,1),time=time).T
+            bdx,bdy = self.get_boundary(np.size(magr,1),time=time).T
         else:
             bdx,bdy = magr[-1], magz[-1]
         
-        magx_out = (bdx-mean(bdx))*extrapolate/rho[-1]+mean(bdx)
-        magy_out = (bdy-mean(bdy))*extrapolate/rho[-1]+mean(bdy)
+        magx_out = (bdx-np.mean(bdx))*extrapolate/rho[-1]+np.mean(bdx)
+        magy_out = (bdy-np.mean(bdy))*extrapolate/rho[-1]+np.mean(bdy)
         
-        Ninterp = NearestNDInterpolator(c_[magr[-1],magz[-1]],theta_star[-1])
-        magz = c_[magz.T, magy_out].T
-        magr = c_[magr.T, magx_out].T
+        Ninterp = NearestNDInterpolator(np.c_[magr[-1],magz[-1]],theta_star[-1])
+        magz = np.c_[magz.T, magy_out].T
+        magr = np.c_[magr.T, magx_out].T
         
-        theta_out = Ninterp(c_[ magx_out,magy_out ])
-        theta_star_ = c_[theta_star.T, theta_out].T
+        theta_out = Ninterp(np.c_[ magx_out,magy_out ])
+        theta_star_ = np.c_[theta_star.T, theta_out].T
 
 
-        cos_th, sin_th = cos(theta_star_), sin(theta_star_)
+        cos_th, sin_th = np.cos(theta_star_), np.sin(theta_star_)
         
 
-        Linterp = LinearNDInterpolator(c_[magr.ravel(),magz.ravel()], cos_th.ravel())
+        Linterp = LinearNDInterpolator(np.c_[magr.ravel(),magz.ravel()], cos_th.ravel())
         
         
         if nx is None: nx = self.nx
         if ny is None: ny = self.ny
 
         #centers of the pixels
-        xgridc = linspace(self.xmin,self.xmax,nx+1)
+        xgridc = np.linspace(self.xmin,self.xmax,nx+1)
         xgridc = (xgridc[1:]+xgridc[:-1])/2
-        ygridc = linspace(self.ymin,self.ymax,ny+1)
+        ygridc = np.linspace(self.ymin,self.ymax,ny+1)
         ygridc = (ygridc[1:]+ygridc[:-1])/2
         
-        BdMat = get_bd_mat(self, nx, ny ,boundary=c_[bdx,bdy])
+        BdMat = get_bd_mat(self, nx, ny ,boundary=np.c_[bdx,bdy])
 
-        X,Y = meshgrid(xgridc,ygridc)  #centers of pixels
+        X,Y = np.meshgrid(xgridc,ygridc)  #centers of pixels
         X,Y = X.flatten('F')[~BdMat],Y.flatten('F')[~BdMat]
-        cos_grid = Linterp(c_[X.ravel(),Y.ravel()]).reshape(X.shape)
+        cos_grid = Linterp(np.c_[X.ravel(),Y.ravel()]).reshape(X.shape)
         Linterp.values[:,0] = sin_th.ravel()#trick save a some  computing time
-        sin_grid = Linterp(c_[X.ravel(),Y.ravel()]).reshape(X.shape)  
+        sin_grid = Linterp(np.c_[X.ravel(),Y.ravel()]).reshape(X.shape)  
        
-        theta_star_ = arctan2(sin_grid, cos_grid)
+        theta_star_ = np.arctan2(sin_grid, cos_grid)
         
     
-        theta_star_rz = zeros((nx,ny))
+        theta_star_rz = np.zeros((nx,ny))
         theta_star_rz.flat[~BdMat] =  theta_star_
         
        
@@ -624,10 +624,10 @@ class Tokamak(object):
     def prepare_emiss0(self, time):
         
         from phantom_generator import phantom_generator
-        self.emiss_0 = phantom_generator(self,asarray(time), self.nx, self.ny, 
+        self.emiss_0 = phantom_generator(self,np.asarray(time), self.nx, self.ny, 
                                         profile = self.rad_profile )[3]
 
-        self.emiss_0  = reshape(self.emiss_0, (-1,1))
+        self.emiss_0  = np.reshape(self.emiss_0, (-1,1))
         
         
         
@@ -667,7 +667,7 @@ class Tokamak(object):
 
         data_smooth = min(max(int(data_smooth),1), len(tvec))
         
-        data,error = copy(data.T), copy(error.T) 
+        data,error = np.copy(data.T), np.copy(error.T) 
      
 
         Tmat = self.Tmat if hasattr(self,'Tmat') else None
@@ -679,31 +679,31 @@ class Tokamak(object):
             
     
         self.nl = len(dets)  #number of LOS
-        mean_data = mean(data)
+        mean_data = np.mean(data)
         
      
         if self.use_median_filter and data_smooth < 1000:
             debug('Median filter of data ')
             for j in dets:   
                 data[j]    = medfilt(data[j], (data_smooth//2)*2+1)
-                if not all(isfinite(error[j])):   continue
+                if not np.all(np.isfinite(error[j])):   continue
                 error[j] = 1/medfilt(1/error[j], (data_smooth//2)*2+1)
 
                 
-        elif size(data,1) > 1 and data_smooth > 1:
+        elif np.size(data,1) > 1 and data_smooth > 1:
             for i in dets: 
-                ind = (isfinite(error[i])) & (error[i] > 0)
-                if sum(ind) > data_smooth:
+                ind = (np.isfinite(error[i])) & (error[i] > 0)
+                if np.sum(ind) > data_smooth:
                     error[i,ind] =  1./MovingAveradge(1./error[i,ind],data_smooth,-1)
-                error[i,~ind] = infty
-                data[i] = MovingAveradge(copy(data[i]),data_smooth)
+                error[i,~ind] = np.inf
+                data[i] = MovingAveradge(np.copy(data[i]),data_smooth)
         
         imin,imax = tvec.searchsorted((tmin,tmax))
         t_ind = slice(imin,imax+1, data_undersampling)
 
         nerr =  max(min(5,data_smooth ),2)
 
-        du = max(1,int(round(min(data_smooth, len(tvec))/float(nerr))))
+        du = max(1,int(np.round(min(data_smooth, len(tvec))/float(nerr))))
 
         data_reshaped = data[:,:len(tvec)//du*du].reshape(-1,len(tvec)//du,du)
         data_reshaped = data_reshaped.mean(-1)
@@ -711,8 +711,8 @@ class Tokamak(object):
         du2 = min(nerr, nt)
 
         data_reshaped = data_reshaped[:,:nt//du2*du2].reshape(-1,nt//du2,du2)
-        data_reshaped = diff(data_reshaped, axis=2)
-        std_data = einsum('ijk,ijk->ij', data_reshaped,data_reshaped)/(du2-1)-data_reshaped.mean(2)**2
+        data_reshaped = np.diff(data_reshaped, axis=2)
+        std_data = np.einsum('ijk,ijk->ij', data_reshaped,data_reshaped)/(du2-1)-data_reshaped.mean(2)**2
 
         std_tvec = tvec[:len(tvec)//du*du].reshape(len(tvec)//du,du)
         std_tvec = std_tvec.mean(-1)
@@ -722,35 +722,35 @@ class Tokamak(object):
 
         
         std_data[std_data<0] = 0  #numerical errors
-        std_data[~isfinite(std_data)] = 0  #overflow
+        std_data[~np.isfinite(std_data)] = 0  #overflow
         
-        std_data = sqrt(std_data)
-        std_data/= sqrt(du2)
+        std_data = np.sqrt(std_data)
+        std_data/= np.sqrt(du2)
 
 
         data  = data[:,t_ind]   #use every n-th snapshot
         error = error[:,t_ind]
         tvec  =  tvec[t_ind]
 
-        error /= sqrt(sqrt(data_smooth)) #just guess!!
+        error /= np.sqrt(np.sqrt(data_smooth)) #just guess!!
         std_tvec[[0,-1]] =  tvec[0],  tvec[-1]
         if len(std_tvec) > 1 or len(std_tvec) != len(tvec):
             error+= interp1d( std_tvec, std_data,axis=1,assume_sorted=True)(tvec)
         else:
             error+= std_data
 
-        if any(isnan(data)): debug( 'data prepare nan!!')
+        if np.any(np.isnan(data)): debug( 'data prepare nan!!')
         ind_correct = self.get_correct_dets(data)
 
         dets_index = self.dets_index
-        self.calb = array(self.get_calb())
+        self.calb = np.array(self.get_calb())
   
         
-        if not all(self.calb==1):
+        if not np.all(self.calb==1):
             if len(self.calb) == self.Ndets:
                 for i in range(self.Ndets):
-                    data[dets_index[i], :] *= mean(self.calb[i])   # if case of different time vector
-                    error[dets_index[i], :] *= mean(self.calb[i]) 
+                    data[dets_index[i], :] *= np.mean(self.calb[i])   # if case of different time vector
+                    error[dets_index[i], :] *= np.mean(self.calb[i]) 
             elif len(self.calb) == self.nl:
                 data*= self.calb[:,None]
                 error*= self.calb[:,None]
@@ -760,7 +760,7 @@ class Tokamak(object):
         dets = dets[ind_correct]
 
         if detsCutOff:
-            if not any(ind_correct):
+            if not np.any(ind_correct):
                 raise Exception('All data channels was removed!! ')
 
             if Tmat!= None: Tmat= Tmat[dets,:]
@@ -770,19 +770,19 @@ class Tokamak(object):
     
             
         if len(tvec) > 2: #remove "blocked detectors"
-            error[:,all(abs(data-nanmean(data))<1e-3,0)]  = infty
+            error[:,np.all(np.abs(data-np.nanmean(data))<1e-3,0)]  = np.inf
         
-        normData = nanmax(data, axis=0) + nanmax(data)*1e-6
+        normData = np.nanmax(data, axis=0) + np.nanmax(data)*1e-6
 
         gc.collect()
 
         error *= error_scale
         
         
-        if data.dtype != float32 or error.dtype != float32:
+        if data.dtype != np.float32 or error.dtype != np.float32:
             print('Warning Data or error are not in a single precision', data.dtype, error.dtype)
-            data = data.astype(float32, copy=False)
-            error = error.astype(float32, copy=False)
+            data = data.astype(np.float32, copy=False)
+            error = error.astype(np.float32, copy=False)
 
         debug( "prepare data done")
        
@@ -811,17 +811,17 @@ class Tokamak(object):
                     
                 if len(shots):
                     shots.sort()
-                    ifile = argmin(abs(array(shots)-self.shot))
+                    ifile = np.argmin(np.abs(np.array(shots)-self.shot))
                     calib_file = self.geometry_path+'calibration'+os.sep+'%d.txt'%(shots[ifile])
  
             #BUG OLD AND NEW FORMAT OF THE CALIBRATION FILES
             try:
-                cams,calb_ = loadtxt(calib_file, dtype={'names': ('cam', 'calib'),'formats': ('S4', 'd')}, unpack=True)
+                cams,calb_ = np.loadtxt(calib_file, dtype={'names': ('cam', 'calib'),'formats': ('S4', 'd')}, unpack=True)
             except:
                 #old format
                 try:
-                    calb_ = asarray(loadtxt(calib_file))
-                    cams = asarray(list(self.detectors_dict.keys()))
+                    calb_ = np.asarray(np.loadtxt(calib_file))
+                    cams = np.asarray(list(self.detectors_dict.keys()))
                     f = open(calib_file, 'w')
                     for k,i in zip(cams, calb_):
                         f.write('%s  %.3f\n'%( k,i ))
@@ -833,9 +833,9 @@ class Tokamak(object):
                     calb_ = {c:c_ for c,c_ in zip(cams,calb_)}
                     try:
                         calb_ = [calb_[c] for c in list(self.detectors_dict.keys())]
-                        if size(calb_) in (self.Ndets,self.nl):    calb = calb_ 
+                        if np.size(calb_) in (self.Ndets,self.nl):    calb = calb_ 
                         else:
-                            print('wrong length of the calibration file', size(calb_), size(self.dets_index), self.Ndets)
+                            print('wrong length of the calibration file', np.size(calb_), np.size(self.dets_index), self.Ndets)
                     except Exception as e:
                         print(e)
                                     
@@ -852,30 +852,30 @@ class Tokamak(object):
             f.close()    
             
 
-        calb = asarray(calb)
-        calb[(calb == 0)|~isfinite(calb)] = 1  
+        calb = np.asarray(calb)
+        calb[(calb == 0)|~np.isfinite(calb)] = 1  
    
         return calb
 
     def get_correct_dets(self, data = None, wrong_dets = [] , include_pref  = True):
 
-        ind_correct = ones_like(self.dets, dtype=bool)
+        ind_correct = np.ones_like(self.dets, dtype=bool)
         if include_pref:
-            ind_correct &= ~in1d(self.dets, config.wrong_dets_pref)         # is in "wrong_dets_pref"       
-   
-        ind_correct &= ~in1d(self.dets, self.wrong_dets_damaged)         # is in damaged detectors,
-        ind_correct &= ~in1d(self.dets, wrong_dets)
+            ind_correct &= ~np.isin(self.dets, config.wrong_dets_pref)         # is in "wrong_dets_pref"
+
+        ind_correct &= ~np.isin(self.dets, self.wrong_dets_damaged)         # is in damaged detectors,
+        ind_correct &= ~np.isin(self.dets, wrong_dets)
         
   
 
         if not data is None:
-            if any(isnan(data)):
+            if np.any(np.isnan(data)):
                 debug( 'NaNs in the data detected!!')
         
-                ind_correct &= ~any(isnan(data),1)             # have NaN values
+                ind_correct &= ~np.any(np.isnan(data),1)             # have NaN values
 
             if not self.camera:
-                ind_correct[ind_correct]= ~all(data[ind_correct]<=1e-5,1)                 # selected range values are zeros
+                ind_correct[ind_correct]= ~np.all(data[ind_correct]<=1e-5,1)                 # selected range values are zeros
 
         return ind_correct
 

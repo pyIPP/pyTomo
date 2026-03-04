@@ -165,10 +165,10 @@ def imp_analysis( input_data):
     W = array([interp(rho,r, p ) for r,p in zip( rho_data, W)])
     W_low = array([interp(rho,r, p ) for r,p in zip( rho_data, W_low)])
     W_high = array([interp(rho,r, p ) for r,p in zip( rho_data, W_high)])
-    W_high[isnan(W_high)] = infty
+    W_high[isnan(W_high)] = inf
      
-    W_high[isnan(W_high)] = infty
-    BR_high[isnan(BR_high)] = infty
+    W_high[isnan(W_high)] = inf
+    BR_high[isnan(BR_high)] = inf
 
 
 
@@ -240,7 +240,7 @@ def imp_analysis( input_data):
     for l in leg.legendHandles:  l.set_linewidth(10)
     ax[0].yaxis.set_major_locator(MaxNLocator(5))
         
-    ax[1].set_ylabel('$10^4\ c_W$',fontsize=13)
+    ax[1].set_ylabel('$10^4 c_W$',fontsize=13)
     ax[1].set_xlabel(tokamak.rho_label ,fontsize=15)
     ax[1].yaxis.set_major_locator(MaxNLocator(5))
     
@@ -300,7 +300,7 @@ def imp_analysis( input_data):
                 cw_plot.set_ydata(cw[it])
             
             
-            ax[1].set_ylabel('$10^4\ c_W$',fontsize=13)
+            ax[1].set_ylabel('$10^4 c_W$',fontsize=13)
             ax[1].set_xlabel(tokamak.rho_label,fontsize=15)
             ax[1].yaxis.set_major_locator(MaxNLocator(5))
             if plot_loglin:

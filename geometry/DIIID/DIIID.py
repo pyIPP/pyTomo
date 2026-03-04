@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #AUTOR: Tomas Odstrcil  odstrcilt@fusion.gat.com
 
-from numpy import *
+import numpy as np
 import sys,os
 from matplotlib.pyplot import *
 from tokamak import Tokamak
@@ -35,10 +35,10 @@ postprocessing.
     :var double xmin, xmax, ymin, ymax: boundarys of recontructed area of 
 tokamak emissivity
     :var str geometry_path: Path to saved geometry, boundary or data
-    :var double sigma:  Expected noise in data  += ``sigma``* sqrt(data) * 
-sqrt(max(data))  (Poisson like noise)
+    :var double sigma:  Expected noise in data  += ``sigma``* np.sqrt(data) * 
+np.sqrt(max(data))  (Poisson like noise)
     :var double min_error: Expected noise in data  += ``min_error`` * 
-sqrt(max(data))
+np.sqrt(max(data))
     :var int shot:  NUmber of selected shot
     :var int norm: Used to normalize input parameters to meters
     :var str t_name:  Physical units used to measure time for the tokamak
@@ -148,9 +148,9 @@ sqrt(max(data))
     
         self.VesselStructures()
         if 'inner boundary' in self.struct_dict:
-            self.vessel_boundary = array(self.struct_dict['inner boundary']).T
+            self.vessel_boundary = np.array(self.struct_dict['inner boundary']).T
         else:
-            self.vessel_boundary = loadtxt(path+border_file)
+            self.vessel_boundary = np.loadtxt(path+border_file)
 
        
         Tokamak.__init__(self, input_parameters, input_diagn, coord,
@@ -248,12 +248,12 @@ sqrt(max(data))
                 for k, i in loader2.detectors_dict.items():
                     self.detectors_dict[k] = i
                 
-                self.calb_0 = r_[self.calb_0,loader2.calb_0]
+                self.calb_0 = np.r_[self.calb_0,loader2.calb_0]
                 
                 self.dets_index+=[ind+self.nl for ind in  loader2.dets_index]
                 self.Phi += [loader2.Phi[k] for k in list(loader2.detectors_dict.keys())]
               
-                self.dets = r_[ self.dets, self.nl+loader2.dets]
+                self.dets = np.r_[ self.dets, self.nl+loader2.dets]
                 self.tvec2 = loader2.tvec
                 self.nl +=  loader2.nl
             except:
@@ -265,7 +265,7 @@ sqrt(max(data))
         if not fast_data: 
             self.sample_freq = 1e3  #data are downsampled
             
-        self.Phi = deg2rad(hstack(self.Phi))
+        self.Phi = np.deg2rad(np.hstack(self.Phi))
 
     def BOLO(self):
         
@@ -312,14 +312,14 @@ sqrt(max(data))
 
     def get_psi(self, tvec,xgridc, ygridc):
         eqm = self.init_equ()
-        R,Z = meshgrid(xgridc,ygridc)
+        R,Z = np.meshgrid(xgridc,ygridc)
         Psi = eqm.rz2rho(R[None],Z[None],tvec,coord_out='Psi')  
       
-        return squeeze(sqrt(maximum(0,Psi)))
+        return np.squeeze(np.sqrt(np.maximum(0,Psi)))
     
     def get_mag_contours(self,tvec,rho):
         eqm = self.init_equ()
-        eqm.psi0 = eqm.t_eq*nan
+        eqm.psi0 = eqm.t_eq*np.nan
         eqm.eq_open=True        
         
         return eqm.rho2rz(rho**2, tvec,'Psi',True)  
@@ -338,14 +338,14 @@ sqrt(max(data))
 
   
             
-    def get_data(self, failsave = True,tmin = -infty,tmax = infty):
+    def get_data(self, failsave = True,tmin = -np.inf,tmax = np.inf):
 
         t = time.time()
         global loader
 
     
         tvec, data, error = loader.get_data(tmin,tmax)
-        wrong_dets_damaged = where(in1d(loader.all_los,loader.wrong_dets_damaged))[0]
+        wrong_dets_damaged = np.where(np.isin(loader.all_los,loader.wrong_dets_damaged))[0]
       
 
         if self.input_diagn in ['SXR', 'SXR fast']:
@@ -353,27 +353,27 @@ sqrt(max(data))
             if loader2 is not None:
                 tvec2, data2, error2 = loader2.get_data(tmin,tmax)
                 nt = min(tvec.size, tvec2.size)
-                data = hstack((data[:nt], data2[:nt]))
-                error = hstack((error[:nt],error2[:nt]))
+                data = np.hstack((data[:nt], data2[:nt]))
+                error = np.hstack((error[:nt],error2[:nt]))
                 tvec = tvec[:nt]
                 #BUG funguje to i pro rychla data?
 
-                wrong_dets_damaged2 = where(in1d(loader2.all_los,loader2.wrong_dets_damaged))[0]
-                wrong_dets_damaged = r_[wrong_dets_damaged,wrong_dets_damaged2+loader.nl]
+                wrong_dets_damaged2 = np.where(np.isin(loader2.all_los,loader2.wrong_dets_damaged))[0]
+                wrong_dets_damaged = np.r_[wrong_dets_damaged,wrong_dets_damaged2+loader.nl]
              
-                O = zeros((loader.nl,loader2.nl))
+                O = np.zeros((loader.nl,loader2.nl))
               
             
-        self.wrong_dets_damaged  = unique(r_[self.wrong_dets_damaged,wrong_dets_damaged])
+        self.wrong_dets_damaged  = np.unique(np.r_[self.wrong_dets_damaged,wrong_dets_damaged])
        
         ind_t = slice(None,None)
-        if  len(tvec) > 5000:  ind_t = random.randint(len(tvec),size=1000)
-        
-        mean_data = nanmean(data[ind_t],axis=0)
+        if  len(tvec) > 5000:  ind_t = np.random.randint(len(tvec),size=1000)
+
+        mean_data = np.nanmean(data[ind_t],axis=0)
 
        #include also "nonstatistical noise"  by min_error and sigma
-        error =  hypot(error, single(mean_data*self.sigma),out=error)
-        error += abs(mean_data)*self.min_error
+        error =  np.hypot(error, np.single(mean_data*self.sigma),out=error)
+        error += np.abs(mean_data)*self.min_error
 
         print('loading time: %.1f s'%( time.time()-t))
 
@@ -420,7 +420,7 @@ sqrt(max(data))
                     for diag,mag_exp,mag_ed  in eq_diags:
                         stat = eqm.Open(self.shot, diag=diag, exp=mag_exp, ed=mag_ed)
                        
-                        if stat and size(eqm.t_eq) >2 : break
+                        if stat and np.size(eqm.t_eq) >2 : break
                         warning('Warning: equlibrium for shot:%d diag:%s  exp:%s  ed:%d  was not found!! other will be used'%(self.shot,diag,mag_exp,mag_ed))
 
                     if not stat:
@@ -453,7 +453,7 @@ sqrt(max(data))
             
                 try:
                         
-                    pfm = copy(eqm.pfm)
+                    pfm = np.copy(eqm.pfm)
                     pfm-= eqm.psi0
                     pfm/= (eqm.psix-eqm.psi0)
                     pfm_tvec = eqm.t_eq
@@ -465,7 +465,7 @@ sqrt(max(data))
                     pass
            
            
-                savez_compressed(eq_path,diag=mag_diag,exp=self.mag_exp,
+                np.savez_compressed(eq_path,diag=mag_diag,exp=self.mag_exp,
                                 ed=self.mag_ed,**output)
 
 
@@ -473,7 +473,7 @@ sqrt(max(data))
 
       
         if os.path.isfile(eq_path) and not hasattr(self, 'surf_coeff'):
-            data = load(eq_path,allow_pickle=True)
+            data = np.load(eq_path,allow_pickle=True)
             self.tsurf = data['tsurf']
             self.surf_coeff = data['surf_coeff']
             mag_diag = data['diag'].item()
@@ -490,13 +490,13 @@ sqrt(max(data))
                 except:
                     self.PFM = {'pfm':data['pfm'],'t_eq':data['t_eq'],    'Rmesh':data['Rmesh'],'Zmesh':data['Zmesh']}
 
-        self.mag_dt = amax(diff(self.mag_axis['tvec']))
-        self.mag_axis['Rmag'] = copy(self.surf_coeff[:,-1,0,0])
-        self.mag_axis['Zmag'] = copy(self.surf_coeff[:,-1,0,1])
+        self.mag_dt = np.amax(np.diff(self.mag_axis['tvec']))
+        self.mag_axis['Rmag'] = np.copy(self.surf_coeff[:,-1,0,0])
+        self.mag_axis['Zmag'] = np.copy(self.surf_coeff[:,-1,0,1])
         self.surf_coeff[:,-1,0,:2] = 0
-        if size(self.mag_axis['ahor']) == 1 and (self.mag_axis['ahor'] is None or self.mag_axis['ahor'].item() is None):
-            self.mag_axis['ahor'] = ones_like(self.mag_axis['tvec'])
-            self.mag_axis['bver'] = ones_like(self.mag_axis['tvec'])
+        if np.size(self.mag_axis['ahor']) == 1 and (self.mag_axis['ahor'] is None or self.mag_axis['ahor'].item() is None):
+            self.mag_axis['ahor'] = np.ones_like(self.mag_axis['tvec'])
+            self.mag_axis['bver'] = np.ones_like(self.mag_axis['tvec'])
 
     def VesselStructures(self):
         self.struct_dict = {}
@@ -531,11 +531,11 @@ sqrt(max(data))
                 
         def surf_polyval(rho,theta, p_rcos,p_zcos,p_rsin,p_zsin):
             #evaluate equilibrium polynom
-            nmom = size(p_rcos,-1)
-            rho = atleast_1d(rho)
+            nmom = np.size(p_rcos,-1)
+            rho = np.atleast_1d(rho)
 
-            P = double(dstack((p_rcos,p_zcos,p_rsin,p_zsin)))
-            moments = zeros((nmom, 4, size(rho)))
+            P = np.double(np.dstack((p_rcos,p_zcos,p_rsin,p_zsin)))
+            moments = np.zeros((nmom, 4, np.size(rho)))
                 
             #horner scheme
             for p in P:
@@ -543,60 +543,60 @@ sqrt(max(data))
                 moments += p[:,:,None]
             
 
-            angle = outer(arange(nmom),theta )
-            C = cos(angle)
-            S = sin(angle)
-            r_plot = tensordot(moments[:,0].T,C,axes=([-1,0])) #rcos
-            r_plot+= tensordot(moments[:,2].T,S,axes=([-1,0])) #rsin
-            z_plot = tensordot(moments[:,1].T,C,axes=([-1,0])) #zcos
-            z_plot+= tensordot(moments[:,3].T,S,axes=([-1,0])) #zsin
+            angle = np.outer(np.arange(nmom),theta )
+            C = np.cos(angle)
+            S = np.sin(angle)
+            r_plot = np.tensordot(moments[:,0].T,C,axes=([-1,0])) #rcos
+            r_plot+= np.tensordot(moments[:,2].T,S,axes=([-1,0])) #rsin
+            z_plot = np.tensordot(moments[:,1].T,C,axes=([-1,0])) #zcos
+            z_plot+= np.tensordot(moments[:,3].T,S,axes=([-1,0])) #zsin
         
             
             return r_plot.T, z_plot.T
 
 
         if rho is None:
-            rho = linspace(0,1,n_rho)#[surf_slice]
-        tvec = atleast_1d(tvec).astype('double')
+            rho = np.linspace(0,1,n_rho)#[surf_slice]
+        tvec = np.atleast_1d(tvec).astype('double')
         
 
       
-        tvec  =  copy(tvec)
+        tvec  =  np.copy(tvec)
 
         tvec[tvec<self.tsurf[0]] = self.tsurf[0]
         tvec[tvec>self.tsurf[-1]] = self.tsurf[-1]
 
         
         
-        ind  = slice(max(0,searchsorted( self.tsurf, tvec.min()-self.mag_dt*2)-1), 
-                     min(len(self.tsurf),searchsorted( self.tsurf, tvec.max()+self.mag_dt*2)+1))
+        ind  = slice(max(0,np.searchsorted( self.tsurf, tvec.min()-self.mag_dt*2)-1), 
+                     min(len(self.tsurf),np.searchsorted( self.tsurf, tvec.max()+self.mag_dt*2)+1))
 
         from shared_modules import MovingAveradge
 
-        theta = linspace(-pi,pi,n_theta)
+        theta = np.linspace(-np.pi,np.pi,n_theta)
         fast_tvec = self.mag_axis['tvec']
 
         #calculate separatrix
         if len(tvec) > 1:
-            n_smooth = max(int(mean(diff(tvec))/mean(diff(fast_tvec))),1)
+            n_smooth = max(int(np.mean(np.diff(tvec))/np.mean(np.diff(fast_tvec))),1)
         else:
             n_smooth = sum((fast_tvec<tvec[-1]+self.mag_dt)&(fast_tvec>tvec[0]-self.mag_dt))
 
-        surf_coeff = copy(self.surf_coeff[ind])
+        surf_coeff = np.copy(self.surf_coeff[ind])
             
-        tsurf = copy(self.tsurf[ind])
+        tsurf = np.copy(self.tsurf[ind])
 
-        surf_coeff = interp1d(tsurf, surf_coeff,axis=0,copy=False, bounds_error=False, fill_value=nan)(tvec)
+        surf_coeff = interp1d(tsurf, surf_coeff,axis=0,copy=False, bounds_error=False, fill_value=np.nan)(tvec)
 
         if return_mean:
             ind_fast = slice(fast_tvec.searchsorted(tvec[0]-self.mag_dt),
                              fast_tvec.searchsorted(tvec[-1]+self.mag_dt)+1)
             
             #print self.mag_axis['ahor']
-            ahor = atleast_1d(median(self.mag_axis['ahor'][ind_fast]))
-            bver = atleast_1d(median(self.mag_axis['bver'][ind_fast]))
-            R0   = atleast_1d(median(self.mag_axis['Rmag'][ind_fast]))
-            Z0   = atleast_1d(median(self.mag_axis['Zmag'][ind_fast]))
+            ahor = np.atleast_1d(np.median(self.mag_axis['ahor'][ind_fast]))
+            bver = np.atleast_1d(np.median(self.mag_axis['bver'][ind_fast]))
+            R0   = np.atleast_1d(np.median(self.mag_axis['Rmag'][ind_fast]))
+            Z0   = np.atleast_1d(np.median(self.mag_axis['Zmag'][ind_fast]))
             
         else :
             fast_tvec = fast_tvec
@@ -609,16 +609,16 @@ sqrt(max(data))
             imin = max(0, imin-n_smooth-1 )
             imax = min(len(fast_tvec), imax+n_smooth+1 ) #BUG can couse problems at the begining and end
 
-            ahor = MovingAveradge(double(copy(self.mag_axis['ahor'][imin:imax])),n_smooth)
-            bver = MovingAveradge(double(copy(self.mag_axis['bver'][imin:imax])),n_smooth)
-            R0   = MovingAveradge(double(copy(self.mag_axis['Rmag'][imin:imax])),n_smooth)
-            Z0   = MovingAveradge(double(copy(self.mag_axis['Zmag'][imin:imax])),n_smooth)
+            ahor = MovingAveradge(np.double(np.copy(self.mag_axis['ahor'][imin:imax])),n_smooth)
+            bver = MovingAveradge(np.double(np.copy(self.mag_axis['bver'][imin:imax])),n_smooth)
+            R0   = MovingAveradge(np.double(np.copy(self.mag_axis['Rmag'][imin:imax])),n_smooth)
+            Z0   = MovingAveradge(np.double(np.copy(self.mag_axis['Zmag'][imin:imax])),n_smooth)
             mag_tvec = fast_tvec[imin:imax]
             
-            ahor = interp(tvec,mag_tvec, ahor)
-            bver = interp(tvec,mag_tvec, bver)
-            R0   = interp(tvec,mag_tvec,   R0)
-            Z0   = interp(tvec,mag_tvec,   Z0)
+            ahor = np.interp(tvec,mag_tvec, ahor)
+            bver = np.interp(tvec,mag_tvec, bver)
+            R0   = np.interp(tvec,mag_tvec,   R0)
+            Z0   = np.interp(tvec,mag_tvec,   Z0)
                 
 
              
@@ -651,31 +651,31 @@ sqrt(max(data))
 
 
         if  return_mean:      
-            p_rcos,p_zcos,p_rsin,p_zsin = mean(surf_coeff, 0).T
+            p_rcos,p_zcos,p_rsin,p_zsin = np.mean(surf_coeff, 0).T
             magx,magy = surf_polyval( rho ,theta, p_rcos.T,p_zcos.T,p_rsin.T,p_zsin.T)
 
         else:
             p_rcos,p_zcos,p_rsin,p_zsin = surf_coeff.T
             p_rcos,p_zcos,p_rsin,p_zsin = p_rcos.T,p_zcos.T,p_rsin.T,p_zsin.T
             
-            magx = empty((size(theta), size(rho),size(tvec)),dtype='single')
-            magy = empty((size(theta), size(rho),size(tvec)),dtype='single')
+            magx = np.empty((np.size(theta), np.size(rho),np.size(tvec)),dtype='single')
+            magy = np.empty((np.size(theta), np.size(rho),np.size(tvec)),dtype='single')
             
 
             for it, t in enumerate(tvec): #slowest
                 magx[:,:,it],magy[:,:,it] = surf_polyval( rho ,theta, p_rcos[it],p_zcos[it],p_rsin[it],p_zsin[it])
 
    
-        if any(isnan(magx)):
+        if np.any(np.isnan(magx)):
             raise Exception('nans in mag. surfaces!!')
         
         
         if radial_coordinate is None: radial_coordinate = self.radial_coordinate
         
-        if radial_coordinate == 'r_a'  and size(rho)>1:
+        if radial_coordinate == 'r_a'  and np.size(rho)>1:
             self.convert_rho_2_r_a(rho, magx,magy)
         
-        if radial_coordinate == 'r_V'  and size(rho)>1:
+        if radial_coordinate == 'r_V'  and np.size(rho)>1:
             self.convert_rho_2_r_V(rho, magx,magy)
         
         
@@ -691,11 +691,11 @@ sqrt(max(data))
         Calculate the radiation power density from bremsstrahlung radiation.
         This calcuation uses the popular formula in cgs/eV/A units giving power in W/cm**3
         or equivalently MW/m**3
-        power = [1.89e-28 * gff * n_e**2 * Zeff / (sqrt(T_e)*lambda**2)] * exp[-hc/(T_e*lambda)]
+        power = [1.89e-28 * gff * n_e**2 * Zeff / (np.sqrt(T_e)*lambda**2)] * exp[-hc/(T_e*lambda)]
         here gff = 1.35 T_e**0.15 and n_e in (cm**-3), T_e in (eV) and lambda in (A).
         for these units hc=1.2400e4
         Total bremsstrahlung (NRL Formulary) power in W/cm**3 is
-        power = 1.69e-32 ne**2 sqrt(Te) Zeff
+        power = 1.69e-32 ne**2 np.sqrt(Te) Zeff
 
         inputs
         (none) : Returns total bremsstrahlung radiation.
@@ -713,7 +713,7 @@ sqrt(max(data))
         c = 2.9979e8
         q = 1.6022e-19
         
-        filter_dict = loadtxt(os.path.join(self.geometry_path,'radiation','adas414_adf35_Be125_Si300.dat'))
+        filter_dict = np.loadtxt(os.path.join(self.geometry_path,'radiation','adas414_adf35_Be125_Si300.dat'))
         # Energy in eV
         energy = filter_dict[::-1,0]
         # Filter response on energy(ascending) and wavelength(descending) grid
@@ -721,7 +721,7 @@ sqrt(max(data))
         # Wavelength in A
         wavelength = h*c/(energy*q)*1.e10
         from scipy import  integrate
-        T_e = maximum(T_e,1)
+        T_e = np.maximum(T_e,1)
         # Free-free gaunt factor
         gff = 1.35 * T_e**0.15
         # hc for the quantity [hc/(Te*lambda)] for T_e in (eV) and lambda in (A)
@@ -729,7 +729,7 @@ sqrt(max(data))
 
         coeff = 1.89e-28 * (n_e*1e-6)**2 * Zeff * gff / np.sqrt(T_e)
 
-        vb_wl = outer(coeff , transmission/wavelength**2) * exp(-hc / outer(T_e,wavelength))
+        vb_wl = np.outer(coeff , transmission/wavelength**2) * np.exp(-hc / np.outer(T_e,wavelength))
         vb_wl_int = integrate.simps(vb_wl, x=wavelength, axis=1)
         
         return vb_wl_int*1e6
@@ -746,8 +746,8 @@ sqrt(max(data))
     
         
         try:
-            self.impur_inject_t = atleast_1d(loadtxt(lbo_path))             
-            if all(isnan(self.impur_inject_t)):
+            self.impur_inject_t = np.atleast_1d(np.loadtxt(lbo_path))             
+            if np.all(np.isnan(self.impur_inject_t)):
                 self.impur_inject_t = None
         except Exception as e:
             
@@ -774,12 +774,12 @@ sqrt(max(data))
                 LBOQSWCH  = LBOQSWCH >= 1
                 LBOSHUTT  = LBOSHUTT >= 1 #BUG
 
-                assert any(LBOQSWCH&LBOSHUTT), 'no LBO'
+                assert np.any(LBOQSWCH&LBOSHUTT), 'no LBO'
 
-                lbo_times = tvec[where((diff(double(LBOQSWCH&LBOSHUTT)) > 0 ))]/1e3
+                lbo_times = tvec[np.where((np.diff(np.double(LBOQSWCH&LBOSHUTT)) > 0 ))]/1e3
                 
                 if config.useCache:
-                    savetxt(lbo_path, lbo_times,fmt='%3.5f' )
+                    np.savetxt(lbo_path, lbo_times,fmt='%3.5f' )
                 self.impur_inject_t = lbo_times
 
 
@@ -790,7 +790,7 @@ sqrt(max(data))
                 #raise
                 self.impur_inject_t = None
                 if config.useCache:
-                    savetxt(lbo_path, (nan,))
+                    np.savetxt(lbo_path, (np.nan,))
             
 
     def load_others(self):
@@ -805,7 +805,7 @@ sqrt(max(data))
 
         try:
 
-            kin_data = load( self.geometry_path+'kin_data_%d.npz'%self.shot,allow_pickle=True)
+            kin_data = np.load( self.geometry_path+'kin_data_%d.npz'%self.shot,allow_pickle=True)
             
             
             ne = kin_data['ne'].item()
@@ -867,17 +867,17 @@ sqrt(max(data))
                 Ti_data = self.MDSconn.get('_x=\\IONS::TOP.PROFILE_FITS.ZIPFIT.ITEMPFIT').data()*1e3
                 Ti_rho  = self.MDSconn.get('dim_of(_x,0)').data()
                 Ti_tvec = self.MDSconn.get('dim_of(_x,1)').data()/1e3
-                Ti_err  = abs(self.MDSconn.get('error_of(_x)').data())*1e3
+                Ti_err  = np.abs(self.MDSconn.get('error_of(_x)').data())*1e3
                 
                 omega_data = self.MDSconn.get('_x=\\IONS::TOP.PROFILE_FITS.ZIPFIT.TROTFIT').data()*1e3
                 omega_rho  = self.MDSconn.get('dim_of(_x,0)').data()
                 omega_tvec = self.MDSconn.get('dim_of(_x,1)').data()/1e3
-                omega_err  = abs(self.MDSconn.get('error_of(_x)').data())*1e3
+                omega_err  = np.abs(self.MDSconn.get('error_of(_x)').data())*1e3
 
                 nimp = self.MDSconn.get('_x=\\IONS::TOP.PROFILE_FITS.ZIPFIT.ZDENSFIT').data()*1e19
                 Zeff_rho  = self.MDSconn.get('dim_of(_x,0)').data()
                 Zeff_tvec = self.MDSconn.get('dim_of(_x,1)').data()/1e3
-                nimp_err  = abs(self.MDSconn.get('error_of(_x)').data())*1e19
+                nimp_err  = np.abs(self.MDSconn.get('error_of(_x)').data())*1e19
                 Zimp = 6  #carbon
                 Zmain = 1  #carbon
 
@@ -888,12 +888,12 @@ sqrt(max(data))
                 ne_data = self.MDSconn.get('_x=\\ELECTRONS::TOP.PROFILE_FITS.ZIPFIT.EDENSFIT').data()*1e19
                 ne_rho  = self.MDSconn.get('dim_of(_x,0)').data()
                 ne_tvec = self.MDSconn.get('dim_of(_x,1)').data()/1e3
-                ne_err  = abs(self.MDSconn.get('error_of(_x)').data())*1e19
+                ne_err  = np.abs(self.MDSconn.get('error_of(_x)').data())*1e19
 
                 Te_data = self.MDSconn.get('_x=\\ELECTRONS::TOP.PROFILE_FITS.ZIPFIT.ETEMPFIT').data()*1e3
                 Te_rho  = self.MDSconn.get('dim_of(_x,0)').data()
                 Te_tvec = self.MDSconn.get('dim_of(_x,1)').data()/1e3
-                Te_err  = abs(self.MDSconn.get('error_of(_x)').data())*1e3
+                Te_err  = np.abs(self.MDSconn.get('error_of(_x)').data())*1e3
                 
                 ne_ = interp1d(ne_tvec, ne_data, axis=0, bounds_error=False)(Zeff_tvec)
                 Zeff_data  = (Zimp**2*nimp - Zimp*Zmain*nimp + Zmain*ne_)/ne_
@@ -905,7 +905,7 @@ sqrt(max(data))
                 return 
                 
             
-        tvec = unique(r_[Te_tvec,ne_tvec,Zeff_tvec,omega_tvec,Ti_tvec])
+        tvec = np.unique(np.r_[Te_tvec,ne_tvec,Zeff_tvec,omega_tvec,Ti_tvec])
  
         rind = ne_rho<=1
         
@@ -933,24 +933,24 @@ sqrt(max(data))
         from .SXR.radiation.Bremsstrahlung import CalcBackgroundRadiation,CalcRadiation,CalcZ, LoadAtomData,LoadFile
         
         
-        BR = ones_like(Te)*nan
-        BR_low = ones_like(Te)*nan
-        BR_up = ones_like(Te)*nan
-        W = ones_like(Te)*nan
-        W_low = ones_like(Te)*nan
-        W_up = ones_like(Te)*nan
+        BR = np.ones_like(Te)*np.nan
+        BR_low = np.ones_like(Te)*np.nan
+        BR_up = np.ones_like(Te)*np.nan
+        W = np.ones_like(Te)*np.nan
+        W_low = np.ones_like(Te)*np.nan
+        W_up = np.ones_like(Te)*np.nan
             
-        ind = isfinite(Te)&isfinite(ne)
-        ind2 = isfinite(Te)&isfinite(ne)&isfinite(Zeff)
+        ind = np.isfinite(Te)&np.isfinite(ne)
+        ind2 = np.isfinite(Te)&np.isfinite(ne)&np.isfinite(Zeff)
 
         filt = 14
         BR[ind2 ] = CalcBackgroundRadiation(ne[ind2],Te[ind2], Zeff[ind2],filt=filt)
-        BR_low[ind2]= CalcBackgroundRadiation(maximum(1,ne-ne_err)[ind2],maximum(1,Te-Te_err)[ind2], Zeff[ind2]/1.1,filt=filt)
+        BR_low[ind2]= CalcBackgroundRadiation(np.maximum(1,ne-ne_err)[ind2],np.maximum(1,Te-Te_err)[ind2], Zeff[ind2]/1.1,filt=filt)
         BR_up[ind2] = CalcBackgroundRadiation((ne+ne_err)[ind2],(Te-Te_err)[ind2], Zeff[ind2]*1.3,filt=filt)
     
     
         W[ind]  = CalcRadiation(ne[ind],Te[ind],1e-4,filt=filt)
-        W_low[ind]  = CalcRadiation(maximum(1,ne-ne_err)[ind],maximum(1,Te-Te_err)[ind],1e-4,filt=filt)
+        W_low[ind]  = CalcRadiation(np.maximum(1,ne-ne_err)[ind],np.maximum(1,Te-Te_err)[ind],1e-4,filt=filt)
         W_up[ind]   = CalcRadiation((ne+ne_err)[ind],(Te+Te_err)[ind],1e-4,filt=filt)
 
 
@@ -965,26 +965,26 @@ sqrt(max(data))
         R0 = 1.7
         a0 = 0.5  
         R_cxrs = R0+a0*rhot
-        vtor = omega*R_cxrs#/(2*pi)   
-        mach = sqrt(abs(2*m_u/e*vtor**2/(2*Ti)))
+        vtor = omega*R_cxrs#/(2*np.pi)   
+        mach = np.sqrt(np.abs(2*m_u/e*vtor**2/(2*Ti)))
 
         Z_w  = CalcZ(Te,element='W')
 
 
         M02 = (mach**2*m_z/m_i*(1-(m_i/m_z*Z_w*Zeff)*Te/(Ti+Zeff*Te)))/R_cxrs**2*R0**2
         
-        prof_LFS = exp((M02/R0**2)*(R_cxrs**2-R_cxrs**2)) # = 1
-        prof_HFS = exp((M02/R0**2)*((R0-a0*rhot)**2-R_cxrs**2))
-        asym = abs(prof_LFS-prof_HFS)/(prof_HFS+prof_LFS) #not consistent with tomography definition for large Mach! 
+        prof_LFS = np.exp((M02/R0**2)*(R_cxrs**2-R_cxrs**2)) # = 1
+        prof_HFS = np.exp((M02/R0**2)*((R0-a0*rhot)**2-R_cxrs**2))
+        asym = np.abs(prof_LFS-prof_HFS)/(prof_HFS+prof_LFS) #not consistent with tomography definition for large Mach! 
   
-        savez_compressed(data_path,
-                    tvec=single(tvec),
-                    rho=single(rhot), #rho toroidal 
-                    BR=single(BR),
-                    BR_low=single(BR_low),
-                    BR_high=single(BR_up),
-                    W=single(W),
-                    W_low=single(W_low),
-                    W_high=single(W_up),
-                    asym=single(asym))
+        np.savez_compressed(data_path,
+                    tvec=np.single(tvec),
+                    rho=np.single(rhot), #rho toroidal 
+                    BR=np.single(BR),
+                    BR_low=np.single(BR_low),
+                    BR_high=np.single(BR_up),
+                    W=np.single(W),
+                    W_low=np.single(W_low),
+                    W_high=np.single(W_up),
+                    asym=np.single(asym))
          

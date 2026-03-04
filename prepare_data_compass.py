@@ -243,7 +243,7 @@ class COMPASS(Tokamak):
 		ind_wrong = int_(array( [ ind_wrong, [48] ]))
 		
 		data -= min_data
-		data[:,ind_wrong] = NaN
+		data[:,ind_wrong] = nan
 
 
 		savez(data_path , data = single(data), tvec = tvec, dets = dets)
@@ -652,7 +652,7 @@ class COMPASS(Tokamak):
 
 		
 		data -= min_data
-		data[:,ind_wrong] = NaN
+		data[:,ind_wrong] = nan
 
 		
 		savez(data_path , data = single(data), tvec = tvec, dets = dets)

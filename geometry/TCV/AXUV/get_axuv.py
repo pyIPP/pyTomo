@@ -285,8 +285,8 @@ def axuv_dld(connect, shotno,tbegin=.4,tend=1.8,period=5e-6, diag='PLASMA'):
 
     #nodes = 
     
-    #mds_load(connect, nodes,chns, chnfmt=None, tmin=-infty,tmax=infty,step=1,raw=True,
-             #remove_offset=False,offset_time_min = -infty, offset_time_max=0):
+    #mds_load(connect, nodes,chns, chnfmt=None, tmin=-inf,tmax=inf,step=1,raw=True,
+             #remove_offset=False,offset_time_min = -inf, offset_time_max=0):
     
     
     

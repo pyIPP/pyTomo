@@ -1,0 +1,9 @@
+*.pyc
+
+# Cython build artifacts
+geom_mat_gen_cython.c
+geom_mat_gen_cython*.so
+geom_mat_gen_cython*.pyd
+build/
+dist/
+*.egg-info/

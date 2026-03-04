@@ -3,7 +3,7 @@
 
 #from matplotlib.pylab import *
 
-from numpy import *
+import numpy as np
 from matplotlib.pyplot import *
 import time
 from scipy import sparse
@@ -63,11 +63,11 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
     #print G0
     
     #exit()
-    if any(isnan(error)):
+    if np.any(np.isnan(error)):
         raise Exception('NaNs in the  errorbars!')
-    if any(~isfinite(data)) :
+    if np.any(~np.isfinite(data)) :
         raise Exception('NaNs in the data !')
-    if all(~isfinite(error)) :
+    if np.all(~np.isfinite(error)) :
         raise Exception('all errors are infinity')
     
     global nx, ny, tokamak
@@ -93,7 +93,7 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
 
     Bmat,BdMat,bnd, Ts, fs,err,tvec, G  = prepare_inputs(Tok, data, error,dets, tvec, Tmat, normData, G0, reg_params,bound, regularization)
                         
-    ndets = size(fs, 0)
+    ndets = np.size(fs, 0)
    
 
     for step in range(Steps):  # minfisher iterations !!!
@@ -113,7 +113,7 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
     
 
         if Tok.transform_index == 0 and boundary > 0:
-            H =  H + sparse.spdiags(BdMat*sinh(maximum(0,boundary))/100, 0, nx*ny, nx*ny,format='csc')
+            H =  H + sparse.spdiags(BdMat*np.sinh(np.maximum(0,boundary))/100, 0, nx*ny, nx*ny,format='csc')
        
        
        
@@ -165,8 +165,8 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
             debug('--------Solve - time  %g' % (time.time()-t))
             
             if debug:
-                resid = linalg.norm(fs[~wrong_dets]-U*(transpose(R)*(R*(U.T.dot(fs[~wrong_dets]).T).T)))/linalg.norm(fs)
-                resid_ = linalg.norm(fs-(Ts*G))/ linalg.norm(fs)
+                resid = np.linalg.norm(fs[~wrong_dets]-U*(np.transpose(R)*(R*(U.T.dot(fs[~wrong_dets]).T).T)))/np.linalg.norm(fs)
+                resid_ = np.linalg.norm(fs-(Ts*G))/ np.linalg.norm(fs)
                 debug( '%d. pass - unexplainable data: %.1f%%, unexplained data %.1f%%'%(step+1,resid*100, resid_*100))
                 
             
@@ -188,12 +188,12 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
 
     #set corrupted points and points with super large errorbars (also corrupted) to zero
     
-    ind = where(~array(isfinite(err.diagonal()))[0] | all(abs(retro)<1e-5,0))[0]
+    ind = np.where(~np.array(np.isfinite(err.diagonal()))[0] | np.all(np.abs(retro)<1e-5,0))[0]
 
         
-    retro = asarray(err*retro.T).T
+    retro = np.asarray(err*retro.T).T
     
-    if size(ind): 
+    if np.size(ind): 
         retro[:,ind] = (Tmat[ind]*(tokamak.Transform*G)).T
 
 
@@ -223,19 +223,19 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
 
     
     
-    #wrong_dets = squeeze(array(L.sum(1)==0))
-    #L = L[where(~wrong_dets)[0],:]
-    #M = min(sum(~wrong_dets),ndets )
+    #wrong_dets = np.squeeze(np.array(L.sum(1)==0))
+    #L = L[np.where(~wrong_dets)[0],:]
+    #M = min(np.sum(~wrong_dets),ndets )
 
     ##try:
         ##from sparsesvd import sparsesvd
-        ##ut, s, vt = sparsesvd(L.tocsc(),size(L,0)) 
+        ##ut, s, vt = sparsesvd(L.tocsc(),np.size(L,0)) 
     ##except:
         ##print 'sparsesvd has failured'
 
         ##from scipy.sparse.linalg import svds
-        ##ut, s, vt = svds(L.tocsc(),size(L,0)-1)  #BUG reconstruct only M-1 eigenvectors!
-        ##ind = where(isfinite(s) & (s>1))[0][::-1]
+        ##ut, s, vt = svds(L.tocsc(),np.size(L,0)-1)  #BUG reconstruct only M-1 eigenvectors!
+        ##ind = np.where(np.isfinite(s) & (s>1))[0][::-1]
         ##ut,s,vt = ut[:,ind].T,s[ind],vt[ind,:]
  
 
@@ -243,44 +243,44 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
     
     #D = factor.D()
     
-    #invsqrtD = sparse.spdiags(1/sqrt(D),(0,),len(D),len(D))
+    #invsqrtD = sparse.spdiags(1/np.sqrt(D),(0,),len(D),len(D))
     ##t = time.time()
     ##vt = factor.apply_Pt(factor.solve_Lt(invsqrtD*vt.T)).T
     ##vt = (invsqrtD*factor.solve_L(factor.apply_P(vt.T))).T
-    ##zero_ind = all(vt==0,axis=0)
+    ##zero_ind = np.all(vt==0,axis=0)
     ##vt = vt[:,~zero_ind]
 
     ##vt = factor(vt.T).T
     #
     #
 
-    ##wrong_dets = sum(fabs(ut),0) < 1e-8
+    ##wrong_dets = np.sum(np.fabs(ut),0) < 1e-8
 
     ##ut = ut[:,~wrong_dets]                           #odstraní nulové sloupcem vypočte
-    ##LC =  dot(vt.T,(ut*s[:,None])).T    #L*C^-1  slow 
+    ##LC =  np.dot(vt.T,(ut*s[:,None])).T    #L*C^-1  slow 
     
     #L = L.tocsr()
     #LC = invsqrtD*factor.solve_L(factor.apply_P(L.T))
     #LC = LC.T.toarray()
 
-    #zero_ind = all(LC==0,axis=0)
+    #zero_ind = np.all(LC==0,axis=0)
     #LC = LC[:,~zero_ind]
     #
     #
 
     #Q1,S1,P = qr(LC.T, mode='economic',pivoting=True)       # 1. QR
     #S1_,P_ = qr(LC.T, mode='r',pivoting=True, check_finite=False) 
-    ##allclose(LC.T[:, P], dot(Q1, S1))
-    ##allclose(LC.T, dot(Q1, S1[:, P]))
+    ##allclose(LC.T[:, P], np.dot(Q1, S1))
+    ##allclose(LC.T, np.dot(Q1, S1[:, P]))
     #
     #
     
 
-    #D = diag(S1)                # čísla na diagonále nsjou setřízená!
+    #D = np.diag(S1)                # čísla na diagonále nsjou setřízená!
 
 
     #S1 = S1/D[:,None]
-    #S1 = S1[:,argsort(P)]
+    #S1 = S1[:,np.argsort(P)]
 
 
     #Q2,R2 = qr(S1.T, mode='economic')   # 2. QR
@@ -290,20 +290,20 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
 
     ##Q3,R = qr(M, mode='economic')       # 3. QR
 
-    ##V = dot(Q1,Q3) 
+    ##V = np.dot(Q1,Q3) 
     #V_,R = qr_multiply(M, Q1, mode='right') # 3. QR
 
 
     #U = Q2
 
-    #DR = diag(R)
+    #DR = np.diag(R)
 
     #R  = D[:,None]*R.T/(D*DR)[None,:]   # lower triangular now!
 
     #D = D*DR   
 
     ##V = factor(V).T     
-    #V = zeros((len(zero_ind),V_.shape[1]))
+    #V = np.zeros((len(zero_ind),V_.shape[1]))
     
     #
     #
@@ -311,7 +311,7 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
     
     #V = factor.apply_Pt(factor.solve_Lt(invsqrtD*V)).T
 
-    ##U = dot(U,linalg.inv(R.T)).T 
+    ##U = np.dot(U,np.linalg.inv(R.T)).T 
     #U = solve_triangular(R,U.T,lower=True,unit_diagonal=True,overwrite_b=True) 
     ##U is not ortonormal anymore! bot it is not problem in the next solution
 
@@ -343,19 +343,19 @@ def PresolveQR(L,C, nx,ny,ndets,BdMat):
     
     
     
-    wrong_dets = squeeze(array(L.sum(1)==0))
-    L = L[where(~wrong_dets)[0],:]
-    m = min(sum(~wrong_dets),ndets )
+    wrong_dets = np.squeeze(np.array(L.sum(1)==0))
+    L = L[np.where(~wrong_dets)[0],:]
+    m = min(np.sum(~wrong_dets),ndets )
 
     #try:
         #from sparsesvd import sparsesvd
-        #ut, s, vt = sparsesvd(L.tocsc(),size(L,0)) 
+        #ut, s, vt = sparsesvd(L.tocsc(),np.size(L,0)) 
     #except:
         #print 'sparsesvd has failured'
 
         #from scipy.sparse.linalg import svds
-        #ut, s, vt = svds(L.tocsc(),size(L,0)-1)  #BUG reconstruct only M-1 eigenvectors!
-        #ind = where(isfinite(s) & (s>1))[0][::-1]
+        #ut, s, vt = svds(L.tocsc(),np.size(L,0)-1)  #BUG reconstruct only M-1 eigenvectors!
+        #ind = np.where(np.isfinite(s) & (s>1))[0][::-1]
         #ut,s,vt = ut[:,ind].T,s[ind],vt[ind,:]
  
     
@@ -372,19 +372,19 @@ def PresolveQR(L,C, nx,ny,ndets,BdMat):
     
     D = factor.D()
     
-    invsqrtD = sparse.spdiags(1/sqrt(D),(0,),len(D),len(D))
+    invsqrtD = sparse.spdiags(1/np.sqrt(D),(0,),len(D),len(D))
 
     #vt = factor.apply_Pt(factor.solve_Lt(invsqrtD*vt.T)).T
     #vt = (invsqrtD*factor.solve_L(factor.apply_P(vt.T))).T
 
 
-    #LC =  dot(vt.T,(ut*s[:,None])).T    #L*C^-1  slow 
+    #LC =  np.dot(vt.T,(ut*s[:,None])).T    #L*C^-1  slow 
     
     L = L.tocsr()
     LC = invsqrtD*factor.solve_L(factor.apply_P(L.T))
     LC = LC.toarray()
 
-    zero_ind = all(LC==0,axis=1)
+    zero_ind = np.all(LC==0,axis=1)
     LC = LC[~zero_ind,:]
 
 
@@ -393,11 +393,11 @@ def PresolveQR(L,C, nx,ny,ndets,BdMat):
     S1 = S1[:m,:]
     #P = P[:]
 
-    D = diag(S1)            
+    D = np.diag(S1)            
 
 
     S1 = S1/D[:,None]
-    S1 = S1[:,argsort(P)]
+    S1 = S1[:,np.argsort(P)]
 
 
     Q2,R2 = qr(S1.T, mode='economic',check_finite=False,overwrite_a=True)       # 2. QR
@@ -407,27 +407,27 @@ def PresolveQR(L,C, nx,ny,ndets,BdMat):
 
     #Q3,R = qr(M, mode='economic')       # 3. QR
 
-    #V = dot(Q1,Q3) 
+    #V = np.dot(Q1,Q3) 
     #V_,R = qr_multiply(M, Q1, mode='right') # 3. QR
     R, = qr(M,mode='r',check_finite=False,overwrite_a=True)                    # 3. QR
 
 
     U = Q2
 
-    DR = diag(R)
+    DR = np.diag(R)
 
     R  = D[:,None]*R.T/(D*DR)[None,:]   # lower triangular now!
 
-    D = abs(D*DR)    #make it positive (there is a freedom in the definition of sign )
+    D = np.abs(D*DR)    #make it positive (there is a freedom in the definition of sign )
     
     
     U = solve_triangular(R,U.T,lower=True,unit_diagonal=True,overwrite_b=True) 
     #U is not ortonormal anymore! bot it is not problem in the next steps of the solution
 
 
-    V = zeros((L.shape[1],len(D) ),dtype='single')
+    V = np.zeros((L.shape[1],len(D) ),dtype=np.single)
 
-    V[~zero_ind,:] = dot(U/D[:,None],LC.T).T  #10ms
+    V[~zero_ind,:] = np.dot(U/D[:,None],LC.T).T  #10ms
     
      #theoreticaly this integration step can be applied later on the final solution, it will be  faster( but just about just 20% on total)
     V = factor.apply_Pt(factor.solve_Lt(invsqrtD*V)).T 
@@ -437,8 +437,8 @@ def PresolveQR(L,C, nx,ny,ndets,BdMat):
     #show()
     
 
-    return {'U':matrix(U,copy=False) , 'V':matrix(V,copy=False) , 'D':D, 
-                'R':matrix(R,copy=False), 'wrong_dets':wrong_dets}
+    return {'U':np.matrix(U,copy=False) , 'V':np.matrix(V,copy=False) , 'D':D, 
+                'R':np.matrix(R,copy=False), 'wrong_dets':wrong_dets}
 
 
 
@@ -456,9 +456,9 @@ def PresolveSVD(L,C, nx,ny,nl,BdMat):
     :param spamtrix C: Smoothing matrix
     """
    
-    wrong_dets = squeeze(array(L.sum(1)==0))
-    L = L[where(~wrong_dets)[0],:]
-    M = min(sum(~wrong_dets),nl )
+    wrong_dets = np.squeeze(np.array(L.sum(1)==0))
+    L = L[np.where(~wrong_dets)[0],:]
+    M = min(np.sum(~wrong_dets),nl )
    
    
     #from scikits.sparse.cholmod import cholesky
@@ -466,7 +466,7 @@ def PresolveSVD(L,C, nx,ny,nl,BdMat):
     #ut, s, vt = sparsesvd(L.tocsc(),M) # jde této znalosti ještě nějak zneužít?
     #factor = cholesky(C)
     #vt = factor(vt.T).T
-    #LC = dot(ut.T, dot(diag(s), vt)) #L*C^-1
+    #LC = np.dot(ut.T, np.dot(np.diag(s), vt)) #L*C^-1
     #LC = L*inv(C.toarray())
     
 
@@ -482,7 +482,7 @@ def PresolveSVD(L,C, nx,ny,nl,BdMat):
     #70ms
     try:
         u, s, vt = svds(L.tocsc(),M-1)  #BUG reconstruct only M-1 eigenvalues!!  
-        ind = where(isfinite(s) & (s>1))[0][::-1] #remove noise vectors
+        ind = np.where(np.isfinite(s) & (s>1))[0][::-1] #remove noise vectors
         s = s[ind]
         vt = vt[ind,:]
         ut = u[:,ind].T
@@ -505,7 +505,7 @@ def PresolveSVD(L,C, nx,ny,nl,BdMat):
     #http://www.mathworks.com/matlabcentral/newsreader/view_thread/32825
     D = factor.D()
     
-    invsqrtD = sparse.spdiags(1/sqrt(D),(0,),len(D),len(D))
+    invsqrtD = sparse.spdiags(1/np.sqrt(D),(0,),len(D),len(D))
     #t = time.time()
     #41ms
     vt = (invsqrtD*factor.solve_L(factor.apply_P(vt.T))).T
@@ -514,13 +514,13 @@ def PresolveSVD(L,C, nx,ny,nl,BdMat):
     v = vt.T*s[None,:]
     #from time import time
     #Compute only for nonzero parts of the profile 
-    zero_ind = all(v==0,axis=1) 
-    #vt2 = copy(vt)
+    zero_ind = np.all(v==0,axis=1) 
+    #vt2 = np.copy(vt)
 
     #t = time()
-    #LC = dot(ut.T, vt[:,~zero_ind]*s[:,None])            #L*C^-1 
+    #LC = np.dot(ut.T, vt[:,~zero_ind]*s[:,None])            #L*C^-1 
     #u2,s2,vt_ = svd(LC,full_matrices=False, overwrite_a=True)
-    #vt2 = zeros(L.shape)
+    #vt2 = np.zeros(L.shape)
     #vt2[:,~zero_ind] = vt_
     #print time()-t
 
@@ -531,15 +531,15 @@ def PresolveSVD(L,C, nx,ny,nl,BdMat):
     P,T = qr(v[~zero_ind],overwrite_a=True, mode='economic')
     
     #je C symetrická matice????
-    #U,s,V = svd(dot(R,T.T),full_matrices=False, overwrite_a=False)
+    #U,s,V = svd(np.dot(R,T.T),full_matrices=False, overwrite_a=False)
     #V,s,U = svd(T,full_matrices=False, overwrite_a=True)
     U,s,V = svd(T.T,full_matrices=False, overwrite_a=True)
 
     
-    ut = dot(ut.T,U)
-    vt_ = copy(vt)
+    ut = np.dot(ut.T,U)
+    vt_ = np.copy(vt)
     #31ms
-    vt_[:,~zero_ind] = dot(V,P.T)
+    vt_[:,~zero_ind] = np.dot(V,P.T)
 
     #print time()-t
     
@@ -554,7 +554,7 @@ def PresolveSVD(L,C, nx,ny,nl,BdMat):
 
     #PlotBaseVectors({'U':ut , 'V':vt , 'D':s,'wrong_dets':wrong_dets}, 44,66)
 
-    return {'U':matrix(ut) , 'V':matrix(vt) , 'D':s, 'wrong_dets':wrong_dets}
+    return {'U':np.matrix(ut) , 'V':np.matrix(vt) , 'D':s, 'wrong_dets':wrong_dets}
 
 
 
@@ -571,9 +571,9 @@ def PresolveSVD_(L,C, nx,ny,nl):
     :param spamtrix C: Smoothing matrix
     """
    
-    wrong_dets = squeeze(array(L.sum(1)==0))
-    L = L[where(~wrong_dets)[0],:]
-    M = min(sum(~wrong_dets),nl )
+    wrong_dets = np.squeeze(np.array(L.sum(1)==0))
+    L = L[np.where(~wrong_dets)[0],:]
+    M = min(np.sum(~wrong_dets),nl )
    
    
     #from scikits.sparse.cholmod import cholesky
@@ -588,7 +588,7 @@ def PresolveSVD_(L,C, nx,ny,nl):
     #http://www.mathworks.com/matlabcentral/newsreader/view_thread/32825
     D = factor.D()
     
-    invsqrtD = sparse.spdiags(1/sqrt(D),(0,),len(D),len(D))
+    invsqrtD = sparse.spdiags(1/np.sqrt(D),(0,),len(D),len(D))
     #t = time.time()
     #41ms
     
@@ -597,7 +597,7 @@ def PresolveSVD_(L,C, nx,ny,nl):
     LC = invsqrtD*factor.solve_L(factor.apply_P(L.T))
     LC = LC.T.toarray()
 
-    zero_ind = all(LC==0,axis=0)
+    zero_ind = np.all(LC==0,axis=0)
     LC = LC[:,~zero_ind]
     
     #LC = (invsqrtD*factor.solve_L(factor.apply_P(L.T))).T
@@ -610,13 +610,13 @@ def PresolveSVD_(L,C, nx,ny,nl):
     #v = vt.T*s[None,:]
     #from time import time
     #Compute only for nonzero parts of the profile 
-    #zero_ind = all(v==0,axis=1) 
-    #vt2 = copy(vt)
+    #zero_ind = np.all(v==0,axis=1) 
+    #vt2 = np.copy(vt)
 
     #t = time()
-    #LC = dot(ut.T, vt[:,~zero_ind]*s[:,None])            #L*C^-1 
+    #LC = np.dot(ut.T, vt[:,~zero_ind]*s[:,None])            #L*C^-1 
     #u2,s2,vt_ = svd(LC,full_matrices=False, overwrite_a=True)
-    #vt2 = zeros(L.shape)
+    #vt2 = np.zeros(L.shape)
     #vt2[:,~zero_ind] = vt_
     #print time()-t
 
@@ -627,16 +627,16 @@ def PresolveSVD_(L,C, nx,ny,nl):
     #P,T = qr(LC,overwrite_a=True, mode='economic')
     
     #je C symetrická matice????
-    #U,s,V = svd(dot(R,T.T),full_matrices=False, overwrite_a=False)
+    #U,s,V = svd(np.dot(R,T.T),full_matrices=False, overwrite_a=False)
     #V,s,U = svd(T,full_matrices=False, overwrite_a=True)
     U,s,Vt_ = svd(LC,full_matrices=False, overwrite_a=True)
 
     
     
-    #ut = dot(ut.T,U).T
-    #vt_ = copy(vt)
+    #ut = np.dot(ut.T,U).T
+    #vt_ = np.copy(vt)
     #31ms
-    Vt = zeros(L.shape)
+    Vt = np.zeros(L.shape)
     Vt[:,~zero_ind] = Vt_
 
     #print time()-t
@@ -652,7 +652,7 @@ def PresolveSVD_(L,C, nx,ny,nl):
 
     #PlotBaseVectors({'U':ut , 'V':vt , 'D':s,'wrong_dets':wrong_dets}, 44,66)
 
-    return {'U':matrix(U) , 'V':matrix(vt) , 'D':s, 'wrong_dets':wrong_dets}
+    return {'U':np.matrix(U) , 'V':np.matrix(vt) , 'D':s, 'wrong_dets':wrong_dets}
 
 
 
@@ -674,15 +674,15 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
     #T = time.time()
     #print K.shape,ndets
 
-    wrong_dets = squeeze(array(K.sum(1)==0))
+    wrong_dets = np.squeeze(np.array(K.sum(1)==0))
     
-    if all(wrong_dets):
+    if np.all(wrong_dets):
         raise Exception('Something is wrong with normalized geometry matrix')
         
         
         
-    K = K[where(~wrong_dets)[0],:]  #1.2ms
-    k = min(sum(~wrong_dets),ndets,K.shape[1] )
+    K = K[np.where(~wrong_dets)[0],:]  #1.2ms
+    k = min(np.sum(~wrong_dets),ndets,K.shape[1] )
     
 
 
@@ -697,17 +697,17 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
 
     
     
-    #null = B*ones(2400)==0
+    #null = B*np.ones(2400)==0
     B_trace = B.diagonal().sum()
-    #singular = abs(sum( B *(B.sum(1).T==0).T)/B_trace)  <1e-20
+    #singular = np.abs(np.sum( B *(B.sum(1).T==0).T)/B_trace)  <1e-20
     
     
     
-    #save('B',B)
+    #np.save('B',B)
     #from scikits.sparse import cholmod
         
        
-    #B = load('B.npy').item()
+    #B = np.load('B.npy').item()
     #from scikits.sparse.cholmod import cholesky
     #T = time.time()
     #%timeit cholesky(B, mode = 'simplicial')
@@ -740,8 +740,8 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
     #D = 
     
     
-    #invsqrtD = sparse.spdiags(1/sqrt(D),(0,),len(D),len(D))
-    zero_ins = array(LPK.sum(1)==0).ravel()|(F.D()<=0)
+    #invsqrtD = sparse.spdiags(1/np.sqrt(D),(0,),len(D),len(D))
+    zero_ins = np.array(LPK.sum(1)==0).ravel()|(F.D()<=0)
     #pcolormesh(F.apply_Pt(double(zero_ins)).reshape(ny,nx,order='F')+BdMat.reshape(ny,nx,order='F'))
     #figure()
     #pcolormesh(BdMat.reshape(ny,nx,order='F'))
@@ -762,7 +762,7 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
     T = time.time()
 
     #LPK_ = LPK.toarray()  #memory consuming 
-    sqrtD = sqrt(F.D()[~zero_ins])
+    sqrtD = np.sqrt(F.D()[~zero_ins])
     
     
     #print 'to array'
@@ -785,7 +785,7 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
     #from scipy.sparse.linalg import svds
 
     #u, s, vt = svds(LPK,k-1)  #BUG reconstruct only M-1 eigenvalues!!  
-    #ind = where(isfinite(s) & (s>1))[0][::-1] #remove noise vectors
+    #ind = np.where(np.isfinite(s) & (s>1))[0][::-1] #remove noise vectors
     #s = s[ind]
     #vt = vt[ind,:]
     #ut = u[:,ind].T
@@ -801,15 +801,15 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
     #r, = qr(LPK, overwrite_a=False,mode='r', pivoting=False, check_finite=False)
     #r = r[:,:k]
     #u,s,v = svd(r, full_matrices=False, overwrite_a=True, check_finite=False)
-    #invR = dot(v.T, u.T/s[:,None] )
-    ##vt_ = dot(invR,LPK )
+    #invR = np.dot(v.T, u.T/s[:,None] )
+    ##vt_ = np.dot(invR,LPK )
     #print time.time()-t
     #t = time.time()
     #tol = max(dim(m))*max(D)*.Machine$double.eps
 #NOTE http://hackersome.com/p/arbenson/mrtsqr
 
-    #T = ascontiguousarray(LPK.T)
-    #dot(T.T, T)
+    #T = np.ascontiguousarray(LPK.T)
+    #np.dot(T.T, T)
     
     #from scipy.sparse.linalg import eigsh, svds
         #from scipy.sparse.linalg import svds
@@ -829,7 +829,7 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
             
         #T2 = time.time()
 
-        LL = dot(A, A.T)  #Gram matrix
+        LL = np.dot(A, A.T)  #Gram matrix
         #print  'Gram matrix',time.time()-T2
         #T2 = time.time()
   
@@ -838,12 +838,12 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
         #T2 = time.time()
 
         del LL
-        s,u = sqrt(maximum(s,0))[::-1], u[:,::-1] 
+        s,u = np.sqrt(np.maximum(s,0))[::-1], u[:,::-1] 
 
         try:
-            rank = where(cumprod((diff(log(s[s!=0]))>-5)|(s[s!=0][1:]>median(s))))[0][-1]+2
+            rank = np.where(np.cumprod((np.diff(np.log(s[s!=0]))>-5)|(s[s!=0][1:]>np.median(s))))[0][-1]+2
         except:
-            print(diff(log(s[s!=0])))
+            print(np.diff(np.log(s[s!=0])))
             for r in s: print(s)
          
     
@@ -852,7 +852,7 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
         U = u[:,:rank]
         #rank = 
 
-        VT = dot(U.T/S[:,None], A)  #slow...
+        VT = np.dot(U.T/S[:,None], A)  #slow...
         #print  'backprojection',time.time()-T2
 
         
@@ -871,7 +871,7 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
     #LPK = random.randn(200, 6000)
     
     
-    #%timeit dot(LPK, LPK.T) 
+    #%timeit np.dot(LPK, LPK.T) 
     
     #print LPK.shape, type(LPK), LPK.dtype
     U,S,vt_, rank = fast_svd(LPK) #22ms
@@ -885,22 +885,22 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
     
     del LPK
 
-    #LL = dot(LPK_, LPK_.T)
+    #LL = np.dot(LPK_, LPK_.T)
     #s,u = eigh(LL,overwrite_a=True, check_finite=False,lower=True)
     ##print 'LL'
 
     #del LL
-    #s,u = sqrt(maximum(s,0))[::-1], u[:,::-1]
-    ##dot(u[:,:rank].T/D[:,None], LPK)
+    #s,u = np.sqrt(np.maximum(s,0))[::-1], u[:,::-1]
+    ##np.dot(u[:,:rank].T/D[:,None], LPK)
     ##ut = u[:,ind].T
     #
     #
     
-    ##r = qr(ascontiguousarray(LPK.T),  mode='r',check_finite=False)
+    ##r = qr(np.ascontiguousarray(LPK.T),  mode='r',check_finite=False)
 
     ##from scipy.linalg import cholesky
     
-    ##L = cholesky( dot(LPK, LPK.T),lower=False, overwrite_a=False, check_finite=False)
+    ##L = cholesky( np.dot(LPK, LPK.T),lower=False, overwrite_a=False, check_finite=False)
     ##U,S,V = svd(L, full_matrices=False, compute_uv=True, overwrite_a=True, check_finite=False)
 
 
@@ -913,9 +913,9 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
     ##print s
     ##plot(s)
     ##show()  
-    ##print where(cumprod((diff(log(s[s!=0]))>-5)))
+    ##print np.where(np.cumprod((np.diff(np.log(s[s!=0]))>-5)))
     ##try:
-    #rank = where(cumprod((diff(log(s[s!=0]))>-5)|(s[s!=0][1:]>median(s))))[0][-1]+2
+    #rank = np.where(np.cumprod((np.diff(np.log(s[s!=0]))>-5)|(s[s!=0][1:]>np.median(s))))[0][-1]+2
     ##except:
         #
         #
@@ -927,10 +927,10 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
     #S = s[:rank]
     #U = u[:,:rank]
     
-    ##if any(S == 0) or any(isnan(S)):
+    ##if np.any(S == 0) or np.any(np.isnan(S)):
         #
         #
-    #vt_ = dot(U.T/S[:,None], LPK_)  #slow...
+    #vt_ = np.dot(U.T/S[:,None], LPK_)  #slow...
     #del LPK_
 
     #print 'VT'
@@ -944,11 +944,11 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
     #print time.time()-t
 
 
-    #valid_ind = isfinite(s)
+    #valid_ind = np.isfinite(s)
     #valid_ind[valid_ind] &= s[valid_ind] > 0
     
     
-    vt = zeros(( K.shape[1], len(S)) )
+    vt = np.zeros(( K.shape[1], len(S)) )
     
     
     
@@ -957,7 +957,7 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
     vt_ /= sqrtD
     vt[~zero_ins] = vt_.T
     #print 'VT2'
-    #vt = ascontiguousarray(vt.T)
+    #vt = np.ascontiguousarray(vt.T)
 
     #vt = vt.astype(single,copy=False)
     del vt_
@@ -970,13 +970,13 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
     T = time.time()
 
 
-    #valid_ind = slice(0, where(s/s.max() > 1e-7)[0][-1]+1)
+    #valid_ind = slice(0, np.where(s/s.max() > 1e-7)[0][-1]+1)
     #valid_ind = slice(None,None)
   
     #sort from the most important to the least
     #valid_ind = S > 1e-6
     #S =S
-    #U = (K*V)[:,valid_ind].T/S[:,newaxis]
+    #U = (K*V)[:,valid_ind].T/S[:,np.newaxis]
     #U = u.T
   ##V = V[:,valid_ind]
     #V = V.T
@@ -1001,28 +1001,28 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
     
     #iterative upgrade of the existing decompostion for a new B. But U is not orthogonal!? 
     #F = cholesky(B)
-    #HK = asarray(F(K.T).T.todense())
-    #V_ = dot(U.T/S[:,None],HK)
+    #HK = np.asarray(F(K.T).T.todense())
+    #V_ = np.dot(U.T/S[:,None],HK)
     #U_ = K*V_.T
-    #D_ = S*linalg.norm(U,axis=0)
+    #D_ = S*np.linalg.norm(U,axis=0)
     
     
-    #sqrt(B.diagonal().sum())/sum(S)
-    #1/sqrt(linalg.inv((K*K.T).todense()).trace())/(1/sum(1/S))
+    #np.sqrt(B.diagonal().sum())/np.sum(S)
+    #1/np.sqrt(np.linalg.inv((K*K.T).todense()).trace())/(1/np.sum(1/S))
 
     #S[0],S[-1]
     
-    #dot(linalg.inv((K*K.T).todense()),K.T)
-    #lmin = 1/sqrt(linalg.inv((K*K.T).todense()).trace())
-    #lmax = sqrt(B.diagonal().sum())
+    #np.dot(np.linalg.inv((K*K.T).todense()),K.T)
+    #lmin = 1/np.sqrt(np.linalg.inv((K*K.T).todense()).trace())
+    #lmax = np.sqrt(B.diagonal().sum())
     #fill =  B.nnz/float(nx*ny)
-    #lmax = sqrt((square(K.data).sum())/B.diagonal().sum()*(nx*ny)**2)*20
-    #lmin = sqrt((square(K.data).sum())/B.diagonal().sum()*nx*ny)/5
+    #lmax = np.sqrt((square(K.data).sum())/B.diagonal().sum()*(nx*ny)**2)*20
+    #lmin = np.sqrt((square(K.data).sum())/B.diagonal().sum()*nx*ny)/5
     #print 
-    #print '======== =%.3e  %.3e, %.3e, %.3e'%( lmin,S[-1], lmax,S[0])#, sqrt(lmin*lmax)/median(S)
+    #print '======== =%.3e  %.3e, %.3e, %.3e'%( lmin,S[-1], lmax,S[0])#, np.sqrt(lmin*lmax)/np.median(S)
     
-    #K_ = dot(dot(U,diag(1/S)),V)
-    #print 'Decomposition accuracy',linalg.norm((K_* K.T)-eye(K.shape[0]))#-len(S)+rank
+    #K_ = np.dot(np.dot(U,np.diag(1/S)),V)
+    #print 'Decomposition accuracy',np.linalg.norm((K_* K.T)-np.eye(K.shape[0]))#-len(S)+rank
     #exit()
 
 
@@ -1032,7 +1032,7 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
 
     #exit()
 
-    return {'K':K,'U':matrix(U,copy=False), 'V':matrix(V,copy=False) , 'D':S, 'wrong_dets':wrong_dets}
+    return {'K':K,'U':np.matrix(U,copy=False), 'V':np.matrix(V,copy=False) , 'D':S, 'wrong_dets':wrong_dets}
 
 
 def PresolveSVD3_sparse(K,B,nx,ny, ndets):
@@ -1045,9 +1045,9 @@ def PresolveSVD3_sparse(K,B,nx,ny, ndets):
 
     """
 
-    wrong_dets = squeeze(array(K.sum(1)==0))
-    K = K[where(~wrong_dets)[0],:]
-    k = min(sum(~wrong_dets),ndets,K.shape[1] )
+    wrong_dets = np.squeeze(np.array(K.sum(1)==0))
+    K = K[np.where(~wrong_dets)[0],:]
+    k = min(np.sum(~wrong_dets),ndets,K.shape[1] )
     npix = K.shape[1] 
 
     #solve generalized eigen value problem K.T*K*x = lambda*C*x
@@ -1074,15 +1074,15 @@ def PresolveSVD3_sparse(K,B,nx,ny, ndets):
     D = F.D()
     
     
-    invsqrtD = sparse.spdiags(1/sqrt(D),(0,),len(D),len(D))
-    zero_ins = array(LPK.sum(1)==0).ravel()
+    invsqrtD = sparse.spdiags(1/np.sqrt(D),(0,),len(D),len(D))
+    zero_ins = np.array(LPK.sum(1)==0).ravel()
     LPK = (invsqrtD*LPK)
-    LPK = LPK[where(~zero_ins)[0],:].T
+    LPK = LPK[np.where(~zero_ins)[0],:].T
 
     #LPK_ = LPK.T.toarray()  #memory consuming 
 
     #print 'to array'
-    #LPK_/= sqrt(D[~zero_ins])
+    #LPK_/= np.sqrt(D[~zero_ins])
     #LPK_ = (invsqrtD*LPK_).T.toarray()  #LC^-1
 
     #calculate only for nonzero coloumns of LPK_ matrix
@@ -1097,7 +1097,7 @@ def PresolveSVD3_sparse(K,B,nx,ny, ndets):
     #from scipy.sparse.linalg import svds
 
     #u, s, vt = svds(LPK,k-1)  #BUG reconstruct only M-1 eigenvalues!!  
-    #ind = where(isfinite(s) & (s>1))[0][::-1] #remove noise vectors
+    #ind = np.where(np.isfinite(s) & (s>1))[0][::-1] #remove noise vectors
     #s = s[ind]
     #vt = vt[ind,:]
     #ut = u[:,ind].T
@@ -1113,15 +1113,15 @@ def PresolveSVD3_sparse(K,B,nx,ny, ndets):
     #r, = qr(LPK, overwrite_a=False,mode='r', pivoting=False, check_finite=False)
     #r = r[:,:k]
     #u,s,v = svd(r, full_matrices=False, overwrite_a=True, check_finite=False)
-    #invR = dot(v.T, u.T/s[:,None] )
-    #vt_ = dot(invR,LPK )
+    #invR = np.dot(v.T, u.T/s[:,None] )
+    #vt_ = np.dot(invR,LPK )
     #print time.time()-t
     #t = time.time()
     #tol = max(dim(m))*max(D)*.Machine$double.eps
 #NOTE http://hackersome.com/p/arbenson/mrtsqr
 
-    #T = ascontiguousarray(LPK.T)
-    #dot(T.T, T)
+    #T = np.ascontiguousarray(LPK.T)
+    #np.dot(T.T, T)
     
     #from scipy.sparse.linalg import eigsh, svds
         #from scipy.sparse.linalg import svds
@@ -1136,23 +1136,23 @@ def PresolveSVD3_sparse(K,B,nx,ny, ndets):
     #LPK = LPK.toarray()
     print('eigh')
 
-    #LL = dot( LPK, LPK.T)
+    #LL = np.dot( LPK, LPK.T)
     s,u = eigh(LL,overwrite_a=True, check_finite=False,lower=True)
     #print 'LL'
 
     del LL
     s[s<0] = 0
-    s,u = sqrt(s)[::-1], u[:,::-1]
-    #dot(u[:,:rank].T/D[:,None], LPK)
+    s,u = np.sqrt(s)[::-1], u[:,::-1]
+    #np.dot(u[:,:rank].T/D[:,None], LPK)
     #ut = u[:,ind].T
     
     
     
-    #r = qr(ascontiguousarray(LPK.T),  mode='r',check_finite=False)
+    #r = qr(np.ascontiguousarray(LPK.T),  mode='r',check_finite=False)
 
     #from scipy.linalg import cholesky
     
-    #L = cholesky( dot(LPK, LPK.T),lower=False, overwrite_a=False, check_finite=False)
+    #L = cholesky( np.dot(LPK, LPK.T),lower=False, overwrite_a=False, check_finite=False)
     #U,S,V = svd(L, full_matrices=False, compute_uv=True, overwrite_a=True, check_finite=False)
 
 
@@ -1163,24 +1163,24 @@ def PresolveSVD3_sparse(K,B,nx,ny, ndets):
     #print s
     #plot(s)
     #show()  
-    #print where(cumprod((diff(log(s[s!=0]))>-5)))
+    #print np.where(np.cumprod((np.diff(np.log(s[s!=0]))>-5)))
     #try:
-    rank = where(cumprod((diff(log(s[s!=0]))>-5)|(s[s!=0][1:]>median(s))))[0][-1]+2
+    rank = np.where(np.cumprod((np.diff(np.log(s[s!=0]))>-5)|(s[s!=0][1:]>np.median(s))))[0][-1]+2
     #except:
 
     #print 'BUG!!!!!!'
     #rank-= 1
     #valid_ind = slice(None, rank+1)
     
-    S = abs(s[:rank])
+    S = np.abs(s[:rank])
     U = u[:,:rank]
     print('calc V')
     indptr = list(LPK.indptr)
-    for i in where(zero_ins)[0]:  indptr.insert(i,indptr[i])    
+    for i in np.where(zero_ins)[0]:  indptr.insert(i,indptr[i])    
     LPK = sparse.csc_matrix((LPK.data, LPK.indices, indptr), shape=( ndets, len(zero_ins)) )
 
     
-    vt = zeros(( rank,npix),dtype=single )
+    vt = np.zeros(( rank,npix),dtype=np.single )
     chunk = 1000
     US = U.T/S[:,None]
     for i in range(npix/chunk+1):
@@ -1203,11 +1203,11 @@ def PresolveSVD3_sparse(K,B,nx,ny, ndets):
     #print time.time()-t
 
     
-    #valid_ind = isfinite(s)
+    #valid_ind = np.isfinite(s)
     #valid_ind[valid_ind] &= s[valid_ind] > 0
     
 
-    #vt.indptr = array(indptr)
+    #vt.indptr = np.array(indptr)
     #vt.shape = (vt_.shape[0],len(zero_ins))
     #vt.set_shape((vt_.shape[0],len(zero_ins)))
     #vt[:,~zero_ins] = vt_.todense()   
@@ -1219,7 +1219,7 @@ def PresolveSVD3_sparse(K,B,nx,ny, ndets):
     
     #print vt_.shape, vt[:,~zero_ins].shape, vt.shape
     #vt[:,~zero_ins] = vt_
-    vt/= sqrt(D)
+    vt/= np.sqrt(D)
     #print 'VT2'
     print('calc CV')
 
@@ -1228,7 +1228,7 @@ def PresolveSVD3_sparse(K,B,nx,ny, ndets):
     chunk = 100
     for i in range(rank/chunk+1):
         ind = slice(i*chunk,min((i+1)*chunk,rank))
-        vt[ind,:] =  F.apply_Pt(F.solve_Lt(vt[ind,:].T.astype('double'))).T
+        vt[ind,:] =  F.apply_Pt(F.solve_Lt(vt[ind,:].T.astype(np.double))).T
          #F.apply_Pt(double(V))
     #V = vt
     #del vt
@@ -1236,13 +1236,13 @@ def PresolveSVD3_sparse(K,B,nx,ny, ndets):
     #print 'Solve L'
 
 
-    #valid_ind = slice(0, where(s/s.max() > 1e-7)[0][-1]+1)
+    #valid_ind = slice(0, np.where(s/s.max() > 1e-7)[0][-1]+1)
     #valid_ind = slice(None,None)
   
     #sort from the most important to the least
     #valid_ind = S > 1e-6
     #S =S
-    #U = (K*V)[:,valid_ind].T/S[:,newaxis]
+    #U = (K*V)[:,valid_ind].T/S[:,np.newaxis]
     #U = u.T
   ##V = V[:,valid_ind]
     #V = V.T
@@ -1258,8 +1258,8 @@ def PresolveSVD3_sparse(K,B,nx,ny, ndets):
     #V = V.T
     
     
-    #K_ = dot(dot(U,diag(1/S)),V)
-    #print 'Decomposition accuracy',linalg.norm((K_* K.T)-eye(K.shape[0]))-len(s)+rank
+    #K_ = np.dot(np.dot(U,np.diag(1/S)),V)
+    #print 'Decomposition accuracy',np.linalg.norm((K_* K.T)-np.eye(K.shape[0]))-len(s)+rank
     #exit()
 
     
@@ -1270,13 +1270,13 @@ def PresolveSVD3_sparse(K,B,nx,ny, ndets):
     
     #iterative upgrade of the existing decompostion for a new B. But U is not orthogonal!? 
     #F = cholesky(B)
-    #HK = asarray(F(K.T).T.todense())
-    #V_ = dot(U.T/S[:,None],HK)
+    #HK = np.asarray(F(K.T).T.todense())
+    #V_ = np.dot(U.T/S[:,None],HK)
     #U_ = K*V_.T
-    #D_ = S*linalg.norm(U,axis=0)
+    #D_ = S*np.linalg.norm(U,axis=0)
 
 
-    return {'U':matrix(U,copy=False), 'V':matrix(vt,copy=False) , 'D':S, 'wrong_dets':wrong_dets}
+    return {'U':np.matrix(U,copy=False), 'V':np.matrix(vt,copy=False) , 'D':S, 'wrong_dets':wrong_dets}
 
     
 
@@ -1293,9 +1293,9 @@ def PresolveSVD3_sparse2(K,B,nx,ny, ndets,nsqval=200):
     
     
     
-    wrong_dets = squeeze(array(K.sum(1)==0))
-    K = K[where(~wrong_dets)[0],:]
-    k = min(sum(~wrong_dets),ndets,K.shape[1] )
+    wrong_dets = np.squeeze(np.array(K.sum(1)==0))
+    K = K[np.where(~wrong_dets)[0],:]
+    k = min(np.sum(~wrong_dets),ndets,K.shape[1] )
     npix = K.shape[1] 
     K.indices = K.indices.astype('uint16',copy=True) #BUG max 2**16 detectors!
     
@@ -1320,12 +1320,12 @@ def PresolveSVD3_sparse2(K,B,nx,ny, ndets,nsqval=200):
     del K
 
     D = F.D().astype('float32',copy=False)
-    zero_ins = array(LPK.sum(1)==0).ravel()
+    zero_ins = np.array(LPK.sum(1)==0).ravel()
 
     chunk = 100
-    for i in range(size(LPK)/chunk+1):
-        ind = slice(i*chunk,min((i+1)*chunk,size(LPK)))
-        LPK.data[ind]/= sqrt(D[LPK.indices[ind]])
+    for i in range(np.size(LPK)/chunk+1):
+        ind = slice(i*chunk,min((i+1)*chunk,np.size(LPK)))
+        LPK.data[ind]/= np.sqrt(D[LPK.indices[ind]])
 
     
     
@@ -1335,15 +1335,15 @@ def PresolveSVD3_sparse2(K,B,nx,ny, ndets,nsqval=200):
         
         
     #BUG memory consumption!!
-    LPK = LPK[where(~zero_ins)[0],:].T #udělat tohle seříznutí dřív?? 
-    #invsqrtD = sparse.spdiags(1/sqrt(D[~zero_ins]),(0,),sum(~zero_ins),sum(~zero_ins)  )
+    LPK = LPK[np.where(~zero_ins)[0],:].T #udělat tohle seříznutí dřív?? 
+    #invsqrtD = sparse.spdiags(1/np.sqrt(D[~zero_ins]),(0,),np.sum(~zero_ins),np.sum(~zero_ins)  )
 
 
 
     #LPK_ = LPK.toarray()  #memory consuming 
 
     #print 'to array'
-    #LPK_/= sqrt(D[~zero_ins])
+    #LPK_/= np.sqrt(D[~zero_ins])
     #LPK_ = (invsqrtD*LPK_).T.toarray()  #LC^-1
 
     #calculate only for nonzero coloumns of LPK_ matrix
@@ -1358,14 +1358,14 @@ def PresolveSVD3_sparse2(K,B,nx,ny, ndets,nsqval=200):
     #from scipy.sparse.linalg import svds
     #from scipy.sparse.linalg import aslinearoperator
     
-    #from scipy.linalg.interpolative import svd
+    #from scipy.np.linalg.interpolative import svd
     #u, s, vt_ = svd(aslinearoperator(LPK),nsqval)
     print('calc svds')
     #from fsvd import fsvd
     #u, s, vt_ = fsvd(LPK)
     u, s, vt_ = svds(LPK,min(nsqval,k-1))  #BUG reconstruct only M-1 eigenvalues!!  
-    #ind = where(isfinite(s) & (s>1))[0][::-1] #remove noise vectors
-    s[isnan(s)] = 0
+    #ind = np.where(np.isfinite(s) & (s>1))[0][::-1] #remove noise vectors
+    s[np.isnan(s)] = 0
     #s = s[ind]
     #vt = vt[ind,:]
     #ut = u[:,ind].T
@@ -1381,15 +1381,15 @@ def PresolveSVD3_sparse2(K,B,nx,ny, ndets,nsqval=200):
     #r, = qr(LPK, overwrite_a=False,mode='r', pivoting=False, check_finite=False)
     #r = r[:,:k]
     #u,s,v = svd(r, full_matrices=False, overwrite_a=True, check_finite=False)
-    #invR = dot(v.T, u.T/s[:,None] )
-    #vt_ = dot(invR,LPK )
+    #invR = np.dot(v.T, u.T/s[:,None] )
+    #vt_ = np.dot(invR,LPK )
     #print time.time()-t
     #t = time.time()
     #tol = max(dim(m))*max(D)*.Machine$double.eps
 #NOTE http://hackersome.com/p/arbenson/mrtsqr
 
-    #T = ascontiguousarray(LPK.T)
-    #dot(T.T, T)
+    #T = np.ascontiguousarray(LPK.T)
+    #np.dot(T.T, T)
     
     #from scipy.sparse.linalg import eigsh, svds
         #from scipy.sparse.linalg import svds
@@ -1404,23 +1404,23 @@ def PresolveSVD3_sparse2(K,B,nx,ny, ndets,nsqval=200):
     #LPK = LPK.toarray()
     #print 'eigh'
 
-    #LL = dot( LPK, LPK.T)
+    #LL = np.dot( LPK, LPK.T)
     #s,u = eigh(LL,overwrite_a=True, check_finite=False,lower=True)
     #print 'LL'
 
     #del LL
     #s[s<0] = 0
     s,u,vt_ = s[::-1], u[:,::-1], vt_[::-1]
-    #dot(u[:,:rank].T/D[:,None], LPK)
+    #np.dot(u[:,:rank].T/D[:,None], LPK)
     #ut = u[:,ind].T
     
     
     
-    #r = qr(ascontiguousarray(LPK.T),  mode='r',check_finite=False)
+    #r = qr(np.ascontiguousarray(LPK.T),  mode='r',check_finite=False)
 
     #from scipy.linalg import cholesky
     
-    #L = cholesky( dot(LPK, LPK.T),lower=False, overwrite_a=False, check_finite=False)
+    #L = cholesky( np.dot(LPK, LPK.T),lower=False, overwrite_a=False, check_finite=False)
     #U,S,V = svd(L, full_matrices=False, compute_uv=True, overwrite_a=True, check_finite=False)
 
 
@@ -1431,26 +1431,26 @@ def PresolveSVD3_sparse2(K,B,nx,ny, ndets,nsqval=200):
     #print s
     #plot(s)
     #show()  
-    #print where(cumprod((diff(log(s[s!=0]))>-5)))
+    #print np.where(np.cumprod((np.diff(np.log(s[s!=0]))>-5)))
     #try:
-    rank = where(cumprod((diff(log(s[s!=0]))>-5)|(s[s!=0][1:]>median(s))))[0][-1]+2
+    rank = np.where(np.cumprod((np.diff(np.log(s[s!=0]))>-5)|(s[s!=0][1:]>np.median(s))))[0][-1]+2
     #except:
 
     #print 'BUG!!!!!!'
     #rank-= 1
     #valid_ind = slice(None, rank+1)
     
-    S = abs(s[:rank])
+    S = np.abs(s[:rank])
     U = u[:,:rank]
     vt_ = vt_[:rank,:]
 
     #print 'calc V'
     #indptr = list(LPK.indptr)
-    #for i in where(zero_ins)[0]:  indptr.insert(i,indptr[i])    
+    #for i in np.where(zero_ins)[0]:  indptr.insert(i,indptr[i])    
     #LPK = sparse.csc_matrix((LPK.data, LPK.indices, indptr), shape=( ndets, len(zero_ins)) )
 
     
-    vt = zeros(( rank,npix),dtype=single )
+    vt = np.zeros(( rank,npix),dtype=np.single )
     vt[:,~zero_ins] = vt_
     #chunk = 1000
     ##US = U.T/S[:,None]
@@ -1474,11 +1474,11 @@ def PresolveSVD3_sparse2(K,B,nx,ny, ndets,nsqval=200):
     #print time.time()-t
 
     
-    #valid_ind = isfinite(s)
+    #valid_ind = np.isfinite(s)
     #valid_ind[valid_ind] &= s[valid_ind] > 0
     
 
-    #vt.indptr = array(indptr)
+    #vt.indptr = np.array(indptr)
     #vt.shape = (vt_.shape[0],len(zero_ins))
     #vt.set_shape((vt_.shape[0],len(zero_ins)))
     #vt[:,~zero_ins] = vt_.todense()   
@@ -1490,7 +1490,7 @@ def PresolveSVD3_sparse2(K,B,nx,ny, ndets,nsqval=200):
     
     #print vt_.shape, vt[:,~zero_ins].shape, vt.shape
     #vt[:,~zero_ins] = vt_
-    vt/= sqrt(D)
+    vt/= np.sqrt(D)
     #print 'VT2'
     print('calc CV')
 
@@ -1499,7 +1499,7 @@ def PresolveSVD3_sparse2(K,B,nx,ny, ndets,nsqval=200):
     chunk = 100
     for i in range(rank/chunk+1):
         ind = slice(i*chunk,min((i+1)*chunk,rank))
-        vt[ind,:] =  F.apply_Pt(F.solve_Lt(vt[ind,:].T.astype('double'))).T
+        vt[ind,:] =  F.apply_Pt(F.solve_Lt(vt[ind,:].T.astype(np.double))).T
          #F.apply_Pt(double(V))
     #V = vt
     #del vt
@@ -1507,13 +1507,13 @@ def PresolveSVD3_sparse2(K,B,nx,ny, ndets,nsqval=200):
     #print 'Solve L'
 
 
-    #valid_ind = slice(0, where(s/s.max() > 1e-7)[0][-1]+1)
+    #valid_ind = slice(0, np.where(s/s.max() > 1e-7)[0][-1]+1)
     #valid_ind = slice(None,None)
   
     #sort from the most important to the least
     #valid_ind = S > 1e-6
     #S =S
-    #U = (K*V)[:,valid_ind].T/S[:,newaxis]
+    #U = (K*V)[:,valid_ind].T/S[:,np.newaxis]
     #U = u.T
   ##V = V[:,valid_ind]
     #V = V.T
@@ -1529,8 +1529,8 @@ def PresolveSVD3_sparse2(K,B,nx,ny, ndets,nsqval=200):
     #V = V.T
     
     
-    #K_ = dot(dot(U,diag(1/S)),V)
-    #print 'Decomposition accuracy',linalg.norm((K_* K.T)-eye(K.shape[0]))-len(s)+rank
+    #K_ = np.dot(np.dot(U,np.diag(1/S)),V)
+    #print 'Decomposition accuracy',np.linalg.norm((K_* K.T)-np.eye(K.shape[0]))-len(s)+rank
     #exit()
 
     
@@ -1541,13 +1541,13 @@ def PresolveSVD3_sparse2(K,B,nx,ny, ndets,nsqval=200):
     
     #iterative upgrade of the existing decompostion for a new B. But U is not orthogonal!? 
     #F = cholesky(B)
-    #HK = asarray(F(K.T).T.todense())
-    #V_ = dot(U.T/S[:,None],HK)
+    #HK = np.asarray(F(K.T).T.todense())
+    #V_ = np.dot(U.T/S[:,None],HK)
     #U_ = K*V_.T
-    #D_ = S*linalg.norm(U,axis=0)
+    #D_ = S*np.linalg.norm(U,axis=0)
 
 
-    return {'U':matrix(U,copy=False), 'V':matrix(vt,copy=False) , 'D':S, 'wrong_dets':wrong_dets}
+    return {'U':np.matrix(U,copy=False), 'V':np.matrix(vt,copy=False) , 'D':S, 'wrong_dets':wrong_dets}
 
 
 def PresolveSVD2(K,B,nx,ny, ndets):
@@ -1558,9 +1558,9 @@ def PresolveSVD2(K,B,nx,ny, ndets):
 
     """
 
-    wrong_dets = squeeze(array(K.sum(1)==0))
-    K = K[where(~wrong_dets)[0],:]
-    k = min(sum(~wrong_dets),ndets,K.shape[1] )
+    wrong_dets = np.squeeze(np.array(K.sum(1)==0))
+    K = K[np.where(~wrong_dets)[0],:]
+    k = min(np.sum(~wrong_dets),ndets,K.shape[1] )
     
 
     #solve generalized eigen value problem K.T*K*x = lambda*C*x
@@ -1580,13 +1580,13 @@ def PresolveSVD2(K,B,nx,ny, ndets):
 
     D = F.D()
 
-    invsqrtD = sparse.spdiags(1/sqrt(D),(0,),len(D),len(D))
+    invsqrtD = sparse.spdiags(1/np.sqrt(D),(0,),len(D),len(D))
     LPK_ = (invsqrtD*LPK_).T
     #LPK_ = (invsqrtD*LPK_).T.toarray()  #LC^-1
     
     #calculate only for nonzero coloumns of LPK_ matrix
-    zero_ins = array(LPK_.sum(0)==0).ravel()
-    LPK = LPK_[:,where(~zero_ins)[0]].todense()
+    zero_ins = np.array(LPK_.sum(0)==0).ravel()
+    LPK = LPK_[:,np.where(~zero_ins)[0]].todense()
 
     
     
@@ -1598,7 +1598,7 @@ def PresolveSVD2(K,B,nx,ny, ndets):
     #from scipy.sparse.linalg import svds
 
     #u, s, vt = svds(LPK,k-1)  #BUG reconstruct only M-1 eigenvalues!!  
-    #ind = where(isfinite(s) & (s>1))[0][::-1] #remove noise vectors
+    #ind = np.where(np.isfinite(s) & (s>1))[0][::-1] #remove noise vectors
     #s = s[ind]
     #vt = vt[ind,:]
     #ut = u[:,ind].T
@@ -1614,15 +1614,15 @@ def PresolveSVD2(K,B,nx,ny, ndets):
     #r, = qr(LPK, overwrite_a=False,mode='r', pivoting=False, check_finite=False)
     #r = r[:,:k]
     #u,s,v = svd(r, full_matrices=False, overwrite_a=True, check_finite=False)
-    #invR = dot(v.T, u.T/s[:,None] )
-    #vt_ = dot(invR,LPK )
+    #invR = np.dot(v.T, u.T/s[:,None] )
+    #vt_ = np.dot(invR,LPK )
     #print time.time()-t
     #t = time.time()
     #tol = max(dim(m))*max(D)*.Machine$double.eps
 #NOTE http://hackersome.com/p/arbenson/mrtsqr
 
-    #T = ascontiguousarray(LPK.T)
-    #dot(T.T, T)
+    #T = np.ascontiguousarray(LPK.T)
+    #np.dot(T.T, T)
     
     #from scipy.sparse.linalg import eigsh, svds
         #from scipy.sparse.linalg import svds
@@ -1631,18 +1631,18 @@ def PresolveSVD2(K,B,nx,ny, ndets):
     #u, s, vt = svds(LPK,k-1)  #BUG reconstruct only M-1 eigenvalues!!  
     
     
-    s,u = eigh(dot(LPK, LPK.T),overwrite_a=True, check_finite=False,lower=True)
-    s,u = sqrt(abs(s))[::-1], u[:,::-1]
-    #dot(u[:,:rank].T/D[:,None], LPK)
+    s,u = eigh(np.dot(LPK, LPK.T),overwrite_a=True, check_finite=False,lower=True)
+    s,u = np.sqrt(np.abs(s))[::-1], u[:,::-1]
+    #np.dot(u[:,:rank].T/D[:,None], LPK)
     #ut = u[:,ind].T
     
     
     
-    #r = qr(ascontiguousarray(LPK.T),  mode='r',check_finite=False)
+    #r = qr(np.ascontiguousarray(LPK.T),  mode='r',check_finite=False)
 
     #from scipy.linalg import cholesky
     
-    #L = cholesky( dot(LPK, LPK.T),lower=False, overwrite_a=False, check_finite=False)
+    #L = cholesky( np.dot(LPK, LPK.T),lower=False, overwrite_a=False, check_finite=False)
     #U,S,V = svd(L, full_matrices=False, compute_uv=True, overwrite_a=True, check_finite=False)
 
 
@@ -1651,20 +1651,20 @@ def PresolveSVD2(K,B,nx,ny, ndets):
     #print s
     #plot(s)
     #show()  
-    #print where(cumprod((diff(log(s[s!=0]))>-5)))
+    #print np.where(np.cumprod((np.diff(np.log(s[s!=0]))>-5)))
     #try:
-    rank = where(cumprod((diff(log(s[s!=0]))>-5)|(s[s!=0][1:]>median(s))))[0][-1]+2
+    rank = np.where(np.cumprod((np.diff(np.log(s[s!=0]))>-5)|(s[s!=0][1:]>np.median(s))))[0][-1]+2
     #except:
 
     #print 'BUG!!!!!!'
     #rank-= 1
     #valid_ind = slice(None, rank+1)
     
-    D = abs(s[:rank])
+    D = np.abs(s[:rank])
 
     U = u[:,:rank]
 
-    vt_ = dot(U.T/D[:,None], LPK)
+    vt_ = np.dot(U.T/D[:,None], LPK)
     
     
     
@@ -1677,10 +1677,10 @@ def PresolveSVD2(K,B,nx,ny, ndets):
     #print time.time()-t
 
     
-    #valid_ind = isfinite(s)
+    #valid_ind = np.isfinite(s)
     #valid_ind[valid_ind] &= s[valid_ind] > 0
     
-    vt = zeros((vt_.shape[0],len(zero_ins)) )
+    vt = np.zeros((vt_.shape[0],len(zero_ins)) )
     
     
     
@@ -1689,13 +1689,13 @@ def PresolveSVD2(K,B,nx,ny, ndets):
     V = F.apply_Pt(F.solve_Lt(invsqrtD*vt.T)).T
 
 
-    #valid_ind = slice(0, where(s/s.max() > 1e-7)[0][-1]+1)
+    #valid_ind = slice(0, np.where(s/s.max() > 1e-7)[0][-1]+1)
     #valid_ind = slice(None,None)
   
     #sort from the most important to the least
     #valid_ind = D > 1e-6
     #D = D
-    #U = (K*V)[:,valid_ind].T/D[:,newaxis]
+    #U = (K*V)[:,valid_ind].T/D[:,np.newaxis]
     #U = u.T
   ##V = V[:,valid_ind]
     #V = V.T
@@ -1711,8 +1711,8 @@ def PresolveSVD2(K,B,nx,ny, ndets):
     #V = V.T
     
     
-    #K_ = dot(dot(U,diag(1/D)),V)
-    #print 'Decomposition accuracy',linalg.norm((K_* K.T)-eye(K.shape[0]))-len(s)+rank
+    #K_ = np.dot(np.dot(U,np.diag(1/D)),V)
+    #print 'Decomposition accuracy',np.linalg.norm((K_* K.T)-np.eye(K.shape[0]))-len(s)+rank
     #exit()
 
     
@@ -1723,326 +1723,13 @@ def PresolveSVD2(K,B,nx,ny, ndets):
     
     #iterative upgrade of the existing decompostion for a new B. But U is not orthogonal!? 
     #F = cholesky(B)
-    #HK = asarray(F(K.T).T.todense())
-    #V_ = dot(U.T/D[:,None],HK)
+    #HK = np.asarray(F(K.T).T.todense())
+    #V_ = np.dot(U.T/D[:,None],HK)
     #U_ = K*V_.T
-    #D_ = D*linalg.norm(U,axis=0)
+    #D_ = D*np.linalg.norm(U,axis=0)
 
 
-    return {'U':matrix(U), 'V':matrix(V) , 'D':D, 'wrong_dets':wrong_dets}
-
-    
-
-
-def PresolveSVD3D(K,B,nx,ny, ndets):
-    """
-    :param spmatrix K: Geometry matrix
-    :param spamtrix B: Smoothing matrix D.T*D
-    Solve SVD by cholesky and svd decomposition. 
-
-    """
-
-    wrong_dets = squeeze(array(K.sum(1)==0))
-    
-    
-    
-    K = K[where(~wrong_dets)[0],:]
-    k = min(sum(~wrong_dets),ndets,K.shape[1] )
-    
-
-    #solve generalized eigen value problem K.T*K*x = lambda*C*x
-
-    #from scikits.sparse.cholmod import cholesky, cholesky_AAt
-    #from  scipy.linalg import eigh,svd,qr
-    
-
-    try:
-        F = cholesky(B)
-    except:
-        #solve case whan B is singular
-        B_trace = B.diagonal().sum()
-        F = cholesky(B,B_trace*1e-16/nx/ny)
-        
-    
-    LPK_ = F.solve_L(F.apply_P(K.T.tocsc()))  
-
-    D = F.D()
-
-    invsqrtD = sparse.spdiags(1/sqrt(D),(0,),len(D),len(D))
-    LPK_ = (invsqrtD*LPK_).T
-    #LPK_ = (invsqrtD*LPK_).T.toarray()  #LC^-1
-    
-    #calculate only for nonzero coloumns of LPK_ matrix
-    zero_ins = array(LPK_.sum(0)==0).ravel()
-    LPK = LPK_[:,where(~zero_ins)[0]]
-
-
-    LPK.sort_indices()
-    
-    #LPKT = LPK.tocsr().T
-    
-    #LPKT[:k]*LPK[:k,0]
-    
-    
-    
-    from scipy.sparse import csc_matrix
-    
-    def slice_csc(A,k,typ='='):
-        #slicing in scipy is extremaly slow :( 
-        from scipy.sparse import csc_matrix
-        ind = A.indptr[k]
-        if typ == '=':
-            ind2 = A.indptr[k+1]
-            return csc_matrix((A.data[ind:ind2],A.indices[ind:ind2],[0, ind2-ind]),shape=(A.shape[0],1))
-        if typ == '<':
-            return csc_matrix((A.data[:ind],A.indices[:ind],A.indptr[:k+1]),shape=(A.shape[0],k))
-        #if typ == '>':
-            #return csc_matrix((A.data[ind:],A.indices[ind:],A.indptr[k:]-A.indptr[k]),shape=(A.shape[0],A.shape[1]-k))
-
-    
-    LPK = LPK.T.tocsc()
-    LLs = sparse.vstack([ slice_csc(LPK,i+1,'<').T*slice_csc(LPK,i) for i in range(k)])
-    #LLs = sparse.vstack([ LPK[:i+1,:]*LPK[i,:].T for i in arange(k)])
-    #LLs = sparse.hstack([ LPK*LPK[i,:].T for i in arange(k)])
-
-    
-    LL = zeros((k,k))
-    LL[tril_indices(k)] = array(LLs.todense()).flatten()
-    #ind = ones((k,k), dtype='bool')
-    LL.flat = array(LLs.todense()).flatten()
-    LL2 = LPK.T*LPK
-    
-    
-    #X = [r_[x.todense] for i, x in enumerate(X)]
-    
-    
-    subplot(1,2,1);imshow(LL2.todense());subplot(1,2,2);imshow(LL);show()
-
-    
-    
-    #LPK[:,:500]
-    
-    
-    #LPK = LPK.toarray()
-    
-    #[for i in]
-
-    
-    #from scipy.sparse.linalg import svds
-
-    #u, s, vt = svds(LPK,k-1)  #BUG reconstruct only M-1 eigenvalues!!  
-    #ind = where(isfinite(s) & (s>1))[0][::-1] #remove noise vectors
-    #s = s[ind]
-    #vt = vt[ind,:]
-    #ut = u[:,ind].T
-    
-    
-    
-    
-    #NOTE ugly way how to calulate fast SVD
-    
-    #t = time.time()
-    #u,s,v = svd(LPK, full_matrices=False, overwrite_a=True, check_finite=False)
-
-    #r, = qr(LPK, overwrite_a=False,mode='r', pivoting=False, check_finite=False)
-    #r = r[:,:k]
-    #u,s,v = svd(r, full_matrices=False, overwrite_a=True, check_finite=False)
-    #invR = dot(v.T, u.T/s[:,None] )
-    #vt_ = dot(invR,LPK )
-    #print time.time()-t
-    #t = time.time()
-    #tol = max(dim(m))*max(D)*.Machine$double.eps
-#NOTE http://hackersome.com/p/arbenson/mrtsqr
-
-    #T = ascontiguousarray(LPK.T)
-    #dot(T.T, T)
-    
-    #from scipy.sparse.linalg import eigsh, svds
-        #from scipy.sparse.linalg import svds
-        
-
-
-    #s,u = eigsh( LPK* LPK.T, k=k-1)
-    #u, s, vt = svds(LPK,k-1)  #BUG reconstruct only M-1 eigenvalues!!  
-    
-    
-    #from sparsesvd import sparsesvd
-    #ut, s, vt = sparsesvd( LPK,k)
-
-    #
-    #imshow(LL.todense().astype('single'),interpolation='nearest')
-    #show()
-    
-
-    
-    from sparsesvd import sparsesvd
-    #from scipy.sparse.linalg import eigsh, svds
-    
-    #FL = cholesky_AAt(LPK)
-    #FL.apply_P(LPK)
-    
-    #LL = (LPK* LPK.T)
-    #FLL = cholesky(LL)
-
-    #I = eye(k)
-    #I[:] = FL.apply_P(I)
-    
-    
-
-    
-    
-
-
-    #461
-    #t = time.time();eigh((LPK* LPK.T).todense(),overwrite_a=True, check_finite=False,lower=True);print time.time()-t
-    #t = time.time();eigsh( LPK* LPK.T, k=k-1);print time.time()-t
-    #t = time.time();svds(LPK,k-1);print time.time()-t
-    #t = time.time();sparsesvd( LPK,k);print time.time()-t
-    #t = time.time();svdp(LPK , k, which='L', irl_mode=False,blocksize = 16,compute_v=False);print time.time()-t
-
-
-    
-    
-    #1120 = 160*7
-    #LL[-160:,-160:]-LL[:160,:160]
-    
-    
-    #from pypropack import svdp
-    #u,s,v = svdp(LPK , k, which='L', irl_mode=False,blocksize = 16,compute_v=False )
-    #imshow(LL.astype('float32'),aspect='auto', interpolation='nearest');show()
-    
-    
-    #TODO Very ugly step!! i kan not slve it as sparse!!
-    LL = (LPK* LPK.T).todense()
-    s,u = eigh(LL,overwrite_a=True, check_finite=False,lower=True)
-    del LL
-    s,u = sqrt(abs(s))[::-1], u[:,::-1]
-    #dot(u[:,:rank].T/D[:,None], LPK)
-    #ut = u[:,ind].T
-    #imshow(u.astype('float32'),aspect='auto', interpolation='nearest');show()
-    #imshow(sqrt(abs(u.astype('float16'))),aspect='auto', interpolation='nearest');show()
-
-    I = 1+dot(abs(u.T),arange(k))/amax(dot(abs(u.T),arange(k)))*1e-5
-    ind = argsort(I*s)[::-1]
-    u = u[:,ind]
-    s = s[ind]
-    u = sparse.csr_matrix(u)
-
-    
-
-    #imshow(sqrt(abs(u[:,ind].astype('float16'))),aspect='auto', interpolation='nearest');show()
-    
-    
-    #u*arange(k)
-
-    #r = qr(ascontiguousarray(LPK.T),  mode='r',check_finite=False)
-
-    #from scipy.linalg import cholesky
-    
-    #L = cholesky( dot(LPK, LPK.T),lower=False, overwrite_a=False, check_finite=False)
-    #U,S,V = svd(L, full_matrices=False, compute_uv=True, overwrite_a=True, check_finite=False)
-
-
-
-    #estimate the rank
-    #print s
-    #plot(s)
-    #show()  
-    #print where(cumprod((diff(log(s[s!=0]))>-5)))
-    #try:
-    rank = where(cumprod((diff(log(s[s!=0]))>-5)|(s[s!=0][1:]>median(s))))[0][-1]+2
-    #except:
-
-    #print 'BUG!!!!!!'
-    #rank-= 1
-    #valid_ind = slice(None, rank+1)
-    
-    D = abs(s[:rank])
-
-    U = u[:,:rank]
-    
-    #sparse.spdiags(1/D, 0, k,k)
-
-    vt_ = (U.T*sparse.spdiags(1/D, 0, k,k))* LPK
-    
-    
-    
-    #wrong_dets[~wrong_dets] |=~valid_ind
-#print time.time()-t
-    #t = time.time()
-
-    #ordinary SVD (slow)
-    #u, s_, vt_ = svd(LPK,  full_matrices=False,check_finite = False, overwrite_a=True)
-    #print time.time()-t
-
-    
-    #valid_ind = isfinite(s)
-    #valid_ind[valid_ind] &= s[valid_ind] > 0
-    
-    #vt = zeros((vt_.shape[0],len(zero_ins)) )
-    
-    
-    
-    
-    indptr = list(vt_.indptr)
-    for i in where(zero_ins)[0]:  indptr.insert(i,indptr[i])    
-    vt = sparse.csc_matrix((vt_.data, vt_.indices, indptr), shape=(rank, len(zero_ins)) )
-    
-    #vt.indptr = array(indptr)
-    #vt.shape = (vt_.shape[0],len(zero_ins))
-    #vt.set_shape((vt_.shape[0],len(zero_ins)))
-    #vt[:,~zero_ins] = vt_.todense()   
-    
-    #sparse.csc_matrix(vt).indptr
-    
-    V = F.apply_Pt(F.solve_Lt(invsqrtD*vt.T)).T
-
-
-    #valid_ind = slice(0, where(s/s.max() > 1e-7)[0][-1]+1)
-    #valid_ind = slice(None,None)
-  
-    #sort from the most important to the least
-    #valid_ind = D > 1e-6
-    #D = D
-    #U = (K*V)[:,valid_ind].T/D[:,newaxis]
-    #U = u.T
-  ##V = V[:,valid_ind]
-    #V = V.T
-
-        
- 
-    
-    
-    
-    
-    #V = V[:,valid_ind]
-    #define decomposition in the same form as for the other methods
-    #U =  (K*V).T
-    #V = V.T
-    
-    
-    #K_ = dot(dot(U,diag(1/D)),V)
-    #print 'Decomposition accuracy',linalg.norm((K_* K.T)-eye(K.shape[0]))-len(s)+rank
-    #exit()
-
-    
-    
-    
-    
-    #U*D*V*B= K!!
-    
-    #iterative upgrade of the existing decompostion for a new B. But U is not orthogonal!? 
-    #F = cholesky(B)
-    #HK = asarray(F(K.T).T.todense())
-    #V_ = dot(U.T/D[:,None],HK)
-    #U_ = K*V_.T
-    #D_ = D*linalg.norm(U,axis=0)
-
-
-    return {'U':U, 'V':V , 'D':D, 'wrong_dets':wrong_dets}
-
-    
-
+    return {'U':np.matrix(U), 'V':np.matrix(V) , 'D':D, 'wrong_dets':wrong_dets}
 
 def PresolveGEV(K,B,nx,ny, ndets,BdMat):
     """
@@ -2054,19 +1741,19 @@ def PresolveGEV(K,B,nx,ny, ndets,BdMat):
 
     """
 
-    wrong_dets = squeeze(array(K.sum(1)==0))
+    wrong_dets = np.squeeze(np.array(K.sum(1)==0))
     #print K.shape, wrong_dets.shape
-    K = K[where(~wrong_dets)[0],:]
-    k = min(sum(~wrong_dets),ndets,K.shape[1] )
+    K = K[np.where(~wrong_dets)[0],:]
+    k = min(np.sum(~wrong_dets),ndets,K.shape[1] )
     
     C = K.T*K
-    k = min(shape(C)[0]-1, ndets-1)
+    k = min(np.shape(C)[0]-1, ndets-1)
 
     #NOTE faster computation by cholmod (just sometimes faster!!, example - JET)
     try:
         from scipy.sparse.linalg.interface import  LinearOperator
         from scikits.sparse.cholmod import cholesky
-        Minv = LinearOperator(shape(B), cholesky(B))
+        Minv = LinearOperator(np.shape(B), cholesky(B))
     except:
         debug( 'cholesky failured')
         Minv = None
@@ -2080,11 +1767,11 @@ def PresolveGEV(K,B,nx,ny, ndets,BdMat):
     #GEV solved, it can be used for computation 
 
 
-    D = sqrt(D[valid_ind][::-1])
+    D = np.sqrt(D[valid_ind][::-1])
     V = V[:,valid_ind][:,::-1]
 
     #define decomposition in the same form as for the other methods
-    U =  (K*V)/D[newaxis,:]
+    U =  (K*V)/D[np.newaxis,:]
     V = V.T
     
     
@@ -2096,7 +1783,7 @@ def PresolveGEV(K,B,nx,ny, ndets,BdMat):
     #D, V = eigsh(C,M = B*fact+C, k=k)  # in case that npix < ndets
     #D = D/(1-D)*fact
     #valid_ind = D > 0 #can be negative -  numerical error
-    #D = sqrt(D[valid_ind])
+    #D = np.sqrt(D[valid_ind])
     #U = (K*V)
     #V = V[:,valid_ind].T*D[:,None]
     #U = U[:,valid_ind] #reduce numerical errors? 
@@ -2107,12 +1794,12 @@ def PresolveGEV(K,B,nx,ny, ndets,BdMat):
     
     
           
-    #K_ = dot(dot(U.T,diag(1/D)),V)
-    #print 'Decomposition accuracy',linalg.norm((K_* K.T)-eye(K.shape[0]))
+    #K_ = np.dot(np.dot(U.T,np.diag(1/D)),V)
+    #print 'Decomposition accuracy',np.linalg.norm((K_* K.T)-np.eye(K.shape[0]))
     #exit()
 
 
-    return {'U':matrix(U), 'V':matrix(V) , 'D':D, 'wrong_dets':wrong_dets}
+    return {'U':np.matrix(U), 'V':np.matrix(V) , 'D':D, 'wrong_dets':wrong_dets}
 
     
 def PresolveGEV_singular(K,B,nx,ny, ndets,BdMat):
@@ -2123,12 +1810,12 @@ def PresolveGEV_singular(K,B,nx,ny, ndets,BdMat):
     
     
         
-    wrong_dets = squeeze(array(K.sum(1)==0))
-    K = K[where(~wrong_dets)[0],:]
-    k = min(sum(~wrong_dets),ndets,K.shape[1] )
+    wrong_dets = np.squeeze(np.array(K.sum(1)==0))
+    K = K[np.where(~wrong_dets)[0],:]
+    k = min(np.sum(~wrong_dets),ndets,K.shape[1] )
     
     C = K.T*K
-    k = min(shape(C)[0]-1, ndets-1)
+    k = min(np.shape(C)[0]-1, ndets-1)
 
     fact = 1e4  #compensate a very low rank of C matrix => huge numerical instability 
 
@@ -2140,12 +1827,12 @@ def PresolveGEV_singular(K,B,nx,ny, ndets,BdMat):
 
     ##debug('done')
 
-    D = sqrt(abs(D[valid_ind]))#can be negative -  numerical error
+    D = np.sqrt(np.abs(D[valid_ind]))#can be negative -  numerical error
 
-    U = (K*V).T#/sqrt(D)[:,newaxis]
+    U = (K*V).T#/np.sqrt(D)[:,np.newaxis]
 
-    V = V[:,valid_ind].T*D[:,None]#(V*sqrt(D)[newaxis,:]).T
-    U = U[valid_ind]#/linalg.norm(U, axis=1)[valid_ind,None] #reduce numerical errors? 
+    V = V[:,valid_ind].T*D[:,None]#(V*np.sqrt(D)[np.newaxis,:]).T
+    U = U[valid_ind]#/np.linalg.norm(U, axis=1)[valid_ind,None] #reduce numerical errors? 
     D = D[::-1]
     U = U[::-1,:].T    #BUG sort the vectors from the most important to the less
     V = V[::-1,:]
@@ -2153,12 +1840,12 @@ def PresolveGEV_singular(K,B,nx,ny, ndets,BdMat):
 
 
 
-    #K_ = dot(dot(U.T,diag(1/D)),V)
-    #print 'Decomposition accuracy',linalg.norm((K_* K.T)-eye(K.shape[0]))
+    #K_ = np.dot(np.dot(U.T,np.diag(1/D)),V)
+    #print 'Decomposition accuracy',np.linalg.norm((K_* K.T)-np.eye(K.shape[0]))
 
 
     
-    return {'U':matrix(U), 'V':matrix(V) , 'D':D, 'wrong_dets':wrong_dets}
+    return {'U':np.matrix(U), 'V':np.matrix(V) , 'D':D, 'wrong_dets':wrong_dets}
 
 
 
@@ -2174,10 +1861,10 @@ def PresolveGSVD(K,B,nx,ny, ndets):
     
     #dec = PresolveGEV(K,B,nx,ny, ndets)
 
-    wrong_dets = squeeze(array(K.sum(1)==0))
+    wrong_dets = np.squeeze(np.array(K.sum(1)==0))
 
-    K = K[where(~wrong_dets)[0],:]
-    k = min(sum(~wrong_dets),ndets,K.shape[1] )
+    K = K[np.where(~wrong_dets)[0],:]
+    k = min(np.sum(~wrong_dets),ndets,K.shape[1] )
     #from scikits.sparse.cholmod import cholesky
 
     try:
@@ -2189,7 +1876,7 @@ def PresolveGSVD(K,B,nx,ny, ndets):
         
 
     L,D = F.L_D()
-    L = sqrt(D)*F.apply_Pt(L.tocsc()).T
+    L = np.sqrt(D)*F.apply_Pt(L.tocsc()).T
 
   
     fact = 1e4  #compensate a very low rank of C matrix => huge numerical instability 
@@ -2197,8 +1884,8 @@ def PresolveGSVD(K,B,nx,ny, ndets):
     U,V,X,C,S = gsvd(K.todense(),L.todense()*fact)  #normalizovat K a B 
     
     k = K.shape[0]
-    C = diag(C[::-1,::-1])
-    S = diag(S)[:-k-1:-1]
+    C = np.diag(C[::-1,::-1])
+    S = np.diag(S)[:-k-1:-1]
     X = inv(X, overwrite_a=True, check_finite=False)
     X = X.T[:,-k:][:,::-1]
     X*= fact/S
@@ -2207,7 +1894,7 @@ def PresolveGSVD(K,B,nx,ny, ndets):
     D = C/S*fact
     
     
-    return {'U':matrix(U), 'V':matrix(V) , 'D':D, 'wrong_dets':wrong_dets}
+    return {'U':np.matrix(U), 'V':np.matrix(V) , 'D':D, 'wrong_dets':wrong_dets}
 
   
 
@@ -2222,12 +1909,12 @@ def FastLinEmisivity(presolved_decomposition, S, norm,tsteps):
     :param int tsteps: Number of time steps
     :param dict presolved_decomposition: Dictionary with presolved vectors
     :param array S: measured data
-    :var double g:  smoothing factor -- it can be estimated as median(D**2/ndets) or calculated.
+    :var double g:  smoothing factor -- it can be estimated as np.median(D**2/ndets) or calculated.
     :param double norm:  data S normalization
 
     """
     wrong_dets = presolved_decomposition['wrong_dets']
-    S = reshape(S, (-1,tsteps))
+    S = np.reshape(S, (-1,tsteps))
     
     
    
@@ -2237,27 +1924,27 @@ def FastLinEmisivity(presolved_decomposition, S, norm,tsteps):
     D = presolved_decomposition['D']
 
 
-    sum_v = sum(V,1)
-    g = median(D**2)
+    sum_v = np.sum(V,1)
+    g = np.median(D**2)
     w = 1/(1+g/D**2)
-    b = dot(sum_v*w/D,U.T)   #emision coefficients
+    b = np.dot(sum_v*w/D,U.T)   #emision coefficients
 
-    emis =  dot(b, S[:size(b),:])
+    emis =  np.dot(b, S[:np.size(b),:])
 
 
-    return multiply(tokamak,emis,norm)
+    return np.multiply(tokamak,emis,norm)
 
 
 
 def FindNegLocMin(image,lim,neighborhood_size=5):
 
-    if all(image >= -lim):
+    if np.all(image >= -lim):
         return []
     
     data_min = ndi.filters.minimum_filter(image, neighborhood_size)
     minima = (image == data_min)&(image < -lim)
-    ind_minima = where(minima)
-    active_set = ravel_multi_index(ind_minima,image.shape,order='F')
+    ind_minima = np.where(minima)
+    active_set = np.ravel_multi_index(ind_minima,image.shape,order='F')
 
     return active_set
 
@@ -2300,13 +1987,13 @@ def ForcePositivity(E,W,g,V,D,prod,resid,ndets,BdMat,chi2,tokamak):
             cost += np.sum(img[neg]**2)
    
             jac = 2*(w**2*x-p*w+wdg**2*x)
-            jac += 2*dot(A[neg].T,img[neg])
+            jac += 2*np.dot(A[neg].T,img[neg])
     
             return cost, jac
         
         out = minimize(cost_fun, prod[ts],jac=True, method='L-BFGS-B', args=args )   
  
-        iE = dot(W[ts]*out.x/D, V)
+        iE = np.dot(W[ts]*out.x/D, V)
      
         #inverse transformation
         E[ts] = tokamak.Transform.T*iE 
@@ -2360,7 +2047,7 @@ def ForcePositivity2(E,W,g,V,D,prod,resid,ndets,BdMat,chi2,tokamak):
             nconst = len(update_active_set|active_set) 
             if nconst > len(prod[ts])//2:
                 nconst = len(prod[ts])//2 - len(active_set)
-                update_active_set = set(array(list(update_active_set))[argsort(min_vals)][:nconst])
+                update_active_set = set(np.array(list(update_active_set))[np.argsort(min_vals)][:nconst])
      
             if len(update_active_set - active_set) == 0: 
                 break  
@@ -2374,7 +2061,7 @@ def ForcePositivity2(E,W,g,V,D,prod,resid,ndets,BdMat,chi2,tokamak):
             U,S,V_ = np.linalg.svd(B)  #must be full SVD!
             
             n = len(active_set)
-            pinvB = dot(U/S[None],V_[:n]).T
+            pinvB = np.dot(U/S[None],V_[:n]).T
             perpB = V_[n:].T
             
             invB = np.hstack((perpB, pinvB))
@@ -2409,7 +2096,7 @@ def ForcePositivity2(E,W,g,V,D,prod,resid,ndets,BdMat,chi2,tokamak):
            # print(np.sum((prod[ts]-W[ts]*p)**2)/ np.sum(((1-W[ts])*prod[ts])**2), len(active_set))
             
             
-            iE = dot(W[ts]*p/D, V)
+            iE = np.dot(W[ts]*p/D, V)
             if tokamak.transform_index not in [0,4]:
                 iE = tokamak.Transform*iE
             
@@ -2418,10 +2105,10 @@ def ForcePositivity2(E,W,g,V,D,prod,resid,ndets,BdMat,chi2,tokamak):
             
             #vmin  = iE.min()
             #vmax  = iE.max()
-            #print( i, k, -sum(image[image<lim]) )
-            #suptitle(str((i, k, -sum(image[image<lim]) )))
+            #print( i, k, -np.sum(image[image<lim]) )
+            #suptitle(str((i, k, -np.sum(image[image<lim]) )))
             #subplot(121)
-            #itr = dot(single(w*delta_prod/D), V)
+            #itr = np.dot(single(w*delta_prod/D), V)
             #itr[BdMat] = 0
             #imshow(itr.reshape(ny,nx,order='F'),origin='lower', interpolation='nearest',vmin=vmin,vmax=vmax)
             #colorbar()
@@ -2433,10 +2120,10 @@ def ForcePositivity2(E,W,g,V,D,prod,resid,ndets,BdMat,chi2,tokamak):
 
             #show()
             
-            image2 = copy(iE.reshape(ny,nx,order='F'))
-            #corr = dot(single(w*delta_prod/D), V) #.5ms
+            image2 = np.copy(iE.reshape(ny,nx,order='F'))
+            #corr = np.dot(single(w*delta_prod/D), V) #.5ms
             
-            image2.ravel(order='F')[list(active_set)] = nan
+            image2.ravel(order='F')[list(active_set)] = np.nan
             figure()
             #suptitle(str(i)+'  '+str(k))
             subplot(121)
@@ -2522,22 +2209,22 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
     V = presolved_decomposition['V'].astype(dtype)
     D = presolved_decomposition['D'].astype(dtype)
  
-    #L_ = L[where(~wrong_dets)[0], :]
-    #K_ = ((U*diag(1/D)*V))
-    #print '\n\nDecomposition accuracy',linalg.norm((K_* L_.T)-eye(L_.shape[0]))#-len(S)+rank
+    #L_ = L[np.where(~wrong_dets)[0], :]
+    #K_ = ((U*np.diag(1/D)*V))
+    #print '\n\nDecomposition accuracy',np.linalg.norm((K_* L_.T)-np.eye(L_.shape[0]))#-len(S)+rank
     #exit()
     
-    #PlotBaseVectors(V, nx,ny,Nmax=infty)
+    #PlotBaseVectors(V, nx,ny,Nmax=np.inf)
 
-    if not all(fabs(D) > 0):
+    if not np.all(np.fabs(D) > 0):
         print('undetected colinear dimensions!')
         ind = D == 0
-        if not all(ind):D,V,U = D[ind],V[ind],U[:,ind]
+        if not np.all(ind):D,V,U = D[ind],V[ind],U[:,ind]
         
         
         
         
-    assert all(fabs(D) > 0), 'undetected colinear dimensions!'
+    assert np.all(np.fabs(D) > 0), 'undetected colinear dimensions!'
     
 
     if 'R' in list(presolved_decomposition.keys()):   # QR decomposition
@@ -2549,25 +2236,25 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
     S = S.astype(dtype)
     
  
-    chi2 = zeros(tsteps)
-    g = zeros(tsteps)
-    doF = zeros(tsteps)
-    retro = zeros((tsteps,ndets ),dtype=dtype)
+    chi2 = np.zeros(tsteps)
+    g = np.zeros(tsteps)
+    doF = np.zeros(tsteps)
+    retro = np.zeros((tsteps,ndets ),dtype=dtype)
     from scipy.stats.mstats import mquantiles
 
 
-    g_min = 2*log(mquantiles(D,.1))-1
-    g_max = 2*log(mquantiles(D,1))+1
+    g_min = 2*np.log(mquantiles(D,.1))-1
+    g_max = 2*np.log(mquantiles(D,1))+1
     
     
     lam_low = min(g_fract_0, lam_low)
     lam_up  = max(g_fract_0, lam_up)
 
-    g_lim_low,g0,g_lim_up = mquantiles(2*log(D),[lam_low,g_fract_0,lam_up])
+    g_lim_low,g0,g_lim_up = mquantiles(2*np.log(D),[lam_low,g_fract_0,lam_up])
     
     
     try:
-        g0 = mquantiles(2*log(D), float(lam_method))[0]
+        g0 = mquantiles(2*np.log(D), float(lam_method))[0]
         if float(lam_method) == 0: g0 = -50 
     except:
         pass  
@@ -2575,8 +2262,8 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
 
          
     def w_i(g):
-        w = 1./(1.+exp(g)/D**2)
-        w[~isfinite(w)] = 0
+        w = 1./(1.+np.exp(g)/D**2)
+        w[~np.isfinite(w)] = 0
         return w
 
         
@@ -2585,16 +2272,16 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
         
         
         w = w_i(g)
-        u = array(U,copy=False)
+        u = np.array(U,copy=False)
 
-        ind = einsum('ij,ij->i',u,u) < single(u.shape[1]*.1/u.shape[0])  #  diag(U*U.T) - smaller are wrong, linearly dependent? 
+        ind = np.einsum('ij,ij->i',u,u) < np.single(u.shape[1]*.1/u.shape[0])  #  np.diag(U*U.T) - smaller are wrong, linearly dependent? 
 
         if ind.any(): u = u[~ind]
-        return sum((dot(u, (1-w)*prod)/einsum('ij,ij,j->i', u,u, 1-w))**2)/ndets
+        return np.sum((np.dot(u, (1-w)*prod)/np.einsum('ij,ij,j->i', u,u, 1-w))**2)/ndets
     
-        #einsum('ij,ij,j->i', u,u, 1-w) it is diag(W*U*U.T) - 1-leverage- sensitivity of retrofit on these measurements
+        #np.einsum('ij,ij,j->i', u,u, 1-w) it is np.diag(W*U*U.T) - 1-leverage- sensitivity of retrofit on these measurements
     
-        #sum(U**2,1)
+        #np.sum(U**2,1)
         
         
         
@@ -2602,14 +2289,14 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
     def CurvLCurv(g, prod,resid=0):
         #curvature of the Lcurve
         w = w_i(g)
-        g = exp(g)        
+        g = np.exp(g)        
 
-        a = linalg.norm(R*((w-1)*prod))**2+resid**2
-        b = linalg.norm((w/D*prod))**2
+        a = np.linalg.norm(R*((w-1)*prod))**2+resid**2
+        b = np.linalg.norm((w/D*prod))**2
         
         
         
-        E = sum((D*prod)**2/(D**2+g)**3)
+        E = np.sum((D*prod)**2/(D**2+g)**3)
 
         kappa = (a*b/E-g*(a+g*b))/(a+g**2*b)**1.5
         
@@ -2619,32 +2306,32 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
     def QuasiOpt(g, prod,resid=0):
         #Quaisi-Optimum algorithm  PC Hansen Matlab Regularization Tools
         w = w_i(g)
-        return 1/(linalg.norm(prod/D*w*(1-w))*ndets) #BUG inversion is there to have a minimum!
+        return 1/(np.linalg.norm(prod/D*w*(1-w))*ndets) #BUG inversion is there to have a minimum!
 
 
     def GCV(g, prod,resid=0):
         #generalized crossvalidation
         w = w_i(g)
-        #return 1/(1-mean(w))
+        #return 1/(1-np.mean(w))
 
-        return (sum((R*((w-1)*prod))**2)+resid)/ndets/(1-mean(w))**2
+        return (np.sum((R*((w-1)*prod))**2)+resid)/ndets/(1-np.mean(w))**2
     
     
     def AIC(g, prod,resid=0):
         #AIC criteriom
 
         w = w_i(g)
-        n = size(prod)
-        #k = len(w)-sum((1-w)**2)  #number of "parameters" 
-        k = sum(w)
+        n = np.size(prod)
+        #k = len(w)-np.sum((1-w)**2)  #number of "parameters" 
+        k = np.sum(w)
         chi2 = CHI2(g,prod,resid,bias=True,log_out=False)
-        LnL = -.5*chi2*ndets-n*log(2*pi)/2
+        LnL = -.5*chi2*ndets-n*np.log(2*np.pi)/2
         
         return 2*k-2*LnL
         
         
         #ln_chi2 = CHI2(g,prod,resid,bias=True,log_out=True)
-        #ln_chi2+= log(ndets)
+        #ln_chi2+= np.log(ndets)
         
         
         
@@ -2654,19 +2341,19 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
     def AICc(g, prod,resid=0):
         #AICc is AIC with a correction for finite sample sizes.
         w = w_i(g)
-        #k = len(w)-sum((1-w)**2)  #number of "parameters" 
-        k = sum(w)
-        n = size(prod)
+        #k = len(w)-np.sum((1-w)**2)  #number of "parameters" 
+        k = np.sum(w)
+        n = np.size(prod)
         chi2 = CHI2(g,prod,resid,bias=True,log_out=False)
-        LnL = -.5*chi2*ndets-n*log(2*pi)/2
+        LnL = -.5*chi2*ndets-n*np.log(2*np.pi)/2
 
         return -2*LnL+2*(k+1)*n/(n-k-2)
         #return -2*LnL+2*k*n/(n-k-1)
 
         
-        #n = size(prod)
+        #n = np.size(prod)
         #w = w_i(g)
-        #k = len(w)-sum((1-w)**2)  #number of "parameters" 
+        #k = len(w)-np.sum((1-w)**2)  #number of "parameters" 
         #ln_chi2 = CHI2(g,prod,resid,bias=True,log_out=True)
         
         ##BUG output can be negative!!
@@ -2679,50 +2366,50 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
         
         
         w = w_i(g)
-        n = size(prod)
-        k = len(w)-sum((1-w)**2)  #number of "parameters" 
+        n = np.size(prod)
+        k = len(w)-np.sum((1-w)**2)  #number of "parameters" 
         chi2 = CHI2(g,prod,resid,bias=True,log_out=False)
-        LnL = -.5*chi2*ndets#-n*log(2*pi)/2
+        LnL = -.5*chi2*ndets#-n*np.log(2*np.pi)/2
         
-        return k*log(n)-2*LnL
+        return k*np.log(n)-2*LnL
     
     
         #n = ndets
         #w = w_i(g)
-        #k = len(w)-sum((1-w)**2)  #nomber of "parameters" 
+        #k = len(w)-np.sum((1-w)**2)  #nomber of "parameters" 
         #ln_chi2 = CHI2(g,prod,resid,bias=True,log_out=True)
-        #ln_chi2+= log(ndets)
+        #ln_chi2+= np.log(ndets)
 
-        #return n*ln_chi2+k*log(n)  #BUG zkontroolovat
+        #return n*ln_chi2+k*np.log(n)  #BUG zkontroolovat
     
     
     def CHI2(g,prod,resid,bias=True,log_out=False):
         #  discrepancy principle  - chi2
         #ndets = len(D) #BUG!!
-        #w = 1/(1+ndets*exp(g)/D**2)
+        #w = 1/(1+ndets*np.exp(g)/D**2)
         w = w_i(g)
-        #nDoF = ndets if bias else ndets-sum(w)
-        nDoF = ndets  if bias else sum((1-w)**2)
+        #nDoF = ndets if bias else ndets-np.sum(w)
+        nDoF = ndets  if bias else np.sum((1-w)**2)
         #nDoF = len(D)
         #resid = 0 #BUG  ale pak ne vždy existuje chi2=0
         
         if  g < g_min-5:
             if log_out:
-                return log(resid+ndets*sum((R*(prod/D**2))**2))+2*g
+                return np.log(resid+ndets*np.sum((R*(prod/D**2))**2))+2*g
             else:
-                return ndets*sum((R*(prod/D**2))**2)*exp(2*g)+resid
+                return ndets*np.sum((R*(prod/D**2))**2)*np.exp(2*g)+resid
    
         if log_out:
-            return log((linalg.norm(R*((w-1)*prod))**2+resid)/nDoF)
+            return np.log((np.linalg.norm(R*((w-1)*prod))**2+resid)/nDoF)
         else:
-            return (linalg.norm(R*((w-1)*prod))**2+resid)/nDoF
+            return (np.linalg.norm(R*((w-1)*prod))**2+resid)/nDoF
 
     def FindMin(F, x0,dx0,prod,resid,tol=0.01):
         #stupid but robust minimum searching algorithm.
 
         fg = F(x0, prod,resid)
 
-        while abs(dx0) > tol:
+        while np.abs(dx0) > tol:
             fg2 = F(x0+dx0, prod,resid)
                                 
             if fg2 < fg:
@@ -2732,19 +2419,19 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
             else:
                 dx0/=-2.
                 
-        return x0, log(fg2)
+        return x0, np.log(fg2)
     
     
-        #g_gcv  = copy(g0)
+        #g_gcv  = np.copy(g0)
         
         #dx0 = 1.0
-        #asymptote = log(ndets*sum((R*(prod[ts]/D**2))**2))#+2*g_gcv
+        #asymptote = np.log(ndets*np.sum((R*(prod[ts]/D**2))**2))#+2*g_gcv
 
-        #fg = log(GCV(g_gcv, prod[ts],resid[ts]))
+        #fg = np.log(GCV(g_gcv, prod[ts],resid[ts]))
 
-        #while abs(dg) > 0.01:
-            ##print dg, exp(g_gcv)
-            #fg2 = log(GCV(g_gcv+dg, prod[ts],resid[ts]))
+        #while np.abs(dg) > 0.01:
+            ##print dg, np.exp(g_gcv)
+            #fg2 = np.log(GCV(g_gcv+dg, prod[ts],resid[ts]))
                                 
             #if fg2 < fg:# and fg2 < asymptote+2*(g_gcv+dg):
                 #fg = fg2
@@ -2766,27 +2453,27 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
     g_gcv = 0
     
     S_ = S[~wrong_dets, :]  # remove not important  LOS 
-    L_ = L[where(~wrong_dets)[0], :]
+    L_ = L[np.where(~wrong_dets)[0], :]
 
     #try:
-        #prod = array(dot(S_.T,U))
-    prod = array(U.T.dot(S_).T)
+        #prod = np.array(np.dot(S_.T,U))
+    prod = np.array(U.T.dot(S_).T)
 
     #except:
     
 
     if tsteps > U.shape[1]:
-        P = eye(U.shape[0])-(R*U.T).T*(R*U.T)
-        resid = linalg.norm(dot(P.astype(single),S_) ,axis=0)**2 
+        P = np.eye(U.shape[0])-(R*U.T).T*(R*U.T)
+        resid = np.linalg.norm(np.dot(P.astype(np.single),S_) ,axis=0)**2 
     else:
         #print 
         
         
-        resid = linalg.norm(S_-U*(transpose(R)*(R*prod.T)),axis=0)**2 
-        #resid = linalg.norm(dot(P.astype(single),S_) ,axis=0)**2 
+        resid = np.linalg.norm(S_-U*(np.transpose(R)*(R*prod.T)),axis=0)**2 
+        #resid = np.linalg.norm(np.dot(P.astype(single),S_) ,axis=0)**2 
 
         
-    resid += linalg.norm(S[wrong_dets,:],axis=0)**2 
+    resid += np.linalg.norm(S[wrong_dets,:],axis=0)**2 
     #resid[:] = 0
 
 
@@ -2833,29 +2520,29 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
 
 
             
-        #g_tmp = logspace(g_min-10,g_max+10,100,base=e)
-        #chi2_tmp = zeros(100)
-        #chi2_tmp2 = zeros(100)
-        #GCV_tmp = zeros(100)
+        #g_tmp = logspace(g_min-10,g_max+10,100,base=np.e)
+        #chi2_tmp = np.zeros(100)
+        #chi2_tmp2 = np.zeros(100)
+        #GCV_tmp = np.zeros(100)
         
         #for i in range(100):
                 #w = 1/(1+g_tmp[i]/D**2)
-                #chi2_tmp2[i] = CHI2(log(g_tmp[i]),prod,resid,False)
-                #chi2_tmp[i] = CHI2(log(g_tmp[i]),prod,resid)
-                #GCV_tmp[i]  = GCV( log(g_tmp[i]),prod,resid)
+                #chi2_tmp2[i] = CHI2(np.log(g_tmp[i]),prod,resid,False)
+                #chi2_tmp[i] = CHI2(np.log(g_tmp[i]),prod,resid)
+                #GCV_tmp[i]  = GCV( np.log(g_tmp[i]),prod,resid)
                 
         #loglog(g_tmp,chi2_tmp)
         #loglog(g_tmp,chi2_tmp2)
 
         #loglog(g_tmp,GCV_tmp)
         #axhline(y=1)
-        #axvline(exp(g_gcv))
+        #axvline(np.exp(g_gcv))
         #show()
         
         
         if (lam_method=='chi2' and LastCycle) or plotting:
 
-            if sum((R*prod[ts])**2)/ndets < 1+(.1) or resid[ts]/ndets > 1 :  #no root!
+            if np.sum((R*prod[ts])**2)/ndets < 1+(.1) or resid[ts]/ndets > 1 :  #no root!
                 g_chi2, g[ts], f_chi2 = g0,g0, CHI2(g0,prod[ts],resid[ts])
             else:   
                     g1 = g0 - .2
@@ -2866,14 +2553,14 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
                     
                     # very simple searching for chi2 = 1
                     steps = 0
-                    while abs(fg2)>0.01  and steps < 100:
+                    while np.abs(fg2)>0.01  and steps < 100:
                         steps+= 1
                         dg = -fg2*(g2-g1)/(fg2-fg1)
                         g1 = g2
                         g2 += dg
                         fg1 = fg2
                         #if g2 < g_min:
-                            #fg2 = log(ndets*sum((R*(prod/D**2))**2))+2*g2
+                            #fg2 = np.log(ndets*np.sum((R*(prod/D**2))**2))+2*g2
                             
                         if g2 > g_max:
                             g2 = g_max
@@ -2888,7 +2575,7 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
                     g[ts] = g2
                     g_chi2 = g2
                     f_chi2 = fg2
-                    #chi2[ts] = exp(fg2)
+                    #chi2[ts] = np.exp(fg2)
  
      
             
@@ -2897,20 +2584,20 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
     #exit()
     #emulate a rapid solver - use only one median value fo the whole block - it is more stable, lower noise in the timeevolution
     if rapid_solver:
-        g[:] = median(g)
+        g[:] = np.median(g)
         
-    g = minimum(maximum(g,g_lim_low), g_lim_up)
+    g = np.minimum(np.maximum(g,g_lim_low), g_lim_up)
     
     
     
     
     
 
-        #ind = Leverage > 4*std(Leverage)
-        #if any(ind):
+        #ind = Leverage > 4*np.std(Leverage)
+        #if np.any(ind):
             #print '\nMost probably broken detectors: ', dets[~wrong_dets][ind]
             #title('Leverage')
-            #axhline( 4*std(Leverage))
+            #axhline( 4*np.std(Leverage))
             #plot(dets[~wrong_dets], Leverage,'.');xlabel('Detector');ylabel('Leverage');ylim(0,1),show()
         
     #print '...'
@@ -2922,7 +2609,7 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
 
 
 
-        #imshow(sqrt(E[ts].reshape(150,100, order='F')))
+        #imshow(np.sqrt(E[ts].reshape(150,100, order='F')))
         #show()
         
         #imshow(R.todense())
@@ -2930,14 +2617,14 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
         
         
         
-        #p = array(U.T.dot(S_[ts]).T)
+        #p = np.array(U.T.dot(S_[ts]).T)
         #print p.shape
         #print R.shape
         #exit()
         #if LastCycle:
             ##from matplotlib.pyplot import *
             #plot(L_*E[ts,:])
-            #plot(dot(asarray(U),R.T*R*p) )
+            #plot(np.dot(np.asarray(U),R.T*R*p) )
             #show()
             
             #imshow(R.T*R)
@@ -2945,21 +2632,21 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
             
         #U*R.T*R*U.T
             
-        #V.T.dot(single(w*p/D)[:,None],out=ascontiguousarray(E[ts,:]))
+        #V.T.dot(single(w*p/D)[:,None],out=np.ascontiguousarray(E[ts,:]))
         
-        #NOTE errorbars!! err = sqrt(dot(( w_i(g_gcv)/D)**2,V**2))
+        #NOTE errorbars!! err = np.sqrt(np.dot(( w_i(g_gcv)/D)**2,V**2))
     #TODO 
-    #CookDistance = zeros(ndets)
+    #CookDistance = np.zeros(ndets)
     SigmaGsample = None
 
     if LastCycle:
         
-        E = empty(( tsteps,  size(V,1) ),dtype=dtype)  #memory consuming!!
+        E = np.empty(( tsteps,  np.size(V,1) ),dtype=dtype)  #memory consuming!!
         
         
         #remove this forcycle? and the previos one too? 
         if not sparse.issparse(V):
-            V = array(V,copy=False)
+            V = np.array(V,copy=False)
             
         W = np.zeros_like(prod)
         for ts,(p,r) in enumerate(zip(prod,resid)):
@@ -2969,21 +2656,21 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
             if sparse.issparse(V):
                 E[ts] = V.T.dot((W[ts]*p/D).astype(dtype))
             else:
-                dot((W[ts]*p/D).astype(dtype), V,out=E[ts])
-            p = transpose(R)*(R*p)  #for QR decomposition
-            retro[ts,~wrong_dets] = dot(asarray(U),W[ts]*p)
+                np.dot((W[ts]*p/D).astype(dtype), V,out=E[ts])
+            p = np.transpose(R)*(R*p)  #for QR decomposition
+            retro[ts,~wrong_dets] = np.dot(np.asarray(U),W[ts]*p)
             
 
-        #Leverage = einsum('ij,ij,j->i', U,U,w_i( median(g))  )        
+        #Leverage = np.einsum('ij,ij,j->i', U,U,w_i( np.median(g))  )        
 
-        #p = sum(w_i( median(g)))
+        #p = np.sum(w_i( np.median(g)))
         #n = ndets
-        #er =  mean((retro-S.T)**2,0)
-        #s2 = sum(e**2)/n
+        #er =  np.mean((retro-S.T)**2,0)
+        #s2 = np.sum(np.e**2)/n
         #NOTE it is just inspired by Cook's Distance!! 
-        #rel_err = er/mean(er)
+        #rel_err = er/np.mean(er)
         #CookDistance[~wrong_dets] = rel_err[~wrong_dets]*(Leverage/(1-Leverage))
-        #CookDistance[wrong_dets] = infty
+        #CookDistance[wrong_dets] = np.inf
         
         
 
@@ -2992,7 +2679,7 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
         
         
         
-        w = w_i(median(g))
+        w = w_i(np.median(g))
 
         #import IPython
         #IPython.embed()
@@ -3000,37 +2687,37 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
             E,chi2 = ForcePositivity(E,W,g,V,D,prod,resid,ndets, BdMat,chi2,tokamak)
             #E,chi2 = ForcePositivity_old(E,V,D,BdMat,w,chi2,nx,ny, tokamak)
             #print retro.shape, L.shape, E.shape
-            retro = asarray(L*E.T).T  #retrofit was affected
+            retro = np.asarray(L*E.T).T  #retrofit was affected
             #print retro.shape, L.shape, E.shape
 
                 
         if estimate_sigma:
-            proj_err = sqrt(median(chi2))*random.randn(U.shape[0],100)
-            SigmaGsample = dot(V.T,(w/D*norm.mean())[:,None]*array(dot(U.T,proj_err)))
+            proj_err = np.sqrt(np.median(chi2))*np.random.randn(U.shape[0],100)
+            SigmaGsample = np.dot(V.T,(w/D*norm.mean())[:,None]*np.array(np.dot(U.T,proj_err)))
                 
             
     else:
-        w = w_i(median(g))
-        E = dot((w*prod.mean(0)/D), V)
+        w = w_i(np.median(g))
+        E = np.dot((w*prod.mean(0)/D), V)
         
         
         
         #f,ax = subplots(2, sharex=True)
         #ax[0].plot(CookDistance)
-        #ax[0].plot(where(~wrong_dets)[0],(Leverage/(1-Leverage)**2))
+        #ax[0].plot(np.where(~wrong_dets)[0],(Leverage/(1-Leverage)**2))
         #ax[0].plot(rel_err,'--')
 
         ##figure()
-        #ax[1].plot( median(S.T,0))
-        #ax[1].plot( median(retro,0))
-        ##ax[1].plot(e)
+        #ax[1].plot( np.median(S.T,0))
+        #ax[1].plot( np.median(retro,0))
+        ##ax[1].plot(np.e)
 
         #show()
         
-    #linalg.norm(L*E.T-S,axis=0)**2/len(D)
+    #np.linalg.norm(L*E.T-S,axis=0)**2/len(D)
     
     #plot(chi2)
-    #plot(linalg.norm(L*E.T-S,axis=0)**2/ndets)
+    #plot(np.linalg.norm(L*E.T-S,axis=0)**2/ndets)
     #show()
     
 
@@ -3041,7 +2728,7 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
         
 #show()
 
-    #E2 = copy(E.mean(0))
+    #E2 = np.copy(E.mean(0))
     #imshow( E.mean(0).reshape(ny,nx,order='F'));colorbar();show()
   
     
@@ -3061,8 +2748,8 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
 
     #print chih
     #try:
-    #savez('./tmp/decompostion_%.5f_%-5f.npz'%(tvec[0],tvec[-1]), U=U,W=w_i(median(g)),
-          #D=D,V=tokamak.Transform*V.T,L=L ,wrong_dets=wrong_dets,chi2=median(chi2),norm=norm )
+    #np.savez('./tmp/decompostion_%.5f_%-5f.npz'%(tvec[0],tvec[-1]), U=U,W=w_i(np.median(g)),
+          #D=D,V=tokamak.Transform*V.T,L=L ,wrong_dets=wrong_dets,chi2=np.median(chi2),norm=norm )
     #except:
         #print 'decompostion_%.5f_%-5f.npz was not saved'%(tvec[0],tvec[-1])
   
@@ -3094,7 +2781,7 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
     #show()
     
     
-    #if any(isnan(E)):
+    #if np.any(np.isnan(E)):
     
     
     ##figure()
@@ -3104,21 +2791,21 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
 
 
 
-        #wmax = amax(w)
+        #wmax = np.amax(w)
         #ind = w/wmax>0.01
-        #sort_ind = argsort(D, order=None)  # D from QR is unsorted
+        #sort_ind = np.argsort(D, order=None)  # D from QR is unsorted
         #for i in sort_ind[::-1]:
             #if w[i]>wmax*0.1:
             #print sort_ind
             #print w[i]
             #print prod[i]
             #print D[i]
-            ##prod = sum(U*reshape(S[:,ts], (-1,1)),0)
+            ##prod = np.sum(U*np.reshape(S[:,ts], (-1,1)),0)
             #print prod
-            #print reshape(S[:,ts], (-1,1))
+            #print np.reshape(S[:,ts], (-1,1))
             #print U
             
-            #imshow(reshape(w[i]*prod[i]/D[i]*V[i,:], (nx,ny), order="F"))
+            #imshow(np.reshape(w[i]*prod[i]/D[i]*V[i,:], (nx,ny), order="F"))
             #colorbar()
             #show()
             #E[:,ts]  += w[i]*prod[i]/D[i]*V[i,:]
@@ -3133,9 +2820,9 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
     
     #L*E-S
     #BUG 
-    #chi2__ = (linalg.norm((L*E)[~wrong_dets]-S,axis=0)**2/ndets)
+    #chi2__ = (np.linalg.norm((L*E)[~wrong_dets]-S,axis=0)**2/ndets)
     #E[E<0] = 0
-    #chi2_ = (linalg.norm((L*E)[~wrong_dets]-S,axis=0)**2/sum(~wrong_dets))
+    #chi2_ = (np.linalg.norm((L*E)[~wrong_dets]-S,axis=0)**2/np.sum(~wrong_dets))
     #print E.shape
     #imshow(E[:,0].reshape( (ny,nx), order="F"),vmin=0,origin='lower')
     #show()
@@ -3143,18 +2830,18 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
     ##plot(chi2__);plot(chi2,'--');show()
     
     
-    #K_ = dot(dot(U,diag(1/D)),V)
-    #K_ = dot(dot(U,diag(1/D)),V)
+    #K_ = np.dot(np.dot(U,np.diag(1/D)),V)
+    #K_ = np.dot(np.dot(U,np.diag(1/D)),V)
     #print 'Decomposition accuracy',
-    #print linalg.norm((K_* L.T)-eye(L.shape[0])[~wrong_dets])
-    #imshow((K_* L.T)-eye(L.shape[0])[~wrong_dets])
+    #print np.linalg.norm((K_* L.T)-np.eye(L.shape[0])[~wrong_dets])
+    #imshow((K_* L.T)-np.eye(L.shape[0])[~wrong_dets])
     #colorbar()
     #show()
     
     
-    #plot(log(chi2))
+    #plot(np.log(chi2))
     #show()
-    #g0 = mquantiles(log(D**2), g_fract_0)[0]
+    #g0 = mquantiles(np.log(D**2), g_fract_0)[0]
     
     
     
@@ -3162,12 +2849,12 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
     
     g_ = g
     #normalize gamma as quantil of the singular values
-    g = interp(g, log(D**2)[::-1], linspace(0,1,len(D)))
+    g = np.interp(g, np.log(D**2)[::-1], np.linspace(0,1,len(D)))
     
     #from scipy.stats import percentileofscore
     
-    #percentileofscore(log(D**2)[::-1], g_)/100
-    #percentileofscore((D**2)[::-1], exp(g_))/100
+    #percentileofscore(np.log(D**2)[::-1], g_)/100
+    #percentileofscore((D**2)[::-1], np.exp(g_))/100
 
     
      
@@ -3184,11 +2871,11 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
 
     #from scikits.sparse.cholmod import cholesky
     
-    #factor = cholesky( L_.T*L_ + exp(g_[0])*H )
+    #factor = cholesky( L_.T*L_ + np.exp(g_[0])*H )
     #E0 = factor( L_.T*S_)
             
 
-    #print '-----------', len(E), linalg.norm( E0-E)/linalg.norm(E0)
+    #print '-----------', len(E), np.linalg.norm( E0-E)/np.linalg.norm(E0)
     
     #plot
     
@@ -3203,8 +2890,8 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
     
     
     #for i, d in enumerate(D):
-        #ndof = sum((1-w_i(log(d)*2))**2)
-        #print ndof/len(D),'\t\t', interp(log(d)*2, log(D**2)[::-1], linspace(0,1,len(D)))
+        #ndof = np.sum((1-w_i(np.log(d)*2))**2)
+        #print ndof/len(D),'\t\t', np.interp(np.log(d)*2, np.log(D**2)[::-1], np.linspace(0,1,len(D)))
         
         
         
@@ -3215,7 +2902,7 @@ def SolveLinearMetods(presolved_decomposition,tvec, S,ndets,dets, norm,L, H,BdMa
 
         
         
-    #print linalg.norm(L_.T*(L_*E)+g_[0]*H*E-L_.T*S_)/linalg.norm(L_.T*S_)
+    #print np.linalg.norm(L_.T*(L_*E)+g_[0]*H*E-L_.T*S_)/np.linalg.norm(L_.T*S_)
     
     #exit()
     #plot(L.T*(L*E)+g_[0]*H*E-L.T*S)
@@ -3241,17 +2928,17 @@ def plot_tomo_error(tvec, E, V,norm,w,D,chi2 ):
     
     
     
-    V_ = V.T*(w/D)*sqrt(median(chi2))*norm.mean()
+    V_ = V.T*(w/D)*np.sqrt(np.median(chi2))*norm.mean()
     #print V_.dtype
-    Cov = dot(V_,V_.T)
+    Cov = np.dot(V_,V_.T)
     from matplotlib.colors import LogNorm
     
-    #CM = contourf((sqrt(diag(Cov))/E.mean(1)/norm.mean()).reshape(ny,nx,order='F'),levels=logspace(-3, 0, 10) ,origin='lower',vmin=1e-1,vmax=1,norm = LogNorm())
+    #CM = contourf((np.sqrt(np.diag(Cov))/E.mean(1)/norm.mean()).reshape(ny,nx,order='F'),levels=logspace(-3, 0, 10) ,origin='lower',vmin=1e-1,vmax=1,norm = LogNorm())
     #CM.cmap.set_over('red')
     #CM.cmap.set_under('yellow')
     #colorbar(CM);show()
     
-    #imshow((sqrt(diag(Cov))/E.mean(1)/norm.mean()).reshape(ny,nx,order='F') ,origin='lower',vmin=0,vmax=0.1);show()
+    #imshow((np.sqrt(np.diag(Cov))/E.mean(1)/norm.mean()).reshape(ny,nx,order='F') ,origin='lower',vmin=0,vmax=0.1);show()
 
 
 
@@ -3270,14 +2957,14 @@ def plot_tomo_error(tvec, E, V,norm,w,D,chi2 ):
     img1 = axis[0].imshow((E.mean(1)*norm.mean()).reshape(ny,nx,order='F')/1e3,
                           origin='lower',vmin=0,extent=extent,aspect='equal',cmap=my_cmap_)
 
-    #levels = linspace(0,E.mean(1).max(), 10)*norm.mean()/1e3
+    #levels = np.linspace(0,E.mean(1).max(), 10)*norm.mean()/1e3
     #img1 = axis[0].contourf(tokamak.xgrid+tokamak.dx/2,tokamak.ygrid+tokamak.dy/2,
                             #(E.mean(1)*norm.mean()).reshape(ny,nx,order='F')/1e3,levels,
                           #origin='lower',vmin=0,extent=extent,aspect='equal',cmap=my_cmap_)
 
 
     
-    Sig = sqrt(diag(Cov))
+    Sig = np.sqrt(np.diag(Cov))
     from annulus import get_bd_mat, get_rho_field_mat
     bnd = tokamak.get_boundary( 100,time=tvec.mean())
     rho = get_rho_field_mat(tokamak,  tvec.mean())
@@ -3294,7 +2981,7 @@ def plot_tomo_error(tvec, E, V,norm,w,D,chi2 ):
                         ,origin='lower',vmin=1e-2,extent=extent,aspect='equal',
                         vmax=1,norm=LogNorm(vmin=1e-2, vmax=1),cmap=my_cmap_)
     Corr = Cov[pointy+pointx*ny].reshape(ny,nx,order='F')/ Cov[pointy+pointx*ny,pointy+pointx*ny]
-    #Corr[abs(Corr)<.05] = nan
+    #Corr[np.abs(Corr)<.05] = np.nan
     img3=axis[2].imshow( Corr,origin='lower',vmin=-1,vmax=1,cmap='PuOr_r',extent=extent,aspect='equal')
     
     axis[0].axhline(tokamak.ygrid[pointy]+tokamak.dy/2,c='w')
@@ -3309,7 +2996,7 @@ def plot_tomo_error(tvec, E, V,norm,w,D,chi2 ):
 
     
     for _,struct in list(tokamak.struct_dict.items()):
-        if size(struct)>1: 
+        if np.size(struct)>1: 
             axis[0].plot(struct[0], struct[1], 'w',lw=.5)
             axis[1].plot(struct[0], struct[1], 'k',lw=.5)
             axis[2].plot(struct[0], struct[1], 'k',lw=.5)
@@ -3356,7 +3043,7 @@ def PlotBaseVectors2(V, nx,ny):
     from matplotlib.ticker import NullFormatter
 
     
-    N = size(V,0)
+    N = np.size(V,0)
     #from matplotlib.pyplot import *
     
 
@@ -3365,8 +3052,8 @@ def PlotBaseVectors2(V, nx,ny):
     ax = ax.flatten()
 
     for i in range(len(ax)):
-        solution = reshape(V[i],(ny,nx), order='F')
-        vmax = amax(abs(solution))
+        solution = np.reshape(V[i],(ny,nx), order='F')
+        vmax = np.amax(np.abs(solution))
         ax[i].imshow(solution, origin='lower', vmin = -vmax, vmax = vmax,cmap='seismic')
     
     f.subplots_adjust(hspace=0.0, wspace = 0.)
@@ -3379,18 +3066,18 @@ def PlotBaseVectors2(V, nx,ny):
         
     
     
-def PlotBaseVectors(V, nx,ny,Nmax=infty):    
+def PlotBaseVectors(V, nx,ny,Nmax=np.inf):    
     #plot base vectors of the reconstruction space of the linear methods
     #from make_graphs import my_cmap2
     #V = presolved_decomposi{'U':U, 'V':V , 'D':D, 'wrong_dets':wrong_dets}tion['V']
     #ion()
-    N = size(V,0)
+    N = np.size(V,0)
 
     
     for i in range(min(N,Nmax)):
-        solution = reshape(V[i,:],(ny,nx), order='F')
+        solution = np.reshape(V[i,:],(ny,nx), order='F')
         #vmin,vmax = solution.min(),solution.max()
-        vmax = amax(abs(solution))
+        vmax = np.amax(np.abs(solution))
         #vmin = min(vmin,-vmax)
         #print vmin, vmax
         imshow(solution, origin='lower', vmin = -vmax, vmax = vmax)
@@ -3407,7 +3094,7 @@ def PlotBaseVectors(V, nx,ny,Nmax=infty):
     ax = fig.add_subplot(111)
     ax.set_aspect('equal')
 
-    im =  ax.imshow(zeros((ny,nx)), origin='lower',cmap='seismic')
+    im =  ax.imshow(np.zeros((ny,nx)), origin='lower',cmap='seismic')
     txt = ax.set_title('')
     #pause(1)
     #pause(.1)
@@ -3416,7 +3103,7 @@ def PlotBaseVectors(V, nx,ny,Nmax=infty):
         print(i) 
         txt.set_text('%d/%d'%(i+1, min(N,Nmax)))
 
-        solution = reshape(V[i,:],(ny,nx), order='F')
+        solution = np.reshape(V[i,:],(ny,nx), order='F')
         vmin,vmax = solution.min(),solution.max()
         vmin = min(vmin,-vmax)
         im.set_data(solution )

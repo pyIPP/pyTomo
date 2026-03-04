@@ -1002,10 +1002,10 @@ class equ_map:
         
         theta = np.unwrap(theta - theta[:, (0, )], axis=1)
         
-        from scipy.integrate import cumtrapz
+        from scipy.integrate import cumulative_trapezoid
 
 # Definition of the theta star by integral
-        theta_star = cumtrapz(dtheta_star, theta, axis=1, initial=0)
+        theta_star = cumulative_trapezoid(dtheta_star, theta, axis=1, initial=0)
         correction = (n_theta - 1.)/n_theta
 
         theta_star/= theta_star[:, (-1, )]/(2*np.pi)/correction  #normalize to 2pi

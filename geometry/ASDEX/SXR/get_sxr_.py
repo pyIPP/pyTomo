@@ -182,7 +182,7 @@ class loader_SXR():
         self.dd.Close()
         
 
-    def get_data(self,tmin=-infty,tmax=infty):
+    def get_data(self,tmin=-inf,tmax=inf):
 
         if self.fast_data:
             return self.get_data_fast(tmin,tmax)
@@ -268,7 +268,7 @@ class loader_SXR():
         if data_err is None and not data_max is None:
             #very old shotfile - naive guess of the errobars 
             data_err = abs(single(data_max-data_min))
-            data_err[data_max >= ADCrange] = infty
+            data_err[data_max >= ADCrange] = inf
         elif all(data_err == 0):
             #corrupted shotfile 
             data_err = data*single(self.sigma)
@@ -287,7 +287,7 @@ class loader_SXR():
                 #old shotfile, a different algorithm to calculate data_err was used
                 data_err = minimum(data_err, (data_max-data_min)*single(calib)/2)#better error estimate in the presence of the MHD mode
                 #values too close to minimum or maximum are wrong  in old shotfiles due to limited ADC range 
-                data_err[((data_min == self.ADCmin)&((low_data-offset)<2*data_err))|(data_max>=ADCrange)] = infty
+                data_err[((data_min == self.ADCmin)&((low_data-offset)<2*data_err))|(data_max>=ADCrange)] = inf
                             
         else:
             #when the STD is not avalible - use a guess from min and max
@@ -296,13 +296,13 @@ class loader_SXR():
         if len(tvec)!= len(tvec2):
             trimmed_tvec = maximum(minimum(tvec2[-1],tvec),tvec2[0])
             data_err = interp1d(tvec2,1./data_err/3,axis=0,bounds_error=False,
-                            fill_value=infty,kind='nearest',assume_sorted=True)(trimmed_tvec)
+                            fill_value=inf,kind='nearest',assume_sorted=True)(trimmed_tvec)
                 
     
             data_err[data_err!= 0] = 1/data_err[data_err!= 0] 
             data_err = single(data_err)
             
-        data_err[wrong_poinst|isnan(data_err)|(data_err<=0)] = infty
+        data_err[wrong_poinst|isnan(data_err)|(data_err<=0)] = inf
         data[wrong_poinstDAS] = 0
         
 
@@ -384,7 +384,7 @@ class loader_SXR():
                 ind = any(isfinite(data_err[tvec<0.01]),axis=0)
                 offset = nanmedian(data[:tvec.searchsorted(.01), ind],axis=0)
             else:
-                _, data_0, data_err_0 = self.get_data(tmin=-infty,tmax=0.01)
+                _, data_0, data_err_0 = self.get_data(tmin=-inf,tmax=0.01)
 
                 ind = any(isfinite(data_err_0),axis=0)
                 offset = nanmedian(data_0[:, ind],axis=0)
@@ -399,7 +399,7 @@ class loader_SXR():
         
 
 
-    def get_data_fast(self,tmin=-infty,tmax=infty):
+    def get_data_fast(self,tmin=-inf,tmax=inf):
         
 
         all_index = []
@@ -568,7 +568,7 @@ class loader_SXR():
         
         
         #assume that the differnce between data and SVD retrofit is only noise 
-        svd_err = ones(len(self.dets))*infty
+        svd_err = ones(len(self.dets))*inf
         svd_err[ind] = std(all_data[ind_t][:,ind]-dot(U, V*S[:,None]),0)
 
         wrong_data_ind |= all(all_data==mean(all_data,1)[:,None],1)[:,None]
@@ -578,7 +578,7 @@ class loader_SXR():
         all_data_err = zeros_like(all_data)
         all_data_err[:] = 2*svd_err+discr_err
 
-        all_data_err[wrong_data_ind] = infty
+        all_data_err[wrong_data_ind] = inf
     
 
 

@@ -21,7 +21,7 @@ sys.path.append(os.path.abspath(parent_path))
 
 
 
-def dget_xtepro(connect, shot,tmin=-infty,tmax=infty):
+def dget_xtepro(connect, shot,tmin=-inf,tmax=inf):
     
 
     path = os.path.dirname(os.path.realpath(__file__))

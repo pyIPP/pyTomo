@@ -332,7 +332,7 @@ class shotfile:
                return np.squeeze(np.frombuffer(buffer, dtype=np.dtype(buffer))[0])
       return None
 
-   def GetSignal(self, signame, cal=False,nbeg=0,nend=np.infty):
+   def GetSignal(self, signame, cal=False,nbeg=0,nend=np.inf):
       """Returns the specified signal or sigmal group
       
       :str signame:  the name of the loaded signal
@@ -436,7 +436,7 @@ class shotfile:
             print(('Error getting SignalGroup %s' %signame))
       return None
 
-   def GetAreabase(self, signame,nbeg=1,nend=np.infty):
+   def GetAreabase(self, signame,nbeg=1,nend=np.inf):
       """ 
       Returns the areabase to the specified signal, time is always the first independent variable.
            
@@ -507,7 +507,7 @@ class shotfile:
   
   
   
-   def GetTimebase(self, signame ,nbeg=1,nend=np.infty):
+   def GetTimebase(self, signame ,nbeg=1,nend=np.inf):
       """
       Returns the timebase corresponding to the specified signal.
       
@@ -748,7 +748,7 @@ class shotfile:
       result = libddww.ddlastshotnr_(_error, _cshot)
       return cshot.value
 
-   def GetObject(self, name, cal=False,nbeg=0,nend=np.infty):
+   def GetObject(self, name, cal=False,nbeg=0,nend=np.inf):
 
       info = self.GetInfo(name)
 
@@ -795,7 +795,7 @@ class shotfile:
 
 # Backward compatibility
 
-   def GetSignalCalibrated(self, name,nbeg=1,nend=np.infty):
+   def GetSignalCalibrated(self, name,nbeg=1,nend=np.inf):
       """ 
       Return  calibrated 1D signal
            
@@ -806,7 +806,7 @@ class shotfile:
       """
       return self.GetSignal(name, cal=True,nbeg=nbeg,nend=nend)
 
-   def GetSignalGroup(self, name,nbeg=1,nend=np.infty):
+   def GetSignalGroup(self, name,nbeg=1,nend=np.inf):
       """ 
        Return  uncalibrated nD signal
            
@@ -818,7 +818,7 @@ class shotfile:
       """
       return self.GetSignal(name,nbeg=nbeg,nend=nend)
 
-   def GetSignalGroupCalibrated(self, name,nbeg=1,nend=np.infty):
+   def GetSignalGroupCalibrated(self, name,nbeg=1,nend=np.inf):
       """ 
        Return  calibrated nD signal
 

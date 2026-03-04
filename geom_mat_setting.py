@@ -503,7 +503,7 @@ def generate_matrix(xchords, ychords, distance,virt_chord,nl,nx, ny,  tokamak):
             fk = fk/sum(fk)
         else:
             debug( 'virt_chord_profile not availible')
-        
+    
     try:
         Tmat,Xchords,Ychords = gen_cython(xchords, ychords, distance,nx, ny, tokamak,fk)
     except:
@@ -528,21 +528,20 @@ def gen_cython(xchords, ychords, distance,nx, ny, Tok,chord_profile):
     *Cython version, stupid algorithm but 5x faster than better matrix algorithm*
 
     """
-#os.environ['CPATH'] = get_include()
+    # Try to import pre-compiled module first (built with setup.py)
+    # This is required for multiprocessing to work correctly
+    try:
+        from geom_mat_gen_cython import geom_mat_gen_cython
+    except ImportError:
+        # Fallback to pyximport for on-the-fly compilation
+        # WARNING: This may not work with multiprocessing!
+        import pyximport
+        import numpy as np
+        pyximport.install(setup_args={"include_dirs":np.get_include() })
+        from geom_mat_gen_cython import geom_mat_gen_cython
 
-    import pyximport
-
-    #if sys.platform == 'win32':
-        #mingw_setup_args = { 'options': { 'build_ext': { 'compiler': 'mingw32' }}, "include_dirs":np.get_include() }
-        #pyximport.install(setup_args=mingw_setup_args)
-    #else:
-    pyximport.install(setup_args={"include_dirs":get_include() })
-
-    # troubles with JET old python !!!!!
-    from geom_mat_gen_cython import geom_mat_gen_cython
 
 
-    
     Tmat,Xchords,Ychords = geom_mat_gen_cython(xchords,ychords,distance, Tok,  nx, ny,chord_profile)
 
 
