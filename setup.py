@@ -5,7 +5,7 @@ Setup script for pyTomo
 Compiles Cython extensions
 """
 
-from setuptools import setup, Extension
+from setuptools import setup, Extension, find_packages
 from Cython.Build import cythonize
 import numpy as np
 import sys
@@ -17,8 +17,8 @@ import os
 # the proper glibc with libmvec support for vectorized math functions
 extensions = [
     Extension(
-        name="geom_mat_gen_cython",
-        sources=["geom_mat_gen_cython.pyx"],
+        name="pytomo.geom_mat_gen_cython",
+        sources=["pytomo/geom_mat_gen_cython.pyx"],
         include_dirs=[np.get_include()],
         # Let the compiler optimize - conda's gcc includes proper libmvec support
         libraries=["m"] if sys.platform != "win32" else [],
@@ -41,10 +41,34 @@ ext_modules = cythonize(
 
 setup(
     name="pyTomo",
-    version="1.0.0",
+    version="1.0.2",
     description="Tomography reconstruction code for fusion plasmas",
     author="Tomas Odstrcil",
+    packages=find_packages(),
+    package_data={
+        'pytomo': [
+            '*.pyx', '*.pxd', '*.cfg',
+            'geometry/**/*',
+            'delaunay/**/*',
+            'spqr/**/*',
+            'ufiles/**/*',
+        ],
+    },
     ext_modules=ext_modules,
     include_dirs=[np.get_include()],
     zip_safe=False,
+    python_requires=">=3.8",
+    install_requires=[
+        "numpy",
+        "scipy>=1.1.0",
+        "matplotlib>=3.0.0",
+        "Pillow>=5.0.0",
+        "netCDF4",
+        "scikit-sparse>=0.4.4",
+    ],
+    entry_points={
+        'console_scripts': [
+            'pytomo=pytomo.pytomo:main',
+        ],
+    },
 )
