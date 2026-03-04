@@ -115,7 +115,7 @@ def prepare_inputs(Tok, data, error_all, dets, tvec, Tmat, normData, G0, reg_par
 
     
 
-    from mat_deriv_B import mat_deriv_B
+    from .mat_deriv_B import mat_deriv_B
     Bmat, diag_mat = mat_deriv_B(Tok, tvec,regularization, reg_params)
     error = single(error)
 

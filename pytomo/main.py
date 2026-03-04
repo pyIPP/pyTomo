@@ -725,7 +725,7 @@ def main_cycle(input):
                         normData, G0,lam0, tokamak, reg_params, boundary,
                         regularization,_ifishmax, _postprocessing)
     elif solver in [2,3,4,5,6]: #SVD,SVD2, QR, GEV,GSVD solver
-        from linear_methods import linear_methods
+        from .linear_methods import linear_methods
         tvec, g , chi2, lam0,retro,bnd,SigmaGsample  =  linear_methods(tokamak,inputs,
                 data, error, tvec, Tmat,dets, normData, G0,  reg_params, boundary,regularization,
                 solver,  True,_ifishmax, _postprocessing)
