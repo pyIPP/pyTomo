@@ -165,18 +165,17 @@ def glob_initializer( plot_details_):
 from PIL import Image
 from concurrent.futures import ThreadPoolExecutor
 import matplotlib.cm as cm
-
-def save_slice_fast(data, path):
+def save_slice_fast(data, path, tokamak):
     t = time.time()
     os.makedirs(path, exist_ok=True)
     
     # Normalize entire volume at once (vectorized)
-    max_val = data.max()
-    normalized = np.clip(data / max_val, 0, 1)
+    max_val = data.max() 
+    normalized = clip(data / max_val, 0, 1)
     
     # Apply inferno colormap (returns RGBA float 0-1)
     colormap = cm.get_cmap('inferno')
-    colored = (colormap(normalized) * 255).astype(np.uint8)  # shape: H x W x slices x 4
+    colored = (colormap(normalized) * 255).astype(uint8)  # shape: H x W x slices x 4
     
     def save_single(i):
         # Take RGB only (drop alpha), shape: H x W x 3
@@ -185,9 +184,21 @@ def save_slice_fast(data, path):
     # Save in parallel using threads
     with ThreadPoolExecutor() as executor:
         executor.map(save_single, range(data.shape[-1]))
-    
+        
+        
+    import json
+
+    grid = {"x0": tokamak.xgrid[0], 
+            "y0": tokamak.ygrid[0], 
+            "xscale": tokamak.dx,
+            "yscale": tokamak.dy}
+
+    with open(path + "/grid.json", "w") as f:
+        json.dump(grid, f, indent=2)
+        
     print(f'Plotted {data.shape[-1]} reconstructions in {time.time()-t}s')
- 
+    
+    
 def make_graphs(input_data, plot_svd = False):
     """
     Prepare graphs for GUI and export. This is main plotting module. It can plot via Gnuplot (fast) and matplotlib (slow, better quality).
@@ -261,7 +272,7 @@ def make_graphs(input_data, plot_svd = False):
     
     if inputs.get('fast_plot', False):
         G = G.reshape(tokamak.ny,tokamak.nx,-1, order='F')
-        save_slice_fast(G    , tmp_folder)
+        save_slice_fast(G    , tmp_folder, tokamak)
         return 
          
     data[:,results['dets']]  = results['data']  #include data correction (bacground substraction) done during preprocessing  
