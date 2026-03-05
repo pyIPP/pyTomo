@@ -171,11 +171,11 @@ def save_slice_fast(data, path, tokamak):
     
     # Normalize entire volume at once (vectorized)
     max_val = data.max() 
-    normalized = clip(data / max_val, 0, 1)
+    normalized = np.clip(data / max_val, 0, 1)
     
     # Apply inferno colormap (returns RGBA float 0-1)
     colormap = cm.get_cmap('inferno')
-    colored = (colormap(normalized) * 255).astype(uint8)  # shape: H x W x slices x 4
+    colored = (colormap(normalized) * 255).astype(np.uint8)  # shape: H x W x slices x 4
     
     def save_single(i):
         # Take RGB only (drop alpha), shape: H x W x 3
