@@ -184,7 +184,7 @@ def save_slice_fast(data, path, tokamak):
     colored[..., 3] = alpha
 
     def save_single(i):
-        Image.fromarray(colored[:, :, i, :], mode="RGBA").save(f'{path}/tomo_{i:05d}.png')
+        Image.fromarray(colored[::-1, :, i, :], mode="RGBA").save(f'{path}/tomo_{i:05d}.png')
 
     with ThreadPoolExecutor() as executor:
         executor.map(save_single, range(data.shape[-1]))
