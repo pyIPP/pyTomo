@@ -165,29 +165,43 @@ def glob_initializer( plot_details_):
 from PIL import Image
 from concurrent.futures import ThreadPoolExecutor
 import matplotlib.cm as cm
+import numpy as np
+import os, time, json
 
-def save_slice_fast(data, path):
+def save_slice_fast(data, path, tokamak):
     t = time.time()
     os.makedirs(path, exist_ok=True)
-    
-    # Normalize entire volume at once (vectorized)
+
     max_val = data.max()
     normalized = np.clip(data / max_val, 0, 1)
-    
-    # Apply inferno colormap (returns RGBA float 0-1)
+
     colormap = cm.get_cmap('inferno')
-    colored = (colormap(normalized) * 255).astype(np.uint8)  # shape: H x W x slices x 4
-    
+    colored = (colormap(normalized) * 255).astype(np.uint8)  # H x W x slices x 4
+
+    # make zero values transparent
+    alpha = colored[..., 3]
+    alpha[data == 0] = 0
+    colored[..., 3] = alpha
+
     def save_single(i):
-        # Take RGB only (drop alpha), shape: H x W x 3
-        Image.fromarray(colored[:, :, i, :3]).save(f'{path}/tomo_{i:05d}.png')
-    
-    # Save in parallel using threads
+        Image.fromarray(colored[::-1, :, i, :], mode="RGBA").save(f'{path}/tomo_{i:05d}.png')
+
     with ThreadPoolExecutor() as executor:
         executor.map(save_single, range(data.shape[-1]))
-    
+
+    grid = {
+        "x0": tokamak.xgrid[0],
+        "y0": tokamak.ygrid[0],
+        "x1": tokamak.xgrid[-1],
+        "y1": tokamak.ygrid[-1],
+        "time": tokamak.tvec
+    }
+
+    with open(path + "/grid.json", "w") as f:
+        json.dump(grid, f, indent=2)
+
     print(f'Plotted {data.shape[-1]} reconstructions in {time.time()-t}s')
- 
+    
 def make_graphs(input_data, plot_svd = False):
     """
     Prepare graphs for GUI and export. This is main plotting module. It can plot via Gnuplot (fast) and matplotlib (slow, better quality).
@@ -261,7 +275,7 @@ def make_graphs(input_data, plot_svd = False):
     
     if inputs.get('fast_plot', False):
         G = G.reshape(tokamak.ny,tokamak.nx,-1, order='F')
-        save_slice_fast(G    , tmp_folder)
+        save_slice_fast(G    , tmp_folder, tokamak)
         return 
          
     data[:,results['dets']]  = results['data']  #include data correction (bacground substraction) done during preprocessing  
