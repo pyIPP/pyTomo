@@ -190,8 +190,9 @@ def save_slice_fast(data, path, tokamak):
 
     grid = {"x0": tokamak.xgrid[0], 
             "y0": tokamak.ygrid[0], 
-            "xscale": tokamak.dx,
-            "yscale": tokamak.dy}
+            "x1": tokamak.xgrid[-1],
+            "y1": tokamak.ygrid[-1],
+            "time": tokamak.tvec}
 
     with open(path + "/grid.json", "w") as f:
         json.dump(grid, f, indent=2)
