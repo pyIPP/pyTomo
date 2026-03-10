@@ -255,7 +255,7 @@ class pytomo_class:
 
     def run(self):
         #matplotlib.rcParams['backend'] = 'Qt5Agg'   
-        from prepare_data import loaddata
+        from .prepare_data import loaddata
         tok = loaddata(self.inputs, useCache=False, prepare_tokamak = False)
          
         tok.prepare_tokamak()
