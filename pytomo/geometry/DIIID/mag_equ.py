@@ -531,7 +531,7 @@ class Equlibrium:
 
             args = [(self.eqm,  rho, theta, t) for t in t_sequence]
             pool = Pool(ncpu)
-            out = pool.map(help_fun,args )
+            out = pool.imap(help_fun,args )
             R_cont,z_cont = np.hstack(out)
         except:
             R_cont,z_cont = self.eqm.rhoTheta2rz(rho, theta,t_eq, n_line=100)
