@@ -267,7 +267,7 @@ class pytomo_class:
     
     def fast_plot(self, output, output_path = None):
         from .make_graphs import make_graphs
-        global inputs
+        inputs = output[0]
         inputs['fast_plot'] = True
         if output_path is not None:
             inputs['tmp_folder'] = output_path
