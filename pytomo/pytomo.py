@@ -260,13 +260,13 @@ class pytomo_class:
          
         tok.prepare_tokamak()
          
-        from main import tomography
+        from .main import tomography
         inputs, tokamak, progress, output = tomography(self.inputs, tok)
 
         return  tokamak, output
     
     def fast_plot(self, output, output_path = None):
-        from make_graphs import make_graphs
+        from .make_graphs import make_graphs
         global inputs
         inputs['fast_plot'] = True
         if output_path is not None:
