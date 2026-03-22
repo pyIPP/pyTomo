@@ -1769,7 +1769,7 @@ class MainThread(QThread):
         try:
 
             
-            if self.setting['postprocessing'] and self.setting['reconstruct'] and self.setting['tsteps']>1 and not self.setting['fast_plot']:
+            if self.setting['postprocessing'] and self.setting['reconstruct'] and self.setting['tsteps']>1 and not self.setting.get('fast_plot', False):
                 postprocessing_plot(output_list)
                 self.progress.iterateStep()
 

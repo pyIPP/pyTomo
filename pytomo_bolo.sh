@@ -15,12 +15,12 @@ export C_INCLUDE_PATH=$C_INCLUDE_PATH:/fusion/projects/codes/pytomo/SuiteSparse/
 
 
 
-#export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/fusion/usc/opt/intel2020/intelpython3/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/fusion/usc/opt/intel2020/intelpython3/lib/
 
 
 module load omfit
-#module load intel #it is not making it faster and messing up something with cython compilation
+module load intel 
 
-echo "Start pyTOMO for bolometers as 'pytomo' or 'pytomo SHOT -G'"
+echo "Start pyTOMO for bolometers as 'pytomo_bolo SHOT'"
 cd /fusion/projects/codes/pytomo/
-python3  -m pytomo.pytomo  $@  
+python3 -m pytomo.pytomo  $@ -t 23  --lambda_solver 0.2 -u 5 -d 5 --boundary 0 -S 7  -G    -B 16

@@ -17,6 +17,11 @@ __version__ = "1.0.2"
 __author__ = "Tomas Odstrcil"
 
 # Import main classes and functions for easy access
-from .pytomo import pytomo_class
 
-__all__ = ['pytomo_class', '__version__']
+
+def pytomo_class(*args, **kwargs):
+    from .pytomo import pytomo_class as _cls
+    return _cls(*args, **kwargs)
+    
+
+__all__ = [ '__version__']
