@@ -17,6 +17,7 @@ from  scipy.linalg import qr, qr_multiply, solve_triangular, cholesky_banded,eig
 from scipy.sparse.linalg import svds, eigsh
 from .gsvd import gsvd
 import warnings
+from IPython import embed
 
 
 #datatype used to represent the solution
@@ -60,9 +61,7 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
 
     
     """
-    #print G0
-    
-    #exit()
+   
     if np.any(np.isnan(error)):
         raise Exception('NaNs in the  errorbars!')
     if np.any(~np.isfinite(data)) :
@@ -107,18 +106,20 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
         H = create_derivation_matrix(G, Bmat,BdMat, regularization, reg_params['danis'], Tok )
         
 
+
         last_step = (step == Steps-1)
 
         H = H.tocsc()
-    
+        
 
         if Tok.transform_index == 0 and boundary > 0:
-            H =  H + sparse.spdiags(BdMat*np.sinh(np.maximum(0,boundary))/100, 0, nx*ny, nx*ny,format='csc')
+            H =  H + sparse.spdiags(BdMat*np.sinh(np.maximum(0,boundary))/1000, 0, nx*ny, nx*ny,format='csc')
        
        
        
        
-        solvers = {2:PresolveSVD,3:PresolveSVD3,4:PresolveQR,5:PresolveGEV,6:PresolveGEV_singular}
+        solvers = {2:PresolveSVD,3:PresolveSVD3,4:PresolveQR,5:PresolveGEV,
+                    6:PresolveGEV_singular}
         
    
         debug('--------Prepare - time  %g' % (time.time()-t))
@@ -181,7 +182,8 @@ def linear_methods(Tok,input_parameters, data, error, tvec, Tmat,dets, normData,
 
     if Tok.transform_index in [0,4]:
         G[BdMat] = 0  #no emissivity out of the boundary (this emissivity is not contributing to retrofits!)
-        if not SigmaGsample is None:   SigmaGsample[BdMat] = 0 
+        if not SigmaGsample is None: 
+            SigmaGsample[BdMat] = 0 
     
 
     retro *= normData[:,None]

@@ -63,7 +63,7 @@ def prepare_inputs(Tok, data, error_all, dets, tvec, Tmat, normData, G0, reg_par
     Tmat.data/=normTmat
     
  
-    #remove elements of the projection matrix ot of the boundary
+    #remove elements of the projection matrix out of the boundary
     from .geom_mat_setting import prune_geo_matrix
     
     bd_len = int(2*pi*sqrt(nx*nx))
@@ -119,7 +119,8 @@ def prepare_inputs(Tok, data, error_all, dets, tvec, Tmat, normData, G0, reg_par
     Bmat, diag_mat = mat_deriv_B(Tok, tvec,regularization, reg_params)
     error = single(error)
 
-
+    
+    #add virtual measurements pushing solution to zero
     if boundary>0 and Tok.transform_index==0:  #if boundary is nonzero, uses the value as precision, recommended value is 50-100
 
         BdMat_ = BdMat.reshape(Tok.ny, Tok.nx, order="F")
@@ -170,12 +171,14 @@ def create_derivation_matrix(g, Bmat,BdMat, regularization, danis, Tok, compute_
 
     g_tmp /= max_g
     
-    #print('Tok.boundary and Tok.transform_index==0',Tok.boundary , Tok.transform_index==0)
-    if Tok.boundary and Tok.transform_index==0:
-        g_tmp[BdMat] = Tok.rgmin
 
     g_tmp[g_tmp < Tok.rgmin] = Tok.rgmin
     
+
+    if Tok.boundary and Tok.transform_index==0:
+        g_tmp[BdMat] = 1e-2
+
+
 
     g_tmp_inv = 1/g_tmp #**Tok.weight_power
 
@@ -201,7 +204,7 @@ def create_derivation_matrix(g, Bmat,BdMat, regularization, danis, Tok, compute_
         if compute_2nd_deriv:
             Bmat = [b.T*b for b in Bmat]
         H = sigmoid(-danis)*( Bmat[0].T*(W*Bmat[0]) + Bmat[2].T*(W*Bmat[2]))\
-            +sigmoid(danis) *(Bmat[1].T*(W*Bmat[1]) +Bmat[3].T*(W*Bmat[3]))
+            +sigmoid(danis) *(Bmat[1].T*(W*Bmat[1]) + Bmat[3].T*(W*Bmat[3]))
 
     elif regularization in [4]:  # ENERGY
         H = Bmat[0]
@@ -215,7 +218,6 @@ def create_derivation_matrix(g, Bmat,BdMat, regularization, danis, Tok, compute_
     if regularization in [5,6]:  #squared
         H = H.T*H
 
-  
     if Tok.beta!= 0 :  # press reconstruction to zero 
         H = H + Tok.beta* spdiags(ones(npix),0, npix,npix)* W.data.min()
         

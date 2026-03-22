@@ -847,7 +847,7 @@ def matplotlib_preview(g_profilx, g_profily, padding, data,dets, titleX, titleY,
   
 def matplotlib_data_tg(params):
     #advacent plotting method for the showing  the measured brighntess and back calculated values at function of tangential radius
-
+   
     try:
         #clean catch in foked processes
         matplotlib.font_manager._get_font.cache_clear()
@@ -859,7 +859,7 @@ def matplotlib_data_tg(params):
     T = time.time()
     from collections import OrderedDict
     from scipy.ndimage.interpolation import map_coordinates
-    from shared_modules import MovingAveradge,extrap1d
+    from .shared_modules import MovingAveradge,extrap1d
 
     if os.name != 'nt':
         os.nice(3)
@@ -1124,7 +1124,6 @@ def matplotlib_data_tg(params):
             if plot_loglin:
                 ax.set_ylim(0,vmax/fac*1.1)
                     
-
         name = 'brightness_%d_%.4d'%(shot,ntvec[it])+base
         if tsteps==1:
             name = 'previewA'+str(shot)+base 
@@ -1226,7 +1225,7 @@ def matplotlib_data(params):
     ylabel = ax.set_ylabel('')
     ax.set_xlim(0-0.5, Ndets-0.5)
     ax.set_ylim(dmin, dmax)
-
+   
     for i,ts in enumerate(ntvec):
         if plot_details['plot_autoscale']:
             dmin = min(0,dmin)
@@ -1450,7 +1449,7 @@ def matplotlib_image(params):
             mag_surfs=ax.plot(mag_field[0,:,:,0],mag_field[1,:,:,0],'--',c='0.75',lw=.5)
             #mag_surfs=ax.plot(mag_field[0,:,:,0],mag_field[1,:,:,0],'--',c='k')
             
-        if 'mag_out' in plot_details and False:
+        if 'mag_out' in plot_details:
             magr_out,magz_out = plot_details['mag_out']
             mag_surfs_out = [ax.plot(r,z,':',c='0.75',lw=.5)[0] for r,z in zip(magr_out[0],magz_out[0])]
 

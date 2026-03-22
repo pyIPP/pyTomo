@@ -8,7 +8,7 @@ from scipy.interpolate import interp1d
 from time import time
 from scipy.signal import  medfilt
 
-
+from IPython import embed
 
 import os,sys
 #import dd
@@ -532,7 +532,8 @@ class Equlibrium:
             args = [(self.eqm,  rho, theta, t) for t in t_sequence]
             pool = Pool(ncpu)
             out = pool.imap(help_fun,args )
-            R_cont,z_cont = np.hstack(out)
+
+            R_cont,z_cont = np.hstack(list(out))
         except:
             R_cont,z_cont = self.eqm.rhoTheta2rz(rho, theta,t_eq, n_line=100)
 
