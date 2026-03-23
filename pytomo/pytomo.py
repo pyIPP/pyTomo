@@ -255,19 +255,19 @@ class pytomo_class:
 
     def run(self):
         #matplotlib.rcParams['backend'] = 'Qt5Agg'   
-        from prepare_data import loaddata
+        from .prepare_data import loaddata
         tok = loaddata(self.inputs, useCache=False, prepare_tokamak = False)
          
         tok.prepare_tokamak()
          
-        from main import tomography
+        from .main import tomography
         inputs, tokamak, progress, output = tomography(self.inputs, tok)
 
-        return  tokamak, output
+        return inputs, tokamak, progress, output
     
     def fast_plot(self, output, output_path = None):
-        from make_graphs import make_graphs
-        global inputs
+        from .make_graphs import make_graphs
+        inputs = output[0]
         inputs['fast_plot'] = True
         if output_path is not None:
             inputs['tmp_folder'] = output_path
