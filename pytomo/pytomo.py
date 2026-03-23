@@ -263,7 +263,7 @@ class pytomo_class:
         from .main import tomography
         inputs, tokamak, progress, output = tomography(self.inputs, tok)
 
-        return  tokamak, output
+        return inputs, tokamak, progress, output
     
     def fast_plot(self, output, output_path = None):
         from .make_graphs import make_graphs

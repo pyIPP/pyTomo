@@ -189,17 +189,6 @@ def save_slice_fast(data, path, tokamak):
     with ThreadPoolExecutor() as executor:
         executor.map(save_single, range(data.shape[-1]))
 
-    grid = {
-        "x0": tokamak.xgrid[0],
-        "y0": tokamak.ygrid[0],
-        "x1": tokamak.xgrid[-1],
-        "y1": tokamak.ygrid[-1],
-        "time": tokamak.tvec
-    }
-
-    with open(path + "/grid.json", "w") as f:
-        json.dump(grid, f, indent=2)
-
     print(f'Plotted {data.shape[-1]} reconstructions in {time.time()-t}s')
     
 def make_graphs(input_data, plot_svd = False):
@@ -220,7 +209,7 @@ def make_graphs(input_data, plot_svd = False):
      
     global inputs, tokamak, plot_details, my_cmap
 
-    inputs, tokamak, progress,results = input_data
+    inputs, tokamak, progress, results = input_data
     output_path = inputs['output_path']
 
     tmp_folder = inputs['tmp_folder']
