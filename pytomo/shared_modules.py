@@ -1164,3 +1164,15 @@ def get_rho_tan(rhop, magx, magy,XC, YC, npoints=100):
     return rho_tangent, x,y
         
     
+    
+def cpu_count():
+    import os
+    if "SLURM_CPUS_PER_TASK" in os.environ:
+        n_cpu = int(os.environ["SLURM_CPUS_PER_TASK"])
+    elif "SLURM_NTASKS" in os.environ:
+        n_cpu = int(os.environ["SLURM_NTASKS"])
+    elif "SLURM_NTASKS_PER_NODE" in os.environ:
+        n_cpu = int(os.environ["SLURM_NTASKS_PER_NODE"])
+    else:
+        n_cpu = os.cpu_count()   # non-SLURM fallback
+    return n_cpu

@@ -261,9 +261,11 @@ np.sqrt(max(data))
             
 
         self.sample_freq = len(self.tvec)/(self.tvec[-1]-self.tvec[0])
-        
-        if not fast_data: 
-            self.sample_freq = 1e3  #data are downsampled
+
+
+        #if not fast_data: 
+        #    self.sample_freq = 1e3  #data are downsampled
+
             
         self.Phi = np.deg2rad(np.hstack(self.Phi))
 

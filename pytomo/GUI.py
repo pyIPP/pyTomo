@@ -1618,14 +1618,10 @@ class MainWindow(QMainWindow):
         ind_min,ind_max = self.tokamak.tvec.searchsorted([self.tmin,self.tmax])+1
         steps = int((self.tmax-self.tmin)*self.tokamak.sample_freq)//self.data_undersampling
         
+        from .shared_modules import cpu_count
+        ncpu = cpu_count()
+        ncpu = min(ncpu, 8)
      
-        ncpu = 1
-        try:
-            from multiprocessing import cpu_count
-            ncpu = min(8,cpu_count())
-        except:
-            pass
-
         if rcParams['backend'].lower() == 'agg':
             speed = 100*ncpu
         else:
@@ -1633,7 +1629,7 @@ class MainWindow(QMainWindow):
         if self.enableOutput.isChecked():
             speed /= 10
             
-        
+     
         if (steps > speed) and self.plot_all and self.reconstruct:
             reply = QMessageBox.question(self, 'Message', "Are you sure that you want to plot all "+str(steps)
                                         +" snapshots? \n It can take quite long...", QMessageBox.Yes, QMessageBox.No)
