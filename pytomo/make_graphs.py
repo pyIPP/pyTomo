@@ -1350,7 +1350,7 @@ def matplotlib_image(params):
     FigureCanvas(fig)
 
     if plot_details['plot_chords']:  # !! allow plotting of chords !!! 
-        from geom_mat_setting import loadgeometry
+        from .geom_mat_setting import loadgeometry
         Xchord, Ychord, distance, nl,virt_chord  = loadgeometry(plot_details['geometry_path'],
                                                 list(plot_details['detectors_dict'].keys()), 1)   
         Xchord = Xchord[:,dets]

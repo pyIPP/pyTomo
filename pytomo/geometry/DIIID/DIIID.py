@@ -491,8 +491,12 @@ np.sqrt(max(data))
                     self.PFM = {'pfm':data['pfm'],'t_eq':data['pfm_tvec'],'Rmesh':data['pfm_R'],'Zmesh':data['pfm_Z']}
                 except:
                     self.PFM = {'pfm':data['pfm'],'t_eq':data['t_eq'],    'Rmesh':data['Rmesh'],'Zmesh':data['Zmesh']}
-
-        self.mag_dt = np.amax(np.diff(self.mag_axis['tvec']))
+        
+        try:
+            self.mag_dt = np.amax(np.diff(self.mag_axis['tvec']))
+        except:
+            self.mag_dt = 1e-3
+            
         self.mag_axis['Rmag'] = np.copy(self.surf_coeff[:,-1,0,0])
         self.mag_axis['Zmag'] = np.copy(self.surf_coeff[:,-1,0,1])
         self.surf_coeff[:,-1,0,:2] = 0
@@ -583,9 +587,12 @@ np.sqrt(max(data))
             n_smooth = max(int(np.mean(np.diff(tvec))/np.mean(np.diff(fast_tvec))),1)
         else:
             n_smooth = sum((fast_tvec<tvec[-1]+self.mag_dt)&(fast_tvec>tvec[0]-self.mag_dt))
-
+    
         surf_coeff = np.copy(self.surf_coeff[ind])
-            
+        if np.any(np.isnan(surf_coeff)):
+            raise Exception('nans in surf_coeff!!')
+        
+        
         tsurf = np.copy(self.tsurf[ind])
 
         surf_coeff = interp1d(tsurf, surf_coeff,axis=0,copy=False, bounds_error=False, fill_value=np.nan)(tvec)
@@ -651,7 +658,10 @@ np.sqrt(max(data))
        # surf_coeff[:,-2,0,:2] += self.magfield_shift_lcfs
 
 
-
+        if np.any(np.isnan(surf_coeff)):
+            raise Exception('nans in surf_coeff!!')
+        
+        
         if  return_mean:      
             p_rcos,p_zcos,p_rsin,p_zsin = np.mean(surf_coeff, 0).T
             magx,magy = surf_polyval( rho ,theta, p_rcos.T,p_zcos.T,p_rsin.T,p_zsin.T)

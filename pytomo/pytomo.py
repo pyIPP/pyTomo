@@ -255,12 +255,12 @@ class pytomo_class:
 
     def run(self):
         #matplotlib.rcParams['backend'] = 'Qt5Agg'   
-        from prepare_data import loaddata
+        from .prepare_data import loaddata
         tok = loaddata(self.inputs, useCache=False, prepare_tokamak = False)
          
         tok.prepare_tokamak()
          
-        from main import tomography
+        from .main import tomography
         inputs, tokamak, progress, output = tomography(self.inputs, tok)
 
         return  tokamak, output
