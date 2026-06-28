@@ -263,11 +263,11 @@ class pytomo_class:
         from .main import tomography
         inputs, tokamak, progress, output = tomography(self.inputs, tok)
 
-        return  tokamak, output
+        return inputs, tokamak, progress, output
     
     def fast_plot(self, output, output_path = None):
-        from make_graphs import make_graphs
-        global inputs
+        from .make_graphs import make_graphs
+        inputs = output[0]
         inputs['fast_plot'] = True
         if output_path is not None:
             inputs['tmp_folder'] = output_path
