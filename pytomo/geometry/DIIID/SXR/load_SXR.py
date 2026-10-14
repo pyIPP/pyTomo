@@ -654,7 +654,7 @@ def get_calib_fact(shot, geometry_path,  toroidal=False):
 
     for cam in cams:
         #BUG from for Tor cameras!!!!!!
-        calib_path = '/fusion/projects/diagnostics/sxr/'
+        calib_path = os.environ.get("PYTOMO_CALIB",'/fusion/projects/diagnostics/sxr/')
 
         try:
             resistor, gain, pinhole, filter = get_calib(shot,calib_path,cam)
