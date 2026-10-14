@@ -523,6 +523,7 @@ def make_graphs(input_data, plot_svd = False):
     plot_details['xgrid'] = tokamak.xgrid
 
     plot_details['plot_autoscale'] = inputs['plot_autoscale']
+    plot_details['plot_vmax'] = inputs.get('plot_vmax',None)
     plot_details['plot_svd'] = plot_svd
     plot_details['plot_contours'] = inputs['plot_contours']
     plot_details['n_contours'] = inputs['n_contours']
@@ -613,7 +614,7 @@ def make_graphs(input_data, plot_svd = False):
     data_norm = None
     if inputs['plot_loglin']: 
         #estimate a normalization
-        ind = slice(None,None) if tsteps < 1000 else random.randint(tsteps,size=1000)       
+        ind = slice(None,None) if tsteps < 1000 else np.random.randint(tsteps,size=1000)       
         data_norm = np.median(np.abs(data[:,results['dets']]).mean(0))/2/inputs['loglin_threshold']
         prof_norm = np.std(G[:,ind])/inputs['loglin_threshold']
 
@@ -1495,6 +1496,14 @@ def matplotlib_image(params):
                 vmin = min(0,np.amin(gprof[:,:,i] ))
                 gmax = vmax*fact
                 gmin = vmin*fact
+                
+            if plot_details['plot_vmax'] is not None:
+                vmax = plot_details['plot_vmax']  
+                vmin = min(0,np.amin(gprof[:,:,i] ))
+                gmax = vmax*fact
+                gmin = vmin*fact
+                
+            
   
             if sym_colorbar:
                 gmin = min(gmin,-gmax)

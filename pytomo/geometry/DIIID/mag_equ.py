@@ -482,7 +482,7 @@ class Equlibrium:
     def getStandartEquilibrium(self):
 
         if not self.eqm.eq_open or len(self.eqm.t_eq) < 2:
-            return
+            raise Exception('Issue with equilibrium!!')
 
         try:
             self.eqm.read_ssq()
