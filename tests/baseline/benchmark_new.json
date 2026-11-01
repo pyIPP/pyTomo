@@ -1,0 +1,15 @@
+{
+ "load data + equilibrium": 2.455,
+ "geometry matrix": 0.221,
+ "prepare data (51 slices)": 0.8,
+ "regularization matrix (aniso MFI)": 0.102,
+ "reconstruction SVD2 (51 slices)": 1.571,
+ "reconstruction SVD2 + positivity (51 slices)": 1.767,
+ "reconstruction QR (51 slices)": 1.721,
+ "plots + profile export": 0.457,
+ "peak RSS MB": 388.2,
+ "versions": {
+  "python": "3.13.18",
+  "numpy": "2.5.4"
+ }
+}
