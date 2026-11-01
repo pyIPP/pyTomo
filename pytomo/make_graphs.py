@@ -175,7 +175,7 @@ def save_slice_fast(data, path, tokamak):
     max_val = data.max()
     normalized = np.clip(data / max_val, 0, 1)
 
-    colormap = cm.get_cmap('inferno')
+    colormap = matplotlib.colormaps['inferno']
     colored = (colormap(normalized) * 255).astype(np.uint8)  # H x W x slices x 4
 
     # make zero values transparent
@@ -227,7 +227,7 @@ def make_graphs(input_data, plot_svd = False):
      
     shot = inputs['shot']
 
-    my_cmap = my_cmap_ if inputs['cmap'] == 'ingesson' else cm.get_cmap(inputs['cmap'])
+    my_cmap = my_cmap_ if inputs['cmap'] == 'ingesson' else matplotlib.colormaps[inputs['cmap']]
     my_cmap._init()
     
     
@@ -317,7 +317,7 @@ def make_graphs(input_data, plot_svd = False):
     rem_fsa &= tokamak.transform_index == 1
     symemtric_cmap = False
     if (inputs['rem_back'] or plot_svd or rem_fsa) and not inputs['cmap_neg'] == 'none':
-        my_cmap = cm.get_cmap(inputs['cmap_neg'])
+        my_cmap = matplotlib.colormaps[inputs['cmap_neg']]
         my_cmap._init()
         symemtric_cmap = True
  
@@ -859,7 +859,7 @@ def matplotlib_data_tg(params):
                     mag_field,chi2,lam,tsteps,rho_label,base,linthresh,limits,plot_details) = params
     T = time.time()
     from collections import OrderedDict
-    from scipy.ndimage.interpolation import map_coordinates
+    from scipy.ndimage import map_coordinates
     from .shared_modules import MovingAveradge,extrap1d
 
     if os.name != 'nt':
@@ -2229,7 +2229,7 @@ def postprocessing_plot(input_data):
  
     cmap = my_cmap
     if inputs['rem_back'] and inputs['cmap_neg']!= 'none':  # remove background  
-        cmap = cm.get_cmap(inputs['cmap_neg'])
+        cmap = matplotlib.colormaps[inputs['cmap_neg']]
         
         
         
@@ -2478,7 +2478,7 @@ def CalcPoloidalModeSpectrum(input_data):
     scaling = np.array([tokamak.dx,tokamak.dy])
     offset = np.array([tokamak.xmin,tokamak.ymin])+scaling/2
     
-    from scipy.ndimage.interpolation import map_coordinates
+    from scipy.ndimage import map_coordinates
     
     gres_mean = gres.mean(-1)
     theta0 = np.linspace(0,2*np.pi, theta.shape[1], endpoint=False)

@@ -11,7 +11,7 @@ from scipy.io import loadmat, savemat
 from numpy.matlib import repmat
 from .tokamak import Tokamak
 from . import config
-from .shared_modules import blur_image, nanmedian
+from .shared_modules import blur_image  # nanmedian comes from numpy
 
 class ToreSupra(Tokamak):
     def __init__(self, input_diagn, input_parameters,  only_prepare = False  ):

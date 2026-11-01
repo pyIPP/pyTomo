@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from numpy import *
+import numpy as np
 #from matplotlib.pyplot import *
 from .shared_modules import  debug,sigmoid, blur_image
 from scipy.sparse import spdiags, eye
@@ -65,11 +65,11 @@ def mat_deriv_B(Tok, tvec, regularization,reg_params, nx=None, ny=None):
             rhop,magx, magy = Tok.mag_equilibrium(tvec, return_mean = True)
       
 
-            magx = squeeze(magx)   #take mean field during tvec and omitted the center of field [:,0]
-            magy = squeeze(magy)
+            magx = np.squeeze(magx)   #take mean field during tvec and omitted the center of field [:,0]
+            magy = np.squeeze(magy)
   
-            atan2 = calculate_theta_angle(Tok, mean(tvec), magx, magy, coord,extrapolate=1.2)
-            rho = get_rho_field_mat(Tok, mean(tvec),extrapolate = 1.2)
+            atan2 = calculate_theta_angle(Tok, np.mean(tvec), magx, magy, coord,extrapolate=1.2)
+            rho = get_rho_field_mat(Tok, np.mean(tvec),extrapolate = 1.2)
 
             
             Bper1, Bpar1 = generate_aniso_matrix(coord, atan2,rho,  1,  1)
@@ -79,7 +79,7 @@ def mat_deriv_B(Tok, tvec, regularization,reg_params, nx=None, ny=None):
             # correction of boundary conditions => zero derivation on borders !! + ensure positive definitness
             for i in range(4):
                 Bmat[i] = Bmat[i] - spdiags(Bmat[i].sum(axis=1).T, 0, npix, npix)
-                ind = array(abs(Bmat[i]).sum(axis=1).T == 0)
+                ind = np.array(abs(Bmat[i]).sum(axis=1).T == 0)
                 corr = spdiags(ind,0,npix, npix)
                 Bmat[i] = Bmat[i] + corr
                 
@@ -105,8 +105,8 @@ def mat_deriv_B(Tok, tvec, regularization,reg_params, nx=None, ny=None):
 
         rhop,magx, magy = Tok.mag_equilibrium(tvec, return_mean = True,surf_slice=slice(-1,None),rho=1)
 
-        rho = get_rho_field_mat(Tok, mean(tvec),extrapolate = inf)
-        BdMat = get_bd_mat(Tok, boundary=squeeze(c_[magx, magy]))
+        rho = get_rho_field_mat(Tok, np.mean(tvec),extrapolate = np.inf)
+        BdMat = get_bd_mat(Tok, boundary=np.squeeze(np.c_[magx, magy]))
 
         BdMat = blur_image(BdMat.reshape(Tok.ny, Tok.nx,order='F'),Tok.nx/50.)
         BdMat = BdMat.flatten('F')
@@ -143,12 +143,12 @@ def get_coord(Tok, nx = None, ny = None):
     coord.nx = nx
     coord.ny = ny
     coord.npix =  nx*ny
-    coord.dx = (Tok.xmax-Tok.xmin)/double(nx)
-    coord.dy = (Tok.ymax-Tok.ymin)/double(ny)
+    coord.dx = (Tok.xmax-Tok.xmin)/np.double(nx)
+    coord.dy = (Tok.ymax-Tok.ymin)/np.double(ny)
 
-    xgridc = linspace(Tok.xmin,Tok.xmax,nx+1)
+    xgridc = np.linspace(Tok.xmin,Tok.xmax,nx+1)
     coord.xgrid = (xgridc[1:]+xgridc[:-1])/2
-    ygridc = linspace(Tok.ymin,Tok.ymax,ny+1)
+    ygridc = np.linspace(Tok.ymin,Tok.ymax,ny+1)
     coord.ygrid = (ygridc[1:]+ygridc[:-1])/2
     
     
@@ -163,35 +163,35 @@ def calculate_theta_angle(Tok,time, magx, magy, coord, extrapolate = 10):
     """
 
     
-    bdx,bdy = Tok.get_boundary(size(magy,0),time=time).T
+    bdx,bdy = Tok.get_boundary(np.size(magy,0),time=time).T
 
      #used to extrapolated boundary for smoothing with boundary
-    magx_out = (bdx[::-1]-mean(bdx))*extrapolate+mean(bdx)
-    magy_out = (bdy[::-1]-mean(bdy))*extrapolate+mean(bdy)
+    magx_out = (bdx[::-1]-np.mean(bdx))*extrapolate+np.mean(bdx)
+    magy_out = (bdy[::-1]-np.mean(bdy))*extrapolate+np.mean(bdy)
     
-    magy = c_[magy, magy_out]
-    magx = c_[magx, magx_out]
+    magy = np.c_[magy, magy_out]
+    magx = np.c_[magx, magx_out]
 
-    xt   = zeros_like(magx)
-    yt   = zeros_like(magx)
-    cos1 = zeros_like(magx)
-    sin1 = zeros_like(magx)
+    xt   = np.zeros_like(magx)
+    yt   = np.zeros_like(magx)
+    cos1 = np.zeros_like(magx)
+    sin1 = np.zeros_like(magx)
 
-    dx =  diff(magx,axis=0)   #last point in boundary must be the same as the first
-    dy =  diff(magy,axis=0)
+    dx =  np.diff(magx,axis=0)   #last point in boundary must be the same as the first
+    dy =  np.diff(magy,axis=0)
     
      #positions at the place of the derivative: 
     xt[1:]= magx[:-1]+dx/2+coord.dx*.2 #BUG artificial correction of the observed subpixel error
     yt[1:]= magy[:-1]+dy/2-coord.dy*.2
 
-    cos1[1:] = dx/(hypot(dx,dy)+1e-10)
-    sin1[1:] = dy/(hypot(dx,dy)+1e-10)
+    cos1[1:] = dx/(np.hypot(dx,dy)+1e-10)
+    sin1[1:] = dy/(np.hypot(dx,dy)+1e-10)
 
     from scipy.interpolate import LinearNDInterpolator
 
-    X = r_[xt[1:,1:].ravel(),xt[1,0]]
-    Y = r_[yt[1:,1:].ravel(),yt[1,0]]
-    Z = r_[cos1[1:,1:].ravel(),cos1[1,0]]
+    X = np.r_[xt[1:,1:].ravel(),xt[1,0]]
+    Y = np.r_[yt[1:,1:].ravel(),yt[1,0]]
+    Z = np.r_[cos1[1:,1:].ravel(),cos1[1,0]]
 
     try:
         assert safe_interpolation, 'safe_interpolation'
@@ -203,21 +203,21 @@ def calculate_theta_angle(Tok,time, magx, magy, coord, extrapolate = 10):
         cos_grid = interp[coord.ygrid[0]:coord.ygrid[-1]:complex(0,coord.ny),
                     coord.xgrid[0]:coord.xgrid[-1]:complex(0,coord.nx)]
     
-        Z = r_[sin1[1:,1:].ravel(),sin1[1,0]]
+        Z = np.r_[sin1[1:,1:].ravel(),sin1[1,0]]
         interp = tri.linear_interpolator(Z)
         sin_grid = interp[coord.ygrid[0]:coord.ygrid[-1]:complex(0,coord.ny),
                     coord.xgrid[0]:coord.xgrid[-1]:complex(0,coord.nx)]
 
     except:
         #slow but stable
-        xi,yi = meshgrid(coord.xgrid,coord.ygrid)  #centers of pixels
-        Linterp = LinearNDInterpolator(c_[X.ravel(),Y.ravel()], Z.ravel())
-        cos_grid = Linterp(c_[xi.ravel(),yi.ravel()]).reshape(coord.ny,coord.nx)
-        Z = r_[sin1[1:,1:].ravel(),sin1[1,0]]
+        xi,yi = np.meshgrid(coord.xgrid,coord.ygrid)  #centers of pixels
+        Linterp = LinearNDInterpolator(np.c_[X.ravel(),Y.ravel()], Z.ravel())
+        cos_grid = Linterp(np.c_[xi.ravel(),yi.ravel()]).reshape(coord.ny,coord.nx)
+        Z = np.r_[sin1[1:,1:].ravel(),sin1[1,0]]
         Linterp.values[:,0] = Z.ravel()#trick save a some  computing time        
-        sin_grid = Linterp(c_[xi.ravel(),yi.ravel()]).reshape(coord.ny,coord.nx)  
+        sin_grid = Linterp(np.c_[xi.ravel(),yi.ravel()]).reshape(coord.ny,coord.nx)  
 
-    atan2 = array(arctan2(coord.dx*sin_grid,coord.dy*cos_grid))
+    atan2 = np.array(np.arctan2(coord.dx*sin_grid,coord.dy*cos_grid))
     return atan2
 
 
@@ -240,14 +240,14 @@ def generate_aniso_matrix(coord, atan2,rho,weight, derivation):
     npix = coord.npix
 
     atan2 = atan2.ravel(order='F')
-    rho = rho.ravel(order='F')/amax(rho)
+    rho = rho.ravel(order='F')/np.amax(rho)
 
     n_diag = 9
-    Bper_tmp = zeros((n_diag,npix))
-    Bpar_tmp = zeros((n_diag,npix))
+    Bper_tmp = np.zeros((n_diag,npix))
+    Bpar_tmp = np.zeros((n_diag,npix))
 
     
-    ind = isfinite(atan2)
+    ind = np.isfinite(atan2)
     atan2 = atan2[ind]
     N_ind = len(atan2)
 
@@ -256,14 +256,14 @@ def generate_aniso_matrix(coord, atan2,rho,weight, derivation):
     
     for k in [0,1] :
         #decomposition of direction parallel and oblique
-        direction =  int_(mod(floor(atan2 / (pi/4)+ k) , 8 ))
-        dir = array((-1,2,3,4,1,-2,-3,-4),dtype=int)  #=> (-1,2,3,4,1,-2,-3,-4) is equal (-1, ny-1, ny, ny+1, 1, -ny+1, -ny, -ny-1) is compressed form
-        next = squeeze(dir[direction])
+        direction =  np.int_(np.mod(np.floor(atan2 / (np.pi/4)+ k) , 8 ))
+        dir = np.array((-1,2,3,4,1,-2,-3,-4),dtype=int)  #=> (-1,2,3,4,1,-2,-3,-4) is equal (-1, ny-1, ny, ny+1, 1, -ny+1, -ny, -ny-1) is compressed form
+        next = np.squeeze(dir[direction])
 
-        Arelativ = abs(pi/4 - mod(atan2+pi/4,pi/2))       #saw function, MAIN MAGIC
+        Arelativ = abs(np.pi/4 - np.mod(atan2+np.pi/4,np.pi/2))       #saw function, MAIN MAGIC
 
         if derivation in (1,2): #for second derivation use /2 instead of /sqrt(2)
-            norm = sqrt(2)
+            norm = np.sqrt(2)
         elif derivation == 3:
             norm  = 2
         else:
@@ -271,12 +271,12 @@ def generate_aniso_matrix(coord, atan2,rho,weight, derivation):
             exit()
             
             
-        k1 = sin(2*Arelativ)/norm# obligue direction 
-        k2 = cos(2*Arelativ)        # direction paralel with axes
+        k1 = np.sin(2*Arelativ)/norm# obligue direction 
+        k2 = np.cos(2*Arelativ)        # direction paralel with axes
 
-        a = zeros(N_ind)
+        a = np.zeros(N_ind)
 
-        ind_mod2 = bool_(mod(direction,2))
+        ind_mod2 = np.bool_(np.mod(direction,2))
         a[ind_mod2] = k1[ind_mod2]
         a[~ind_mod2] = k2[~ind_mod2]
 
@@ -290,15 +290,15 @@ def generate_aniso_matrix(coord, atan2,rho,weight, derivation):
 
 
 
-    ind = arange(8)
+    ind = np.arange(8)
     pt1 = dir[ind%8]; pt2 = dir[(ind+2)%8]
     Bpar_tmp[n_diag//2+ pt2[ind]] = Bper_tmp[n_diag//2+ pt1[ind]]     #rotate directions by 90°
 
     #reduce paraell smoothing proportionaly to the circumference of the fluxsurface
     # by applying artificial weighting (for example for the divertor)
 
-    Bpar_tmp/= sum((Bpar_tmp), 0)+1e-6
-    Bper_tmp/= sum((Bper_tmp), 0)+1e-6
+    Bpar_tmp/= np.sum((Bpar_tmp), 0)+1e-6
+    Bper_tmp/= np.sum((Bper_tmp), 0)+1e-6
 
     min_smooth = .2
     Bper_tmp*= ((rho+min_smooth)*weight)
@@ -324,10 +324,10 @@ def generate_aniso_imgesson(coord, rho, BdMat,  danis, in_out_frac = 1, pfx_weig
     #use matrix from Imgesson's mathematic paper
 
     Psi = rho**2
-    Dparin  = sqrt(danis)*sigmoid( in_out_frac)*10
-    Dparout = sqrt(danis)*sigmoid(-in_out_frac)*2
-    Dperpin = 1/sqrt(danis)*sigmoid( in_out_frac)*10
-    Dperpout= 1/sqrt(danis)*sigmoid(-in_out_frac)
+    Dparin  = np.sqrt(danis)*sigmoid( in_out_frac)*10
+    Dparout = np.sqrt(danis)*sigmoid(-in_out_frac)*2
+    Dperpin = 1/np.sqrt(danis)*sigmoid( in_out_frac)*10
+    Dperpout= 1/np.sqrt(danis)*sigmoid(-in_out_frac)
 
     nx = coord.nx       # number of horisontal pixels
     ny = coord.ny       # number of vertical pixels
@@ -365,7 +365,7 @@ def generate_aniso_imgesson(coord, rho, BdMat,  danis, in_out_frac = 1, pfx_weig
 
     
     
-    Dx = zeros((3,npix))
+    Dx = np.zeros((3,npix))
     Dx[0] =-1/2.
     Dx[2] = 1/2.  #central derivative => /2 factor
     #calculating the gradients at the edges
@@ -379,7 +379,7 @@ def generate_aniso_imgesson(coord, rho, BdMat,  danis, in_out_frac = 1, pfx_weig
 
 
     #calculating the gradients inside the area (in this step the gradients at the edges are bad)
-    Dy = zeros((3,npix))
+    Dy = np.zeros((3,npix))
     Dy[0] =  -1/2.
     Dy[2] = 1/2.  #central derivative => /2 factor
     #calculating the gradients at the edges
@@ -392,7 +392,7 @@ def generate_aniso_imgesson(coord, rho, BdMat,  danis, in_out_frac = 1, pfx_weig
     Dy/= deltay
     Dy = spdiags( Dy, (-1,  0, 1), npix, npix,format='csr')
    
-    Dxx = zeros((3,npix))
+    Dxx = np.zeros((3,npix))
     Dxx[0] =  1
     Dxx[1] = -2
     Dxx[2] =  1  #central derivative => /2 factor
@@ -404,7 +404,7 @@ def generate_aniso_imgesson(coord, rho, BdMat,  danis, in_out_frac = 1, pfx_weig
 
 
     ##inside
-    Dyy = zeros((3,npix))
+    Dyy = np.zeros((3,npix))
     Dyy[0] =  1
     Dyy[1] = -2
     Dyy[2] =  1  #central derivative => /2 factor
@@ -423,7 +423,7 @@ def generate_aniso_imgesson(coord, rho, BdMat,  danis, in_out_frac = 1, pfx_weig
 
 
     #---producing the diffusion matrix---
-    xmeshgrid,ymeshgrid = meshgrid(xmesh,ymesh)
+    xmeshgrid,ymeshgrid = np.meshgrid(xmesh,ymesh)
     
     # we can define diffusion coefficient different for different parts of the plasma 
     # the original method caused to strong smoothing in the core 
@@ -437,15 +437,15 @@ def generate_aniso_imgesson(coord, rho, BdMat,  danis, in_out_frac = 1, pfx_weig
     #---creating c coeffitients---
 
   
-    DyM, DxM = gradient(Psi, deltay,deltax)
+    DyM, DxM = np.gradient(Psi, deltay,deltax)
     
 
     #NOTE it is faster then applying these derivation operators 
-    DyyM = diff(Psi,2,0)/deltay**2
-    DyyM = vstack((DyyM[0]/2, DyyM, DyyM[-1]))
-    DxxM = diff(Psi,2,1)/deltax**2
-    DxxM = hstack((DxxM[:,(0,)], DxxM, DxxM[:,(-1,)]))
-    DxyM = gradient(DyM,deltay,deltax)[1]
+    DyyM = np.diff(Psi,2,0)/deltay**2
+    DyyM = np.vstack((DyyM[0]/2, DyyM, DyyM[-1]))
+    DxxM = np.diff(Psi,2,1)/deltax**2
+    DxxM = np.hstack((DxxM[:,(0,)], DxxM, DxxM[:,(-1,)]))
+    DxyM = np.gradient(DyM,deltay,deltax)[1]
     
     #WARNING due to linear interpolation can be the second order differences quite noisy!
 
@@ -466,8 +466,8 @@ def generate_aniso_imgesson(coord, rho, BdMat,  danis, in_out_frac = 1, pfx_weig
     cxy=(Dperp-Dpar)*(DxM*DyM)/gradRho
     
     #NOTE it is faster then applying these derivation operators 
-    dyDperp,dxDperp = gradient(Dperp.reshape(ny,nx,order='F'),deltay,deltax)
-    dyDpar,  dxDpar = gradient( Dpar.reshape(ny,nx,order='F'),deltay,deltax)
+    dyDperp,dxDperp = np.gradient(Dperp.reshape(ny,nx,order='F'),deltay,deltax)
+    dyDpar,  dxDpar = np.gradient( Dpar.reshape(ny,nx,order='F'),deltay,deltax)
     dyDperp = dyDperp.flatten(order='F')
     dxDperp = dxDperp.flatten(order='F')
     dyDpar  =  dyDpar.flatten(order='F')
@@ -506,7 +506,7 @@ def generate_aniso_imgesson(coord, rho, BdMat,  danis, in_out_frac = 1, pfx_weig
 
 
     #supress radiation in in far SOL
-    Wout = spdiags( 10**sol_weight *maximum(0, Psi.flatten('F')-1.05)**2, 0, npix, npix,format='csr')
+    Wout = spdiags( 10**sol_weight *np.maximum(0, Psi.flatten('F')-1.05)**2, 0, npix, npix,format='csr')
     
     
     
@@ -517,7 +517,7 @@ def generate_aniso_imgesson(coord, rho, BdMat,  danis, in_out_frac = 1, pfx_weig
     
     try:
         import matplotlib._contour as _contour
-        gen = _contour.QuadContourGenerator(xmeshgrid,ymeshgrid, rho,bool_(rho*0), False, 0)
+        gen = _contour.QuadContourGenerator(xmeshgrid,ymeshgrid, rho,np.bool_(rho*0), False, 0)
     except:
         from contourpy import contour_generator
         gen = contour_generator(xmeshgrid,ymeshgrid, rho)

@@ -53,7 +53,7 @@ def ReadTomo(path, diag, shot, time,geometry_path):
 
 
     border = loadtxt(geometry_path+'/border.txt')
-    from scipy.ndimage.interpolation import zoom
+    from scipy.ndimage import zoom
 
     #zoom to reduce discretisation error when the radiation outside of the borders is set to zero
     n = 10

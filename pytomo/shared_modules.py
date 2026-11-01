@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 #from geom_mat_setting import loadgeometry
 
-from numpy import *
 import numpy as np
 from scipy import sparse
 #from  matplotlib.pyplot import *
@@ -19,7 +18,6 @@ from scipy.signal import convolve, fftconvolve, medfilt2d, convolve2d,fftconvolv
 from scipy.optimize import minimize
 from .annulus import get_bd_mat
 from scipy.linalg import solve_triangular, sqrtm
-from matplotlib.pylab import *
 
 from scipy.interpolate import RectBivariateSpline
 
@@ -66,7 +64,7 @@ def prepare_inputs(Tok, data, error_all, dets, tvec, Tmat, normData, G0, reg_par
     #remove elements of the projection matrix out of the boundary
     from .geom_mat_setting import prune_geo_matrix
     
-    bd_len = int(2*pi*sqrt(nx*nx))
+    bd_len = int(2*np.pi*np.sqrt(nx*nx))
     bnd = Tok.get_boundary( bd_len,time=tvec.mean())
     BdMat = get_bd_mat(Tok,nx, ny,boundary=bnd)
     
@@ -74,32 +72,32 @@ def prepare_inputs(Tok, data, error_all, dets, tvec, Tmat, normData, G0, reg_par
  
     Tmat = prune_geo_matrix(Tmat,BdMat)
 
-    normData = single(normData)
+    normData = np.single(normData)
     data = (data/normData[:,None]).T
   
-    error = ones(size(error_all,1))*inf
+    error = np.ones(np.size(error_all,1))*np.inf
      #BUG all or  any???? !!!
-    ind = all(isfinite(error_all)&(error_all!= 0),0)
+    ind = np.all(np.isfinite(error_all)&(error_all!= 0),0)
 
-    error[ind]= mean(normData)/mean(normData[:,None]/error_all[:,ind],0)  #in rapid version use mean error
+    error[ind]= np.mean(normData)/np.mean(normData[:,None]/error_all[:,ind],0)  #in rapid version use mean error
 
     mag_axis = None
     #compute averadge position of the magnetic axis
     if hasattr(Tok, 'mag_axis') and Tok.mag_axis != None:
-        T = linspace(tvec.min(), tvec.max(),100)
-        rc = ones_like(tvec)*mean(interp(T,Tok.mag_axis['tvec'],Tok.mag_axis['Rmag']))
-        zc = ones_like(tvec)*mean(interp(T,Tok.mag_axis['tvec'],Tok.mag_axis['Zmag']))
-        mag_axis = c_[rc,zc].T
+        T = np.linspace(tvec.min(), tvec.max(),100)
+        rc = np.ones_like(tvec)*np.mean(np.interp(T,Tok.mag_axis['tvec'],Tok.mag_axis['Rmag']))
+        zc = np.ones_like(tvec)*np.mean(np.interp(T,Tok.mag_axis['tvec'],Tok.mag_axis['Zmag']))
+        mag_axis = np.c_[rc,zc].T
         
 
-    error /= mean(normData)
+    error /= np.mean(normData)
  
     Tok.Transform  = Tok.generate_transform(tvec)
  
     try:
         BdMat = abs((Tok.Transform.T*BdMat.T)) > .5   #Tok.Transform can have problems with __rmul__
     except:
-        print('BdMat = (Tok.Transform.T*BdMat.T).T > .1', shape(Tok.Transform),Tok.npix,Tok.nx*Tok.ny)
+        print('BdMat = (Tok.Transform.T*BdMat.T).T > .1', np.shape(Tok.Transform),Tok.npix,Tok.nx*Tok.ny)
         
         import IPython
         IPython.embed()
@@ -111,35 +109,35 @@ def prepare_inputs(Tok, data, error_all, dets, tvec, Tmat, normData, G0, reg_par
     G0 = Tok.Transform.T*G0
 
 
-    G0 = reshape((G0*normTmat*mean(1/normData)), (Tok.npix, 1), order='F')                     #initial guess of G
+    G0 = np.reshape((G0*normTmat*np.mean(1/normData)), (Tok.npix, 1), order='F')                     #initial guess of G
 
     
 
     from .mat_deriv_B import mat_deriv_B
     Bmat, diag_mat = mat_deriv_B(Tok, tvec,regularization, reg_params)
-    error = single(error)
+    error = np.single(error)
 
     
     #add virtual measurements pushing solution to zero
     if boundary>0 and Tok.transform_index==0:  #if boundary is nonzero, uses the value as precision, recommended value is 50-100
 
         BdMat_ = BdMat.reshape(Tok.ny, Tok.nx, order="F")
-        from scipy.ndimage.morphology import binary_dilation
+        from scipy.ndimage import binary_dilation
         
         border = binary_dilation(~BdMat_)&BdMat_
 
-        ind_border = where(border.flatten(order='F'))[0]
+        ind_border = np.where(border.flatten(order='F'))[0]
         n_bord = len(ind_border)
-        Tadd = sparse.coo_matrix((ones(n_bord), ( ind_border ,arange(n_bord))), (nx*ny, n_bord))
+        Tadd = sparse.coo_matrix((np.ones(n_bord), ( ind_border ,np.arange(n_bord))), (nx*ny, n_bord))
 
         Tadd = Tok.Transform.T*Tadd
 
         Tmat = sparse.vstack((Tmat,Tadd.T))                # add artificial (virtual) sensors at the tokamak boundary
-        data = vstack((data,zeros((n_bord,tsteps),dtype=data.dtype)))
-        error = hstack((error,amin(error)*ones(n_bord,dtype=data.dtype)/sinh(boundary))) 
-        error = single(error)
+        data = np.vstack((data,np.zeros((n_bord,tsteps),dtype=data.dtype)))
+        error = np.hstack((error,np.amin(error)*np.ones(n_bord,dtype=data.dtype)/np.sinh(boundary))) 
+        error = np.single(error)
 
-    nl,npix = shape(Tmat)
+    nl,npix = np.shape(Tmat)
      
 
     iErr = spdiags(1/error, 0, nl, nl)
@@ -163,11 +161,11 @@ def create_derivation_matrix(g, Bmat,BdMat, regularization, danis, Tok, compute_
  
 
     # prefere stability , robusness        
-    g_tmp = mean(asarray(g),1)
+    g_tmp = np.mean(np.asarray(g),1)
     g_tmp = g_tmp if Tok.transform_index==0 else Tok.Transform * g_tmp
     
     npix = len(g_tmp)
-    max_g = nanmax(abs(g_tmp))
+    max_g = np.nanmax(abs(g_tmp))
 
     g_tmp /= max_g
     
@@ -219,7 +217,7 @@ def create_derivation_matrix(g, Bmat,BdMat, regularization, danis, Tok, compute_
         H = H.T*H
 
     if Tok.beta!= 0 :  # press reconstruction to zero 
-        H = H + Tok.beta* spdiags(ones(npix),0, npix,npix)* W.data.min()
+        H = H + Tok.beta* spdiags(np.ones(npix),0, npix,npix)* W.data.min()
         
 
     if Tok.transform_index==0:
@@ -244,23 +242,23 @@ def make_postprocessing(output,Tok, G,data, error,retro, tvec, dets,SigmaGsample
     resid/= error  #BUG do not correcr when covariance matrix is used
     
     
-    xcpix=linspace(Tok.xmin+Tok.dx/2,Tok.xmax+Tok.dx/2, Tok.nx)/Tok.norm
-    ycpix=linspace(Tok.ymin+Tok.dy/2,Tok.ymax+Tok.dy/2, Tok.ny)/Tok.norm 
+    xcpix=np.linspace(Tok.xmin+Tok.dx/2,Tok.xmax+Tok.dx/2, Tok.nx)/Tok.norm
+    ycpix=np.linspace(Tok.ymin+Tok.dy/2,Tok.ymax+Tok.dy/2, Tok.ny)/Tok.norm 
     
     
     tsteps = len(tvec)
     
     
     G = G.reshape(Tok.ny, Tok.nx, tsteps, order='F')
-    chi2_real = mean(resid**2,1)
+    chi2_real = np.mean(resid**2,1)
     
     output['chi2_real'] = chi2_real
     
-    dV = 2*pi*xcpix*Tok.dx*Tok.dy  #volume of the single pixel
-    output['power'] = einsum('ijk,j ->k',G, dV)
+    dV = 2*np.pi*xcpix*Tok.dx*Tok.dy  #volume of the single pixel
+    output['power'] = np.einsum('ijk,j ->k',G, dV)
     
     rho,magr,magz=Tok.mag_equilibrium(tvec.mean(0),surf_slice=[-1,],rho=1)
-    sep_coords = hstack((magr,magz))[:,:,0]
+    sep_coords = np.hstack((magr,magz))[:,:,0]
  
     BdMat = get_bd_mat(Tok,Tok.nx, Tok.ny,boundary=sep_coords)
     BdMat = BdMat.reshape(Tok.ny, Tok.nx, order='F')
@@ -275,10 +273,10 @@ def make_postprocessing(output,Tok, G,data, error,retro, tvec, dets,SigmaGsample
             z_lim = magz.min()+X_point_size
             BdMat |= Tok.ygrid[:,None] < z_lim
 
-    output['power_div'] = einsum('ijk,j ->k', G * BdMat[:,:,None], dV)
+    output['power_div'] = np.einsum('ijk,j ->k', G * BdMat[:,:,None], dV)
  
 
-    position = zeros((tsteps,2))
+    position = np.zeros((tsteps,2))
 
 
     
@@ -292,18 +290,18 @@ def make_postprocessing(output,Tok, G,data, error,retro, tvec, dets,SigmaGsample
         output['mag_rho'] =  rho[None]
     
     if hasattr(Tok,'mag_axis'):
-        position[:,0] = interp(tvec,Tok.mag_axis['tvec'],Tok.mag_axis['Rmag'])+Tok.magfield_shift_core[0]
-        position[:,1] = interp(tvec,Tok.mag_axis['tvec'],Tok.mag_axis['Zmag'])+Tok.magfield_shift_core[1]
+        position[:,0] = np.interp(tvec,Tok.mag_axis['tvec'],Tok.mag_axis['Rmag'])+Tok.magfield_shift_core[0]
+        position[:,1] = np.interp(tvec,Tok.mag_axis['tvec'],Tok.mag_axis['Zmag'])+Tok.magfield_shift_core[1]
         
     else:        
-        position[:,0] = mean(magx[:,0,:],0)/Tok.norm
-        position[:,1] = mean(magy[:,0,:],0)/Tok.norm
+        position[:,0] = np.mean(magx[:,0,:],0)/Tok.norm
+        position[:,1] = np.mean(magy[:,0,:],0)/Tok.norm
         Tok.mag_axis = {'tvec':tvec,'Rmag':position[:,0],'Zmag':position[:,1]}
         
     output['position'] = position 
 
     #compute emisivity "moments" from magnetic
-    dS = zeros_like(magx)  #volume of every elementary cell in 
+    dS = np.zeros_like(magx)  #volume of every elementary cell in 
     for it in range(tsteps): 
         #usage of for loop will save a lot of memory
         #it should be correct with subpixel precision
@@ -311,62 +309,62 @@ def make_postprocessing(output,Tok, G,data, error,retro, tvec, dets,SigmaGsample
         diag_r_x   = magx[:,2:,it]-magx[:,:-2,it]
         diag_r_y   = magy[:,2:,it]-magy[:,:-2,it]
 
-        diag_phi_x = r_[-magx[(0,),1:-1,it]+magx[(2,),1:-1,it],magx[2:,1:-1,it]-magx[:-2,1:-1,it],magx[(1,),1:-1,it]-magx[(-2,),1:-1,it]]
-        diag_phi_y = r_[-magy[(0,),1:-1,it]+magy[(2,),1:-1,it],magy[2:,1:-1,it]-magy[:-2,1:-1,it],magy[(1,),1:-1,it]-magy[(-2,),1:-1,it]]
+        diag_phi_x = np.r_[-magx[(0,),1:-1,it]+magx[(2,),1:-1,it],magx[2:,1:-1,it]-magx[:-2,1:-1,it],magx[(1,),1:-1,it]-magx[(-2,),1:-1,it]]
+        diag_phi_y = np.r_[-magy[(0,),1:-1,it]+magy[(2,),1:-1,it],magy[2:,1:-1,it]-magy[:-2,1:-1,it],magy[(1,),1:-1,it]-magy[(-2,),1:-1,it]]
 
-        norm_r_phi = hypot(diag_r_y,diag_r_x)*hypot(diag_phi_x,diag_phi_y)
+        norm_r_phi = np.hypot(diag_r_y,diag_r_x)*np.hypot(diag_phi_x,diag_phi_y)
         cos_phi = (diag_r_x*diag_phi_x+diag_r_y*diag_phi_y)/norm_r_phi
     
-        dS[:,1:-1,it]  = .5*sqrt(fabs(1-cos_phi**2))*norm_r_phi/2
+        dS[:,1:-1,it]  = .5*np.sqrt(np.fabs(1-cos_phi**2))*norm_r_phi/2
         
         
     dS[:,0,:]  = dS[:,1,:]/10 #aproximate the core 
     dS[:,-1,:]  = 2*dS[:,-2,:]-dS[:,-3,:] #aproximate the edge 
-    dV = 2*pi*dS*magx*dS
+    dV = 2*np.pi*dS*magx*dS
 
     # EMISSIVITY PROFILE 
-    n_mag = size(magx,1)
-    fsa_emiss = zeros((n_mag, tsteps),dtype=single)
+    n_mag = np.size(magx,1)
+    fsa_emiss = np.zeros((n_mag, tsteps),dtype=np.single)
     
-    scaling = array([Tok.dx,Tok.dy])
-    offset = array([Tok.xmin,Tok.ymin])#+scaling/2
+    scaling = np.array([Tok.dx,Tok.dy])
+    offset = np.array([Tok.xmin,Tok.ymin])#+scaling/2
     
-    from scipy.ndimage.interpolation import map_coordinates    
+    from scipy.ndimage import map_coordinates    
     
     for i in range(tsteps): 
-        coords = c_[magx[...,i].ravel(),magy[...,i].ravel()].T
+        coords = np.c_[magx[...,i].ravel(),magy[...,i].ravel()].T
         idx = (coords-offset[:,None])/ scaling[:,None]
         map_prof = map_coordinates(G[...,i].T,idx,order=1)
         map_prof = map_prof.reshape(magy[...,i].shape)
-        fsa_emiss[:,i]   = average(map_prof,0,dV[...,it])
+        fsa_emiss[:,i]   = np.average(map_prof,0,dV[...,it])
 
     if SigmaGsample is not None:
         n_sample =  SigmaGsample.shape[-1]
         SigmaGsample = SigmaGsample.reshape(Tok.ny, Tok.nx,n_sample, order='F')
-        fsa_emiss_err = zeros((n_mag, n_sample),dtype=single)
-        coords = c_[magx.mean(-1).ravel(),magy.mean(-1).ravel()].T
+        fsa_emiss_err = np.zeros((n_mag, n_sample),dtype=np.single)
+        coords = np.c_[magx.mean(-1).ravel(),magy.mean(-1).ravel()].T
         idx = (coords-offset[:,None])/ scaling[:,None]
         dS_m = dV.mean(-1)
         for i in range(n_sample): 
             map_prof = map_coordinates(SigmaGsample[...,i].T,idx,order=1)
             map_prof = map_prof.reshape(magy[...,0].shape)
-            fsa_emiss_err[:,i] = average(map_prof,0,dS_m)
+            fsa_emiss_err[:,i] = np.average(map_prof,0,dS_m)
 
-        output['fsa_emiss_covar'] = cov(fsa_emiss_err)[None]
+        output['fsa_emiss_covar'] = np.cov(fsa_emiss_err)[None]
 
-        fsa_emiss_err = std(fsa_emiss_err,1)
-        output['fsa_emiss_err'] = tile(fsa_emiss_err,(tsteps,1))
+        fsa_emiss_err = np.std(fsa_emiss_err,1)
+        output['fsa_emiss_err'] = np.tile(fsa_emiss_err,(tsteps,1))
 
     
     profmax = fsa_emiss.max(0)[None,:]
 
-    profile_0_3 = copy(fsa_emiss)
+    profile_0_3 = np.copy(fsa_emiss)
     profile_0_3/= profmax
 
     #devide the profile in the the 3 parts accrding teh radiated power with smooth transition
-    f0 = lambda x: interp(x, (0,.2,.4),(1,1,0)) 
-    f1 = lambda x: interp(x, (.2,.4,.6,.8),(0,1,1,0)) 
-    f2 = lambda x: interp(x, (.6,.8,1),(0,1,1))
+    f0 = lambda x: np.interp(x, (0,.2,.4),(1,1,0)) 
+    f1 = lambda x: np.interp(x, (.2,.4,.6,.8),(0,1,1,0)) 
+    f2 = lambda x: np.interp(x, (.6,.8,1),(0,1,1))
     
     profile_2_3 = f2(profile_0_3)
     profile_1_3 = f1(profile_0_3)
@@ -374,38 +372,38 @@ def make_postprocessing(output,Tok, G,data, error,retro, tvec, dets,SigmaGsample
 
 
     eps = 1e-10
-    norm_0_3 = einsum('ijk,jk->k',dV,profile_0_3)+eps
-    Rmag_0_3 = einsum('ijk,ijk,jk,k->k',dV,magx, profile_0_3,1/norm_0_3)
-    Zmag_0_3 = einsum('ijk,ijk,jk,k->k',dV,magy, profile_0_3,1/norm_0_3)
+    norm_0_3 = np.einsum('ijk,jk->k',dV,profile_0_3)+eps
+    Rmag_0_3 = np.einsum('ijk,ijk,jk,k->k',dV,magx, profile_0_3,1/norm_0_3)
+    Zmag_0_3 = np.einsum('ijk,ijk,jk,k->k',dV,magy, profile_0_3,1/norm_0_3)
 
-    norm_1_3 = einsum('ijk,jk->k',dV,profile_1_3)+eps
-    Rmag_1_3 = einsum('ijk,ijk,jk,k->k',dV,magx, profile_1_3,1/norm_1_3)
-    Zmag_1_3 = einsum('ijk,ijk,jk,k->k',dV,magy, profile_1_3,1/norm_1_3)
+    norm_1_3 = np.einsum('ijk,jk->k',dV,profile_1_3)+eps
+    Rmag_1_3 = np.einsum('ijk,ijk,jk,k->k',dV,magx, profile_1_3,1/norm_1_3)
+    Zmag_1_3 = np.einsum('ijk,ijk,jk,k->k',dV,magy, profile_1_3,1/norm_1_3)
 
-    norm_2_3 = einsum('ijk,jk->k',dV,profile_2_3)+eps
-    Rmag_2_3 = einsum('ijk,ijk,jk,k->k',dV,magx, profile_2_3,1/norm_2_3)
-    Zmag_2_3 = einsum('ijk,ijk,jk,k->k',dV,magy, profile_2_3,1/norm_2_3)
+    norm_2_3 = np.einsum('ijk,jk->k',dV,profile_2_3)+eps
+    Rmag_2_3 = np.einsum('ijk,ijk,jk,k->k',dV,magx, profile_2_3,1/norm_2_3)
+    Zmag_2_3 = np.einsum('ijk,ijk,jk,k->k',dV,magy, profile_2_3,1/norm_2_3)
 
     output['fsa_emiss'] = fsa_emiss.T
-    output['xmass_eq'] = vstack((Rmag_0_3,Rmag_1_3,Rmag_2_3)).T
-    output['ymass_eq'] = vstack((Zmag_0_3,Zmag_1_3,Zmag_2_3)).T
+    output['xmass_eq'] = np.vstack((Rmag_0_3,Rmag_1_3,Rmag_2_3)).T
+    output['ymass_eq'] = np.vstack((Zmag_0_3,Zmag_1_3,Zmag_2_3)).T
     
 
-    Gmax = amax(amax(G,0),0)[None,None,:]
+    Gmax = np.amax(np.amax(G,0),0)[None,None,:]
 
-    xmass = empty((3,tsteps),dtype=single) 
-    ymass = empty((3,tsteps),dtype=single) 
+    xmass = np.empty((3,tsteps),dtype=np.single) 
+    ymass = np.empty((3,tsteps),dtype=np.single) 
 
     n_chunk = 100
     for i,fun in enumerate([f0,f1,f2]):
         for it in range(tsteps//n_chunk+1):
             ind = slice(it*n_chunk, (it+1)*n_chunk)
             G_ = fun(G[:,:,ind]/(Gmax[:,:,ind]+eps))
-            g_sum = einsum('ijk->k',G_)+eps
+            g_sum = np.einsum('ijk->k',G_)+eps
             #BUG!!!correction factors dx/2 was found after detail comparism with phantom, 
             #but cause of this subpixel error is unknown
-            xmass[i,ind] = einsum('ijk,j,k->k',G_,xcpix-Tok.dx/2,1/g_sum) 
-            ymass[i,ind] = einsum('ijk,i,k->k',G_,ycpix-Tok.dy/2,1/g_sum)
+            xmass[i,ind] = np.einsum('ijk,j,k->k',G_,xcpix-Tok.dx/2,1/g_sum) 
+            ymass[i,ind] = np.einsum('ijk,i,k->k',G_,ycpix-Tok.dy/2,1/g_sum)
 
     output['xmass'] = xmass.T
     output['ymass'] = ymass.T
@@ -425,14 +423,14 @@ def in1d(ar1, ar2, assume_unique=False):
         ar1, rev_idx = unique(ar1, return_inverse=True)
         ar2 = unique(ar2)
 
-    ar = concatenate( (ar1, ar2) )
+    ar = np.concatenate( (ar1, ar2) )
     # We need this to be a stable sort, so always use 'mergesort'
     # here. The values from the first array should always come before
     # the values from the second array.
     order = ar.argsort(kind='mergesort')
     sar = ar[order]
     equal_adj = (sar[1:] == sar[:-1])
-    flag = concatenate( (equal_adj, [False] ) )
+    flag = np.concatenate( (equal_adj, [False] ) )
     indx = order.argsort(kind='mergesort')[:len( ar1 )]
 
     if assume_unique:
@@ -498,7 +496,7 @@ def warning(*warning ):
         
  
 
-def sigmoid(x):    return 1 / (1 + exp(-x))
+def sigmoid(x):    return 1 / (1 + np.exp(-x))
 
 from scipy import signal
 
@@ -530,32 +528,32 @@ def blur_image(im, n, ny=None) :
 
 def delete_sparse(A, ind, axis = 0):
 
-    if dtype(ind[0]) == "bool":
-        ind = where(ind)[0]
+    if np.dtype(ind[0]) == "bool":
+        ind = np.where(ind)[0]
 
     [indx, indy] = A.nonzero()
 
-    for i in where(in1d(A.nonzero()[axis], ind))[0]:
+    for i in np.where(in1d(A.nonzero()[axis], ind))[0]:
         A[indx[i],indy[i]] = 0
 
     return A
 
 def MAD(x):
-    return mean(abs(x-mean(x)))
+    return np.mean(abs(x-np.mean(x)))
     
  
 def nandot(X,Y):       
 
-    a,b = shape(X)
-    c,d = shape(Y)
+    a,b = np.shape(X)
+    c,d = np.shape(Y)
     if b != c:
         print('wrong size',X.shape,Y.shape)
         exit()
     
-    Z = empty((a,d))
+    Z = np.empty((a,d))
     
     for i in range(a):
-        Z[i,:] = nanmean(Y*X[i,:][:,newaxis],axis=0)*b
+        Z[i,:] = np.nanmean(Y*X[i,:][:,newaxis],axis=0)*b
     return Z
 
     
@@ -698,8 +696,8 @@ def fast_svd(M, k):  # random projection SVD
     if issparse(M): 
         Y = M.dot(R.T)
     else:
-        M = ascontiguousarray(M)
-        Y = dot(R ,M.T).T
+        M = np.ascontiguousarray(M)
+        Y = np.dot(R ,M.T).T
     
     
 
@@ -708,7 +706,7 @@ def fast_svd(M, k):  # random projection SVD
     if issparse(M): 
         B = M.T.dot(Q).T
     else:
-        M = asfortranarray(M)
+        M = np.asfortranarray(M)
         B  = np.dot(Q.T,M)
         
     Uhat, s, v = svd(B,full_matrices=False,overwrite_a=True,check_finite=False)
@@ -728,8 +726,8 @@ def svd_qr(A, tol = 1e-8, N = None): #rank revealing SVD
     from  scipy.linalg import svd,qr
 
     swap = lambda x:x
-    if size(A,0) < size(A,1):
-        swap = transpose
+    if np.size(A,0) < np.size(A,1):
+        swap = np.transpose
         
     A = swap(A)
     #if size(A,0) < size(A,1):
@@ -759,7 +757,7 @@ def svd_qr(A, tol = 1e-8, N = None): #rank revealing SVD
         #V = (dot(q, u)[:,index]).T
         #U = vt[index,:].T
     #else:
-    U = swap(dot(q, u)[:,index])
+    U = swap(np.dot(q, u)[:,index])
     V = swap(vt[index,:])
         
     S = s[index]
@@ -778,14 +776,14 @@ def MovingAveradge(sig, n,axis=-1):
 
 
     sig.cumsum(axis=-1,out=sig)
-    right_pad  = ones(n//2, dtype=sig.dtype)*sig[...,-1][...,None]
-    left_pad = zeros(shape(sig[...,0])+((n+1)//2,), dtype=sig.dtype)
+    right_pad  = np.ones(n//2, dtype=sig.dtype)*sig[...,-1][...,None]
+    left_pad = np.zeros(np.shape(sig[...,0])+((n+1)//2,), dtype=sig.dtype)
     
 
-    cs = concatenate((sig[...,n//2:],right_pad), axis=-1)
-    cs-= concatenate((left_pad,sig[...,:-n//2]), axis=-1)
+    cs = np.concatenate((sig[...,n//2:],right_pad), axis=-1)
+    cs-= np.concatenate((left_pad,sig[...,:-n//2]), axis=-1)
     cs *=1./n
-    edge = 1-arange(n//2+1.)/n
+    edge = 1-np.arange(n//2+1.)/n
     cs[...,:(n+1)//2] /= edge[-2+n%2::-1]
     cs[...,-(n+1)//2:]/= edge
     cs.swapaxes( -1,axis)
@@ -818,28 +816,28 @@ def denoise(img, sigma, distr= 'gauss2', boundary = False, boundary_mask= None):
     N = 3*sigma
 
     if boundary_mask is None:
-        boundary_mask = ones(shape(img))
+        boundary_mask = np.ones(np.shape(img))
 
     if 'lorenz' ==  distr:
-        N= ceil(6*sigma)
+        N= np.ceil(6*sigma)
     
 
-    x = arange(-N,N)/sigma
-    [X,Y] = meshgrid(x,x)
+    x = np.arange(-N,N)/sigma
+    [X,Y] = np.meshgrid(x,x)
 
     if 'gauss' == distr:
-        a = exp(x)
+        a = np.exp(x)
     elif 'gauss2' == distr:
-        a = exp( -x**2 )
+        a = np.exp( -x**2 )
     elif 'lorenz'== distr:
-        mask = 1/pi / (1 + X**2 + Y**2 )
+        mask = 1/np.pi / (1 + X**2 + Y**2 )
     elif 'laplace'== distr:
-        a = exp( -x**2 )
-        L =  -ones((3,3))
+        a = np.exp( -x**2 )
+        L =  -np.ones((3,3))
         L[1,1] = 8
     elif 'sobel'== distr:
-        a = exp( -x**2 )
-        L1 = array([-1,0,1-2,0,2-1,0,1]) /8.
+        a = np.exp( -x**2 )
+        L1 = np.array([-1,0,1-2,0,2-1,0,1]) /8.
         L2 = L1.T
         mask = L1
     else:
@@ -848,13 +846,13 @@ def denoise(img, sigma, distr= 'gauss2', boundary = False, boundary_mask= None):
 
 
     if not 'mask' in locals():
-        [X,Y] = meshgrid(a,a)
+        [X,Y] = np.meshgrid(a,a)
         mask = X*Y
 
-    mask = mask/sum(mask[:])
+    mask = mask/np.sum(mask[:])
 
-    I_size = array(shape(img))
-    M_size = array(shape(mask))
+    I_size = np.array(np.shape(img))
+    M_size = np.array(np.shape(mask))
     outsize = M_size + I_size - 1
 
     # figure out when to use spatial domain vs. freq domain
@@ -880,14 +878,14 @@ def denoise(img, sigma, distr= 'gauss2', boundary = False, boundary_mask= None):
 
     if 'laplace' ==  distr:
         img_new = conv(img_new,L, 'same')
-        b = conv(ones(shape(img)), L, 'same')
-        img_new[ abs(b) > 1e3*median(b[:])]  = 0
+        b = conv(np.ones(np.shape(img)), L, 'same')
+        img_new[ abs(b) > 1e3*np.median(b[:])]  = 0
 
 
     if 'sobel' == distr:
         a = conv(img,L1, 'same')
         b = conv(img,L2, 'same')
-        img_new = sqrt(a**2 + b**2)
+        img_new = np.sqrt(a**2 + b**2)
 
     return img_new
 
@@ -921,7 +919,7 @@ def read_config(path, file = ""):
         elif 'False' in item: item = False
         elif '[]' in item: item = []
         elif 'None' in item: item = None
-        elif isscalar(item): 
+        elif np.isscalar(item): 
             item = re.sub("[\[\]]", "", item) 
             item = item.split(",")
             typ = [int, float, str]
@@ -952,15 +950,15 @@ def smooth(x,window_len=11,window='hanning',axis=-1):
     if window_len < 3:
         return x
         
-    x = atleast_2d(x)
-    x = swapaxes(x, -1, axis)
-    y = empty_like(x)
+    x = np.atleast_2d(x)
+    x = np.swapaxes(x, -1, axis)
+    y = np.empty_like(x)
     
     
     if isinstance(window, str) or type(window) is tuple:
         w = signal.get_window(window, window_len)
     else:
-        w = asarray(window)
+        w = np.asarray(window)
         if len(w.shape) != 1:
             raise ValueError('window must be 1-D')
         if  w.shape[0] > x.shape[-1]:
@@ -972,13 +970,13 @@ def smooth(x,window_len=11,window='hanning',axis=-1):
     else:
         conv = signal.convolve
     for i in range(x.shape[0]):
-        s=r_[2*x[i,0]-x[i,window_len-1::-1],x[i,:],2*x[i,-1]-x[i,-1:-window_len:-1]]
+        s=np.r_[2*x[i,0]-x[i,window_len-1::-1],x[i,:],2*x[i,-1]-x[i,-1:-window_len:-1]]
         
         y[i,:]=conv(s,w/w.sum(),mode='same')[window_len:-window_len+1]     
     
-    y = swapaxes(y, -1, axis)
+    y = np.swapaxes(y, -1, axis)
 
-    return squeeze(y)
+    return np.squeeze(y)
 
 
 
@@ -991,18 +989,18 @@ def find_crossection(lineA,lineB,extrapolate=0):
     #find crosssection of two lines
     #extrapolate extend the second line 
     if extrapolate > 0:
-        lineB = concatenate((((lineB[0]-lineB[1])*extrapolate+lineB[0])[None,:], 
+        lineB = np.concatenate((((lineB[0]-lineB[1])*extrapolate+lineB[0])[None,:], 
                 lineB, ((lineB[-1]-lineB[-2])*extrapolate+lineB[-1])[None,:]))
 
     lineA_ = lineA[None,:,:]
     lineB_ = lineB[:,None,:]
-    DA = diff(lineA_,axis=1)
-    DB = diff(lineB_,axis=0)
+    DA = np.diff(lineA_,axis=1)
+    DB = np.diff(lineB_,axis=0)
     B = (lineB_-lineA_)[:-1,:-1]
     q  = DA[:,:,0]*DB[:,:,1]-DA[:,:,1]*DB[:,:,0]
     x1 = (DA[:,:,1]*B[:,:,0]-DA[:,:,0]*B[:,:,1])/q
     x2 = (DB[:,:,1]*B[:,:,0]-DB[:,:,0]*B[:,:,1])/q
-    ind = array(where(((x1>=0)&(x1<=1)&(x2>=0)&(x2<=1)))).T[:,::-1]
+    ind = np.array(np.where(((x1>=0)&(x1<=1)&(x2>=0)&(x2<=1)))).T[:,::-1]
     crosssection = [x2[iB,iA]*DA[0,iA]+lineA[iA] for iA,iB in ind]
     positionA = [x2[iB,iA]+iA for iA,iB in ind]
     positionB = [x1[iB,iA]+iB for iA,iB in ind]
@@ -1034,7 +1032,7 @@ class fitEllipse:
         C[0,2] = C[2,0] = 2; C[1,1] = -1
 
         E, V =  linalg.eig(linalg.solve(S,C))
-        self.a = real(V[:,3])
+        self.a = np.real(V[:,3])
 
 
     def ellipse_center(self):
@@ -1069,10 +1067,10 @@ def poly_min(x,dx,y): #find extrem of polynom
     return x+(y[0]-y[2])*dx/(2*(y[0]+y[2]-2*y[1]))
 
 def min_fine(x,y): #find extrem with subpixel precision
-    i = argmin(y)
+    i = np.argmin(y)
     if i==0 or i == len(y)-1: return y[i],x[i]    #not working at the edge! 
-    A = x[i-1:i+2]**2, x[i-1:i+2], ones(3)
-    a,b,c = linalg.solve(array(A).T,y[i-1:i+2])
+    A = x[i-1:i+2]**2, x[i-1:i+2], np.ones(3)
+    a,b,c = linalg.solve(np.array(A).T,y[i-1:i+2])
     
     ymin =  c-b**2/(4*a)
     xmin = -b/(2*a) 
@@ -1086,15 +1084,15 @@ def extrap1d(xs,ys):
     def extrapol(xo):
         #just for 1D x and 0. axis of Y
         
-        yo = empty(xo.shape+ys.shape[1:])
+        yo = np.empty(xo.shape+ys.shape[1:])
 
         # Values lower than the minimum "x" are extrapolated at the same time
         low = xo < xs[0]
-        yo[low] =  squeeze(ys[0] + (xo[low,None]-xs[0])*(ys[1]-ys[0])/(xs[1]-xs[0]))
+        yo[low] =  np.squeeze(ys[0] + (xo[low,None]-xs[0])*(ys[1]-ys[0])/(xs[1]-xs[0]))
 
         # Values higher than the maximum "x" are extrapolated at same time
         high = xo > xs[-1]
-        yo[high] = squeeze(ys[-1] + (xo[high,None]-xs[-1])*(ys[-1]-ys[-2])/(xs[-1]-xs[-2]))
+        yo[high] = np.squeeze(ys[-1] + (xo[high,None]-xs[-1])*(ys[-1]-ys[-2])/(xs[-1]-xs[-2]))
 
         # Values inside the interpolation range are interpolated directly
         inside = (xo >= xs[0])&(xo <= xs[-1])
@@ -1115,50 +1113,50 @@ def get_rho_tan(rhop, magx, magy,XC, YC, npoints=100):
     magx_ext = (magx[:,-1]-Rc)*10+Rc
     magy_ext = (magy[:,-1]-Zc)*10+Zc
 
-    MagXY = c_[r_[Rc,c_[magx,magx_ext].ravel()] ,r_[Zc,c_[magy,magy_ext].ravel()]].T
+    MagXY = np.c_[np.r_[Rc,np.c_[magx,magx_ext].ravel()] ,np.r_[Zc,np.c_[magy,magy_ext].ravel()]].T
 
         
-    rho_mag = outer(ones(magx.shape[0]),r_[rhop,10])
+    rho_mag = np.outer(np.ones(magx.shape[0]),np.r_[rhop,10])
 
-    LNDI = LinearNDInterpolator(MagXY.T, r_[0,rho_mag.ravel()],fill_value=10) #14ms            
+    LNDI = LinearNDInterpolator(MagXY.T, np.r_[0,rho_mag.ravel()],fill_value=10) #14ms            
 
-    imin = minimum(argmin(hypot(XC-Rc, YC-Zc),0), len(XC)-2)
+    imin = np.minimum(np.argmin(np.hypot(XC-Rc, YC-Zc),0), len(XC)-2)
     
-    XC1 = XC[imin  , arange(len(imin))]
-    XC2 = XC[imin+1, arange(len(imin))]
-    YC1 = YC[imin  , arange(len(imin))]
-    YC2 = YC[imin+1, arange(len(imin))]
+    XC1 = XC[imin  , np.arange(len(imin))]
+    XC2 = XC[imin+1, np.arange(len(imin))]
+    YC1 = YC[imin  , np.arange(len(imin))]
+    YC2 = YC[imin+1, np.arange(len(imin))]
     
     
     xmax = magx[:,-1].max()
     xmin = magx[:,-1].min()
     ymax = magy[:,-1].max()
     ymin = magy[:,-1].min()
-    x = array((xmin,xmax))[:,None]
+    x = np.array((xmin,xmax))[:,None]
     y = (YC2-YC1)/(XC2-XC1)*(x-XC1)+YC1
-    y = minimum(maximum(ymin,y ), ymax)
+    y = np.minimum(np.maximum(ymin,y ), ymax)
     x = (XC2-XC1)/(YC2-YC1)*(y-YC1)+XC1
-    x = (x[0]+x[1])/2+.5*linspace(-1,1,npoints)[:,None]*(x[1]-x[0])*sign(XC2-XC1)
+    x = (x[0]+x[1])/2+.5*np.linspace(-1,1,npoints)[:,None]*(x[1]-x[0])*np.sign(XC2-XC1)
     y = (YC2-YC1)/(XC2-XC1)*(x-XC1)+YC1
     
     
-    rho = LNDI(array((x,y)).T)
+    rho = LNDI(np.array((x,y)).T)
 
-    cos_theta = zeros(len(rho))
-    rho_tangent = zeros(len(rho))
-    Rtan = zeros(len(rho))
-    Ztan = zeros(len(rho))
+    cos_theta = np.zeros(len(rho))
+    rho_tangent = np.zeros(len(rho))
+    Rtan = np.zeros(len(rho))
+    Ztan = np.zeros(len(rho))
 
-    irho = arange(len(rho.T))
+    irho = np.arange(len(rho.T))
     for ilos,r  in enumerate(rho):
         rhomin,i_min = min_fine(irho,r)
         rho_tangent[ilos] = rhomin
-        Rtan[ilos] = interp(i_min, arange(len(x)),x[:,ilos])
-        Ztan[ilos] = interp(i_min, arange(len(x)),y[:,ilos]) 
+        Rtan[ilos] = np.interp(i_min, np.arange(len(x)),x[:,ilos])
+        Ztan[ilos] = np.interp(i_min, np.arange(len(x)),y[:,ilos]) 
         cos_theta[ilos] = (Rtan[ilos]-Rc)*(YC2[ilos]-YC1[ilos])-( XC2[ilos]-XC1[ilos])*(Ztan[ilos]-Zc)
 
 
-    rho_tangent*=sign(cos_theta)
+    rho_tangent*=np.sign(cos_theta)
 
 
     return rho_tangent, x,y

@@ -4,7 +4,7 @@
 #from matplotlib.pylab import *
 
 import numpy as np
-from matplotlib.pyplot import *
+import matplotlib.pyplot as plt
 import time
 from scipy import sparse
 from .shared_modules import prepare_inputs, create_derivation_matrix, make_postprocessing, debug
@@ -2126,19 +2126,19 @@ def ForcePositivity2(E,W,g,V,D,prod,resid,ndets,BdMat,chi2,tokamak):
             #corr = np.dot(single(w*delta_prod/D), V) #.5ms
             
             image2.ravel(order='F')[list(active_set)] = np.nan
-            figure()
+            plt.figure()
             #suptitle(str(i)+'  '+str(k))
-            subplot(121)
-            imshow( image2.reshape(ny,nx,order='F'),origin='lower', interpolation='nearest', vmin=iE.min(), vmax=None)
-            colorbar()
-            contour(image2,0,colors='w',origin='lower');
-            subplot(122)
-            imshow( image.reshape(ny,nx,order='F'),origin='lower', interpolation='nearest', vmin=iE.min(), vmax=None)
-            colorbar()
-            contour(image,0,colors='w',origin='lower');
+            plt.subplot(121)
+            plt.imshow( image2.reshape(ny,nx,order='F'),origin='lower', interpolation='nearest', vmin=iE.min(), vmax=None)
+            plt.colorbar()
+            plt.contour(image2,0,colors='w',origin='lower');
+            plt.subplot(122)
+            plt.imshow( image.reshape(ny,nx,order='F'),origin='lower', interpolation='nearest', vmin=iE.min(), vmax=None)
+            plt.colorbar()
+            plt.contour(image,0,colors='w',origin='lower');
 
 
-            show()
+            plt.show()
 
 
 
@@ -2952,7 +2952,7 @@ def plot_tomo_error(tvec, E, V,norm,w,D,chi2 ):
     from matplotlib.ticker import MaxNLocator
 
     from make_graphs import my_cmap_
-    f,axis = subplots(1,3, sharex=True,sharey=True)
+    f,axis = plt.subplots(1,3, sharex=True,sharey=True)
     E[E<0] = 0
     f.set_size_inches(10,4)
     
@@ -3019,9 +3019,9 @@ def plot_tomo_error(tvec, E, V,norm,w,D,chi2 ):
     axis[1].set_title('Relative variance')
     axis[2].set_title('Correlation')
     
-    c1=colorbar(img1,ax=axis[0])
-    c2=colorbar(img2,ax=axis[1])
-    c3=colorbar(img3,ax=axis[2])
+    c1=plt.colorbar(img1,ax=axis[0])
+    c2=plt.colorbar(img2,ax=axis[1])
+    c3=plt.colorbar(img3,ax=axis[2])
     tick_locator = MaxNLocator(nbins=5)
     c1.locator = tick_locator
     c1.update_ticks()
@@ -3029,7 +3029,7 @@ def plot_tomo_error(tvec, E, V,norm,w,D,chi2 ):
     #c2.update_ticks()
     c3.locator = tick_locator
     c3.update_ticks()
-    show()
+    plt.show()
     
     
     
@@ -3049,7 +3049,7 @@ def PlotBaseVectors2(V, nx,ny):
     #from matplotlib.pyplot import *
     
 
-    f,ax = subplots(5,15, sharex=True, sharey=True)
+    f,ax = plt.subplots(5,15, sharex=True, sharey=True)
     
     ax = ax.flatten()
 
@@ -3063,7 +3063,7 @@ def PlotBaseVectors2(V, nx,ny):
     ax[0].xaxis.set_major_formatter( NullFormatter() )
     #tight_layout()
 
-    show()
+    plt.show()
 
         
     
@@ -3082,14 +3082,14 @@ def PlotBaseVectors(V, nx,ny,Nmax=np.inf):
         vmax = np.amax(np.abs(solution))
         #vmin = min(vmin,-vmax)
         #print vmin, vmax
-        imshow(solution, origin='lower', vmin = -vmax, vmax = vmax)
-        colorbar()
+        plt.imshow(solution, origin='lower', vmin = -vmax, vmax = vmax)
+        plt.colorbar()
         #im.set_clim((vmin,vmax))
 
         #draw()
-        show()
+        plt.show()
 
-    fig = figure()   
+    fig = plt.figure()   
     fig.show()
 
     
@@ -3111,9 +3111,9 @@ def PlotBaseVectors(V, nx,ny,Nmax=np.inf):
         im.set_data(solution )
         im.set_clim((vmin,vmax))
 
-        draw()
+        plt.draw()
         #show()
-        pause(.1)
+        plt.pause(.1)
         #close()
         
 

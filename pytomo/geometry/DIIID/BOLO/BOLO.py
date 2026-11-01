@@ -7,8 +7,8 @@
 
 import os,sys 
 from collections import OrderedDict
-from numpy import *
-from matplotlib.pyplot import *
+import numpy as np
+import matplotlib.pyplot as plt
 #from annulus import get_bd_mat
 import MDSplus as mds
 from scipy.signal import fftconvolve, medfilt
@@ -88,7 +88,7 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1,firstvals=None, lastva
     if firstvals is None:
         firstvals = y[0] - np.abs( y[1:half_window+1][::-1] - y[0] )
     else:
-        firstvals = ones(half_window)*firstvals
+        firstvals = np.ones(half_window)*firstvals
     if lastvals is None:
         lastvals = y[-1] + np.abs(y[-half_window-1:-1][::-1] - y[-1])
     y = np.concatenate((firstvals, y, lastvals))
@@ -141,14 +141,14 @@ def smooth(x,window_len=11,window='hanning'):
         raise ValueError("Window is on of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'")
 
 
-    s=r_[x[window_len-1:0:-1],x,x[-2:-window_len-1:-1]]
+    s=np.r_[x[window_len-1:0:-1],x,x[-2:-window_len-1:-1]]
    
     if window == 'flat': #moving average
         w=numpy.ones(window_len,'d')
     else:
         w=eval(window+'(window_len)')
 
-    y=convolve(w/w.sum(),s,mode='valid')
+    y=np.convolve(w/w.sum(),s,mode='valid')
     return y
 
 """
@@ -197,25 +197,25 @@ def richardson_lucy(tmp):
     epsilon = 1e-8 
     PSF_inv = np.flipud(psf)
 
-    psf/= sum(psf)
-    img_ = maximum(img+offset,0)
+    psf/= np.sum(psf)
+    img_ = np.maximum(img+offset,0)
     cur_est = img_.copy()
     #Wupd = 1/(1+sigma^2) sigma - detector noise
-    fpsf  = fft.rfft(psf)
-    fipsf = fft.rfft(PSF_inv)
+    fpsf  = np.fft.rfft(psf)
+    fipsf = np.fft.rfft(PSF_inv)
 
     for it in range(numiter):
-        fcur_est = fft.rfft(cur_est)
-        img_model = fft.irfft( fcur_est*fpsf)  #convolution
+        fcur_est = np.fft.rfft(cur_est)
+        img_model = np.fft.irfft( fcur_est*fpsf)  #convolution
         #img_model =  fftconvolve(cur_est, psf, 'full')[:-len(psf)+1]
-        img_model = maximum(img_model+offset,0)+1e-8
-        Wupd = 1/(1+1/sqrt(img_model/mean(img_model)))
-        Wupd/=amax(Wupd)
-        fcorrection = fft.rfft(1 - img_ / img_model)
-        update = fft.irfft( fcorrection*fipsf)*cur_est*Wupd
+        img_model = np.maximum(img_model+offset,0)+1e-8
+        Wupd = 1/(1+1/np.sqrt(img_model/np.mean(img_model)))
+        Wupd/=np.amax(Wupd)
+        fcorrection = np.fft.rfft(1 - img_ / img_model)
+        update = np.fft.irfft( fcorrection*fipsf)*cur_est*Wupd
         #update *= cur_est
         #update = Wupd*fftconvolve( 1 - img_ / img_model, PSF_inv, 'full')[len(PSF_inv)-1:]  * cur_est
-        cur_est = maximum(0, cur_est -  relax* update);
+        cur_est = np.maximum(0, cur_est -  relax* update);
  
     return cur_est
 
@@ -223,11 +223,11 @@ def richardson_lucy(tmp):
 def medfilt_deconv(xxx_todo_changeme2):
     (data,drtau,tdel,tau,gamma, scrfact ) = xxx_todo_changeme2
     m         = max(2*int(int(drtau/tdel)/2)+1, 3)
-    k         = arange(m)-((m-1)/2.)
+    k         = np.arange(m)-((m-1)/2.)
     
     k[k != 0] = 1.0/k[k != 0]
     k        = k/tdel/(int(m/2.)*2)
-    temp      = data-mean(data[:20],0)
+    temp      = data-np.mean(data[:20],0)
     temp      = temp[:len(temp)//4*4].reshape(-1,4).mean(1)
     temp      = medfilt(temp,m)
     drdt      = np.convolve( temp,k, mode='same')
@@ -310,18 +310,18 @@ class loader_BOLO():
         120.6, 117.6, 114.6, 111.6, 108.6, 101.9]
         
         # Create second point to define a line
-        RU2 = array(RU) + 2.0 * cos(deg2rad(angleU))
-        RL2 = array(RL) + 2.0 * cos(deg2rad(angleL))
+        RU2 = np.array(RU) + 2.0 * np.cos(np.deg2rad(angleU))
+        RL2 = np.array(RL) + 2.0 * np.cos(np.deg2rad(angleL))
 
-        ZU2 = array(ZU) + 2.0 * sin(deg2rad(angleU))
-        ZL2 = array(ZL) + 2.0 * sin(deg2rad(angleL))
+        ZU2 = np.array(ZU) + 2.0 * np.sin(np.deg2rad(angleU))
+        ZL2 = np.array(ZL) + 2.0 * np.sin(np.deg2rad(angleL))
 
         self.Phi = {'U':phiU, 'L':phiL}           
         self.R_start= {"U":RU, 'L':RL}
         self.R_end  = {"U":RU2,'L':RL2}
         self.z_start= {"U":ZU, 'L':ZL}
         self.z_end  = {"U":ZU2,'L':ZL2}
-        self.theta=   {"U":rad2deg(angleU),"L":rad2deg(angleL)}
+        self.theta=   {"U":np.rad2deg(angleU),"L":np.rad2deg(angleL)}
         self.etendue = {}
         self.etendue['U'] = [3.0206e4,2.9034e4,2.8066e4,2.7273e4,2.6635e4,4.0340e4,\
         3.9855e4,3.9488e4,3.9235e4,3.9091e4,3.9055e4,3.9126e4,\
@@ -342,12 +342,12 @@ class loader_BOLO():
         self.all_los = []
         for cam in self.cams:
             self.detectors_dict[cam] = ['BOL_%s%.2d'%(cam,ch+1) for ch in range(self.nchan)]
-            self.cam_ind[cam] = arange(self.nl,self.nchan+self.nl)
+            self.cam_ind[cam] = np.arange(self.nl,self.nchan+self.nl)
             self.nl+= self.nchan
             self.all_los.append(self.detectors_dict[cam])
 
-        self.calb_0 = ones(len(self.cams))
-        self.dets = arange(self.nl)
+        self.calb_0 = np.ones(len(self.cams))
+        self.dets = np.arange(self.nl)
         self.dets_index = [v for k,v in self.cam_ind.items()]
         
         
@@ -436,27 +436,27 @@ class loader_BOLO():
                     try:
                         self.MDSconn.openTree(tree,self.shot)
                         
-                        ptot = zeros_like(self.tvec)
+                        ptot = np.zeros_like(self.tvec)
                         TDIcall = "\\%s::TOP.RESULTS.CONFINEMENT.POWER:PNBI"%tree
                         data = self.MDSconn.get('_x ='+TDIcall).data()
                         tvec = self.MDSconn.get('dim_of(_x)').data()/1000
-                        dt = mean(diff(tvec))
+                        dt = np.mean(np.diff(tvec))
                         decay = 150e-3#s
                         from scipy.signal import lfilter
                         data = lfilter((dt/decay ,), [1,-1+dt/decay], data)
 
-                        ptot+=interp(self.tvec,tvec,data )
+                        ptot+=np.interp(self.tvec,tvec,data )
                         
                         TDIcall = "\\%s::TOP.RESULTS.CONFINEMENT.POWER:PECH"%tree
                         data = self.MDSconn.get('_x ='+TDIcall).data()
                         tvec = self.MDSconn.get('dim_of(_x)').data()/1000
                         data = lfilter((dt/decay ,), [1,-1+dt/decay], data)
-                        ptot+=interp(self.tvec,tvec,data )
+                        ptot+=np.interp(self.tvec,tvec,data )
                         
                         TDIcall = "\\%s::TOP.RESULTS.CONFINEMENT.POWER:POH"%tree
                         data = self.MDSconn.get('_x ='+TDIcall).data()
                         tvec = self.MDSconn.get('dim_of(_x)').data()/1000
-                        ptot+=interp(self.tvec,tvec,data )
+                        ptot+=np.interp(self.tvec,tvec,data )
                 
                         
                         self.powers.append(("%s:PTOT"%tree,self.tvec,ptot ))
@@ -475,7 +475,7 @@ class loader_BOLO():
       
       
       
-    def get_data_(self,tmin=-inf,tmax=inf):
+    def get_data_(self,tmin=-np.inf,tmax=np.inf):
         
         imin,imax = self.tvec.searchsorted((tmin, tmax))
         imax += 1
@@ -534,15 +534,15 @@ class loader_BOLO():
 
 
         offset = (tvec<0)&(tvec  > -0.7)
-        noise = std(data[offset],axis=0)
+        noise = np.std(data[offset],axis=0)
 
         data-= data[offset].mean(0)
         it = tvec.searchsorted(-.7)//2*2
         data= data[it:]
         tvec= tvec[it:]
-        fs = 1/diff(tvec).mean()
+        fs = 1/np.diff(tvec).mean()
 
-        data -= outer(tvec,data[tvec>10].mean(0))/tvec[tvec>10].mean()
+        data -= np.outer(tvec,data[tvec>10].mean(0))/tvec[tvec>10].mean()
         import scipy.signal
         notch_filt = ((7.1,1),(6,1))
         for f0,width in notch_filt:
@@ -551,7 +551,7 @@ class loader_BOLO():
 
 
         #noise = std(data[offset],axis=0)
-        drtau = 0.05*maximum(1,sqrt(noise/median(noise))) #more smoothing for noise channels
+        drtau = 0.05*np.maximum(1,np.sqrt(noise/np.median(noise))) #more smoothing for noise channels
         
   
         method = 'richardson_lucy'
@@ -567,16 +567,16 @@ class loader_BOLO():
         #downsample = round(mean(diff(self.tvec))/mean(diff(t)))
         #x =  MovingAveradge(copy(x.T),downsample).T
         #t =  MovingAveradge(copy(t),downsample)
-        pwr = zeros((len(self.tvec), self.nl), dtype='single')
-        pwr_err = zeros((len(self.tvec), self.nl), dtype='single')
-        pwr_err+= std(x[t<0])*sqrt(noise/median(noise))[None,:]*5+pwr.mean(1)[:,None]*0.10 #just guess 
+        pwr = np.zeros((len(self.tvec), self.nl), dtype='single')
+        pwr_err = np.zeros((len(self.tvec), self.nl), dtype='single')
+        pwr_err+= np.std(x[t<0])*np.sqrt(noise/np.median(noise))[None,:]*5+pwr.mean(1)[:,None]*0.10 #just guess 
 
         for i in range(self.nl):
-            pwr[:,i] = interp(self.tvec,t,x[:,i])
+            pwr[:,i] = np.interp(self.tvec,t,x[:,i])
 
         for cam, index in self.cam_ind.items():
-            pwr[:,index] *= array(self.etendue[cam])[index-index[0]]*1e4 #W/m^2
-            pwr_err[:,index] *= array(self.etendue[cam])[index-index[0]]*1e4 #W/m^2
+            pwr[:,index] *= np.array(self.etendue[cam])[index-index[0]]*1e4 #W/m^2
+            pwr_err[:,index] *= np.array(self.etendue[cam])[index-index[0]]*1e4 #W/m^2
 
         self.cache_fast =  pwr,pwr_err
 
@@ -599,27 +599,27 @@ class loader_BOLO():
         
         
         
-        pwr = zeros((len(self.tvec), self.nl), dtype='single')
-        pwr_err = zeros((len(self.tvec), self.nl), dtype='single')
+        pwr = np.zeros((len(self.tvec), self.nl), dtype='single')
+        pwr_err = np.zeros((len(self.tvec), self.nl), dtype='single')
         
         import IPython
         IPython.embed()
         
         from ....shared_modules import MovingAveradge
-        downsample = round(mean(diff(self.tvec))/mean(diff(t3)))
-        x3 =  MovingAveradge(copy(x3.T),downsample).T
-        t3 =  MovingAveradge(copy(t3),downsample)
+        downsample = round(np.mean(np.diff(self.tvec))/np.mean(np.diff(t3)))
+        x3 =  MovingAveradge(np.copy(x3.T),downsample).T
+        t3 =  MovingAveradge(np.copy(t3),downsample)
 
         for i in range(self.nl):
-            pwr[:,i] = interp(self.tvec,t3,x3[:,i])
-            pwr_err[:,i]+= (interp(self.tvec, t2,x2[:,i])-pwr[:,i])**2
-            pwr_err[:,i]+= (interp(self.tvec, t4,x4[:,i])-pwr[:,i])**2
-            pwr_err[:,i] = MovingAveradge(sqrt(pwr_err[:,i]),20)
+            pwr[:,i] = np.interp(self.tvec,t3,x3[:,i])
+            pwr_err[:,i]+= (np.interp(self.tvec, t2,x2[:,i])-pwr[:,i])**2
+            pwr_err[:,i]+= (np.interp(self.tvec, t4,x4[:,i])-pwr[:,i])**2
+            pwr_err[:,i] = MovingAveradge(np.sqrt(pwr_err[:,i]),20)
 
             #pwr_err[:,i] = std(vstack((interp(self.tvec, t2,x2[:,i]),interp(self.tvec, t4,x4[:,i]),pwr[:,i])),0)  #BUG UGLY
         for cam, index in self.cam_ind.items():
-            pwr[:,index] *= array(self.etendue[cam])[index-index[0]]*1e4 #W/m^2
-            pwr_err[:,index] *= array(self.etendue[cam])[index-index[0]]*1e4 #W/m^2
+            pwr[:,index] *= np.array(self.etendue[cam])[index-index[0]]*1e4 #W/m^2
+            pwr_err[:,index] *= np.array(self.etendue[cam])[index-index[0]]*1e4 #W/m^2
 
         self.cache_fast =  pwr,pwr_err
 
@@ -630,7 +630,7 @@ class loader_BOLO():
      
      
         
-        f,ax = subplots(2,2, sharex=True, sharey=True)
+        f,ax = plt.subplots(2,2, sharex=True, sharey=True)
         ax[0,0].plot(t1, x1)
         ax[0,0].set_title('median')
         ax[0,1].plot(t2, x2)
@@ -639,11 +639,11 @@ class loader_BOLO():
         #ax[1,0].set_title('richardson_lucy')
         ax[1,1].plot(t4[:len(t4)//16*16].reshape(-1,16).mean(1), x4[:len(t4)//16*16].reshape(-1, 16,self.nl).mean(1))
         ax[1,1].set_title('wiener')
-        show()
+        plt.show()
         from scipy.signal import fftconvolve, medfilt
         
-        imshow(x1[:len(t4)//16*16].reshape(-1, 16,self.nl).mean(1), aspect='auto')
-        imshow(x1 , aspect='auto')
+        plt.imshow(x1[:len(t4)//16*16].reshape(-1, 16,self.nl).mean(1), aspect='auto')
+        plt.imshow(x1 , aspect='auto')
 
 
         import IPython
@@ -653,26 +653,26 @@ class loader_BOLO():
 #imshow(x1, interpolation='nearest', aspect='auto',vmin=0)
         
         ch = 36
-        f,ax = subplots(2,sharex=True)
-        ax[0].plot(self.tvec,power[:,ch],'--' )
+        f,ax = plt.subplots(2,sharex=True)
+        ax[0].plot(self.tvec,np.power[:,ch],'--' )
         ax[0].plot(t1,x1[:,ch])
         ax[0].plot(t2,x2[:,ch])
         ax[0].plot(t3,x3[:,ch],'k')
         ax[0].plot(t4,x4[:,ch],':')
         tau_ = (tau/gamma)[ch]
-        h = exp(-(t4-t4[0])/tau_)
-        dt= mean(diff(t4))
+        h = np.exp(-(t4-t4[0])/tau_)
+        dt= np.mean(np.diff(t4))
         retro4 = fftconvolve( x4[:,ch]*scrfact[ch]*dt/tau[ch],h,mode='full')[:-len(h)+1]
         
-        h = exp(-(t3-t3[0])/tau_)
-        dt= mean(diff(t3))
+        h = np.exp(-(t3-t3[0])/tau_)
+        dt= np.mean(np.diff(t3))
         retro3 = fftconvolve( x3[:,ch]*scrfact[ch]*dt/tau[ch],h,mode='full')[:-len(h)+1]
         
         ax[1].plot(tvec,data[:,ch])
         ax[1].plot(t4,retro4)
         ax[1].plot(t3,retro3,'k')
 
-        show()
+        plt.show()
         
         
         
@@ -816,20 +816,20 @@ class loader_BOLO():
         
         drdt = np.fft.irfft(fdrdt,axis=0)
         
-        t = arange(1000)/100.*2*pi
+        t = np.arange(1000)/100.*2*np.pi
         t = tvec
-        a = sin(t)
+        a = np.sin(t)
 
-        plot(gradient(a, mean(diff(t)))+a)
-        plot(a)
+        plt.plot(np.gradient(a, np.mean(np.diff(t)))+a)
+        plt.plot(a)
         
         
         
         N = len(a)
-        k = 2*pi/mean(diff(t))/N*arange(N/2+1)
+        k = 2*np.pi/np.mean(np.diff(t))/N*np.arange(N/2+1)
         
         da = np.fft.irfft( k*np.fft.rfft(a))
-        plot(da,'--')
+        plt.plot(da,'--')
         
 
         pwr = (gamma*data+tau*drdt)/scrfact
@@ -837,22 +837,22 @@ class loader_BOLO():
         tvec_ = tvec.reshape(-1, 256).mean(1)
         pwr[:,[0,12,15,21]] = 0
         
-        plot(pwr)
-        figure()
-        plot(self.tvec,power)
-        show()
+        plt.plot(pwr)
+        plt.figure()
+        plt.plot(self.tvec,np.power)
+        plt.show()
         
         
-        imshow(pwr, interpolation='nearest', aspect='auto');show()
+        plt.imshow(pwr, interpolation='nearest', aspect='auto');plt.show()
         
         
-        plot(tvec_, pwr[:,29])
-        plot(self.tvec,power[:,29])
+        plt.plot(tvec_, pwr[:,29])
+        plt.plot(self.tvec,np.power[:,29])
 
 
 
         
-        ion()       
+        plt.ion()       
 
         import IPython
         IPython.embed()
@@ -863,8 +863,8 @@ class loader_BOLO():
         
     def deconvolve_bolo(self,tvec, data,tau,gamma,scrfact, filtertype, drtau ):
 
-        pwr = zeros((len(tvec), self.nl))
-        dt = mean(diff(tvec))
+        pwr = np.zeros((len(tvec), self.nl))
+        dt = np.mean(np.diff(tvec))
         #import IPython
         #IPython.embed()
         
@@ -872,9 +872,9 @@ class loader_BOLO():
 
             data = medfilt(data,(3,1)) #remove spikes
             s = 8
-            offset = std(data[tvec<0],0)*2            
+            offset = np.std(data[tvec<0],0)*2            
             tvec = tvec[:len(tvec)//s*s].reshape(-1,s).mean(1)
-            n = 2**int(ceil(log2(sum(tvec>0))))
+            n = 2**int(np.ceil(np.log2(np.sum(tvec>0))))
             data = data[:len(data)//s*s].reshape(-1,s,self.nl).mean(1)[-n:]
             tvec = tvec[-n:]
             dt*=8
@@ -886,7 +886,7 @@ class loader_BOLO():
 
             for m in range(self.nl): 
                 tau_ = (tau/gamma)[m]
-                h = exp(-(tvec-tvec[0])/tau_)
+                h = np.exp(-(tvec-tvec[0])/tau_)
                 nitr = int(numiter*drtau[m]/0.05)
                 args.append((data[:,m],h,nitr,offset[m],relax))
 
@@ -897,7 +897,7 @@ class loader_BOLO():
             pool.join()
             
             
-            pwr = vstack(list(out)).T*(tau/dt/scrfact/array([sum(a[1]) for a in args]))
+            pwr = np.vstack(list(out)).T*(tau/dt/scrfact/np.array([np.sum(a[1]) for a in args]))
   
             
         
@@ -910,7 +910,7 @@ class loader_BOLO():
             tvec     = tvec[:len(tvec)//4*4].reshape(-1,4).mean(1)
             tdel      = dt*4
             #args = [(data[:,i],drtau[i],tdel,tau[i],gamma[i], scrfact[i] ) for i in range(self.nl)]
-            one = ones(len(tau))
+            one = np.ones(len(tau))
             args = zip(data.T,drtau*one,tdel*one,tau,gamma,scrfact)
 
             pool = Pool(cpu_count())
@@ -918,7 +918,7 @@ class loader_BOLO():
             pool.close()
             pool.join()
             
-            pwr = vstack(out).T
+            pwr = np.vstack(out).T
   
             
         
@@ -932,24 +932,24 @@ class loader_BOLO():
             
             from scipy.signal import savgol_coeffs
             N = 2                 # Order of polynomial fit
-            F = int_(drtau/dt/2)*2+1                # Window length
+            F = np.int_(drtau/dt/2)*2+1                # Window length
             # Calculate S-G coefficients
             for m in range(self.nl):            
                 g = [savgol_coeffs(F[m],N, i) for i in range(2)]
                 y = data[:,m]          
-                SG0 = convolve(g[0][::-1],y, mode='same')
-                SG1 = convolve(g[1][::-1],y, mode='same')/dt # Turn differential into derivative
+                SG0 = np.convolve(g[0][::-1],y, mode='same')
+                SG1 = np.convolve(g[1][::-1],y, mode='same')/dt # Turn differential into derivative
                 pwr[:,m] = (SG0*gamma[m]-SG1*tau[m])/scrfact[m]
             
 
         
         elif filtertype == 'butter':
             from scipy.signal import butter, filtfilt
-            facq = 1./ mean(diff(tvec))
+            facq = 1./ np.mean(np.diff(tvec))
             for m in range(self.nl):            
                 fmax = 1./drtau[m]
                 b,a = butter(5,fmax/facq) # Butterworth filter at 100 Hz
-                rp=gradient(data[:,m])/dt
+                rp=np.gradient(data[:,m])/dt
                 rp=filtfilt(b,a,rp)
                 pwr[:,m] =  (data[:,m]*gamma[m]+rp*tau[m])/scrfact[m]
 
@@ -976,7 +976,7 @@ class loader_BOLO():
             from scipy.signal import bessel, bilinear,lfilter
 
             banalderivfordigit,aanalderivfordigit=bessel(3,filtercutoff/f_nq,analog=False)
-            banalderivfordigit=r_[banalderivfordigit[1:],0]
+            banalderivfordigit=np.r_[banalderivfordigit[1:],0]
             bderivdigit,aderivdigit=bilinear(banalderivfordigit,aanalderivfordigit, f_nq*2)
             #bderivdigit,aderivdigit = banalderivfordigit,aanalderivfordigit
             #---filter preparation---
@@ -993,23 +993,23 @@ class loader_BOLO():
         elif  filtertype == 'wiener':
 
             
-            pwr = zeros((len(tvec), self.nl))
+            pwr = np.zeros((len(tvec), self.nl))
             for ch in range(self.nl):
                 x = medfilt(data[:,ch],3)
                 fx = np.fft.rfft(x)
                 fx[2000:]=0
                 tau_ = (tau/gamma)[ch]
-                h = exp(-(tvec-tvec[0])/tau_)
+                h = np.exp(-(tvec-tvec[0])/tau_)
                 H = np.fft.rfft(h)
                 N = abs(np.fft.rfft(x*(tvec<0)))
-                S=2e-4/exp(drtau[ch]/0.05)
-                smoothN = savitzky_golay(N, 101,1,firstvals=mean(N[:200]))
-                G = conj(H)*S/(H*conj(H)*S+smoothN)
+                S=2e-4/np.exp(drtau[ch]/0.05)
+                smoothN = savitzky_golay(N, 101,1,firstvals=np.mean(N[:200]))
+                G = np.conj(H)*S/(H*np.conj(H)*S+smoothN)
                 pwr[:,ch]=  np.fft.irfft(G*fx)*tau[ch]/dt/scrfact[ch]
            #embed()
         return tvec, pwr
        
-    def get_data_realtime(self,tmin=-inf,tmax=inf):
+    def get_data_realtime(self,tmin=-np.inf,tmax=np.inf):
         print('Loading realtime bolometer data')
        
         data = []
@@ -1029,7 +1029,7 @@ class loader_BOLO():
         
         data = data[:len(data) // self.downsample * self.downsample].reshape(-1, self.downsample, data.shape[1]).mean(1)
       
-        data_err = zeros_like(data,dtype=single)
+        data_err = np.zeros_like(data,dtype=np.single)
         #down
        
         shot_data = data#[(self.tvec > 0)&(self.tvec < 5)]
@@ -1057,7 +1057,7 @@ class loader_BOLO():
         
         
        
-    def get_data(self,tmin=-inf,tmax=inf):
+    def get_data(self,tmin=-np.inf,tmax=np.inf):
          
         #try load realtime data 
         if self.real_time_data and not hasattr(self,'cache'):
@@ -1079,8 +1079,8 @@ class loader_BOLO():
         
         ntim = len(self.tvec)
 
-        data = zeros((ntim, self.nl),dtype=single)
-        data_err = zeros((ntim, self.nl),dtype=single)
+        data = np.zeros((ntim, self.nl),dtype=np.single)
+        data_err = np.zeros((ntim, self.nl),dtype=np.single)
         
         TDIcall = "\\BOLOM::TOP.PRAD_01.POWER:"
         self.MDSconn.openTree(self.tree,self.shot)
@@ -1194,34 +1194,34 @@ class loader_BOLO():
             Z2 = self.z_end[det]
 
             
-            m_alpha = abs(abs(arctan2(Z2-Z1,R2-R1))-pi/2)
-            alphas = arctan2(Z2-Z1,R2-R1)
-            alphas = unwrap(alphas)
-            m_alpha = mean(m_alpha)
+            m_alpha = abs(abs(np.arctan2(Z2-Z1,R2-R1))-np.pi/2)
+            alphas = np.arctan2(Z2-Z1,R2-R1)
+            alphas = np.unwrap(alphas)
+            m_alpha = np.mean(m_alpha)
             
             
             xfile = open(self.geometry_path+'detector_%s_x.txt'%det,'w')
             yfile = open(self.geometry_path+'detector_%s_y.txt'%det,'w')
             
             
-            alpha = arctan2(Z2-Z1,R2-R1) #to same jako alphas? 
+            alpha = np.arctan2(Z2-Z1,R2-R1) #to same jako alphas? 
             
-            theta = ones_like(alpha)*median(abs(diff(alphas)))/2 #exactly nonoverlaping LOS 
+            theta = np.ones_like(alpha)*np.median(abs(np.diff(alphas)))/2 #exactly nonoverlaping LOS 
             theta/= 2  #actual LOS are narrower...
             #theta/= 10  #BUG 
 
-            L = hypot(R2-R1, Z2-Z1)
+            L = np.hypot(R2-R1, Z2-Z1)
 
             verts = []
 
-            if m_alpha < pi/4:       
-                Lr = L*abs(sin(alpha)/sin(pi-theta-alpha))
-                Ll = L*abs(sin(pi-alpha)/sin(alpha-theta))
-                R21 = R1+Ll*cos(alpha-theta)
-                R22 = R1+Lr*cos(alpha+theta)
+            if m_alpha < np.pi/4:       
+                Lr = L*abs(np.sin(alpha)/np.sin(np.pi-theta-alpha))
+                Ll = L*abs(np.sin(np.pi-alpha)/np.sin(alpha-theta))
+                R21 = R1+Ll*np.cos(alpha-theta)
+                R22 = R1+Lr*np.cos(alpha+theta)
                 
-                savetxt(self.geometry_path+'detector_%s_x.txt'%det, c_[R21,R22,R1], fmt='%5.4f')
-                savetxt(self.geometry_path+'detector_%s_y.txt'%det, c_[Z2,Z1], fmt='%5.4f')
+                np.savetxt(self.geometry_path+'detector_%s_x.txt'%det, np.c_[R21,R22,R1], fmt='%5.4f')
+                np.savetxt(self.geometry_path+'detector_%s_y.txt'%det, np.c_[Z2,Z1], fmt='%5.4f')
                 for r1,r21,z1,r22,z2 in zip(R1,R21,Z1,R22,Z2):
                     verts.append([[r1,z1],[r21,z2 ],[r22,z2]])
 
@@ -1236,15 +1236,15 @@ class loader_BOLO():
                 #Z21[ind] = (Z1-(R2-R1)*tan(pi-abs(alpha)-theta)*sign(alpha))[ind]
                 #Z22[ind] = (Z1-(R2-R1)*tan(pi-abs(alpha)+theta)*sign(alpha))[ind]
                 
-                Z21 = (Z1-(R2-R1)*tan(pi-abs(alpha)-theta)*sign(alpha))
-                Z22 = (Z1-(R2-R1)*tan(pi-abs(alpha)+theta)*sign(alpha))
+                Z21 = (Z1-(R2-R1)*np.tan(np.pi-abs(alpha)-theta)*np.sign(alpha))
+                Z22 = (Z1-(R2-R1)*np.tan(np.pi-abs(alpha)+theta)*np.sign(alpha))
                 
                 
                 
                 
 
-                savetxt(self.geometry_path+'detector_%s_x.txt'%det, c_[R2,R1], fmt='%5.4f')
-                savetxt(self.geometry_path+'detector_%s_y.txt'%det, c_[Z21,Z22,Z1], fmt='%5.4f')  
+                np.savetxt(self.geometry_path+'detector_%s_x.txt'%det, np.c_[R2,R1], fmt='%5.4f')
+                np.savetxt(self.geometry_path+'detector_%s_y.txt'%det, np.c_[Z21,Z22,Z1], fmt='%5.4f')  
    
                 for z1,z21,r1,z22,r2 in zip(Z1,Z21,R1,Z22,R2):
                     verts.append([[r1,z1],[r2,z21],[r2,z22]])

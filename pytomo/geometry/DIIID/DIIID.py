@@ -4,7 +4,6 @@
 
 import numpy as np
 import sys,os
-from matplotlib.pyplot import *
 from ...tokamak import Tokamak
 from collections import OrderedDict
 from ... import config
@@ -743,7 +742,7 @@ np.sqrt(max(data))
         coeff = 1.89e-28 * (n_e*1e-6)**2 * Zeff * gff / np.sqrt(T_e)
 
         vb_wl = np.outer(coeff , transmission/wavelength**2) * np.exp(-hc / np.outer(T_e,wavelength))
-        vb_wl_int = integrate.simps(vb_wl, x=wavelength, axis=1)
+        vb_wl_int = integrate.simpson(vb_wl, x=wavelength, axis=1)
         
         return vb_wl_int*1e6
         

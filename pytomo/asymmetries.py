@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from matplotlib.pylab import *
 from numpy import *
+import matplotlib
 from shutil import copyfile
 from scipy.interpolate import LSQUnivariateSpline, UnivariateSpline
 
@@ -34,7 +35,7 @@ except:
 
 from .make_graphs  import my_cmap_
 my_cmap1 = my_cmap_
-my_cmap2 = cm.get_cmap('RdBu')
+my_cmap2 = matplotlib.colormaps['RdBu']
 my_cmap2._init()
 my_cmap2._lut[:-3,:] = my_cmap2._lut[-4::-1,:]
 my_cmap2._lut[-3:-1,:] = my_cmap2._lut[-3:-1,:][::-1]
@@ -778,7 +779,7 @@ def CalcAsymNew(output,Tok, G,data, error,retro, tvec, dets,SigmaGsample,input_p
     BdMat = output['bnd'][0]
     tcalc = time()
 
-    from scipy.ndimage.interpolation import map_coordinates
+    from scipy.ndimage import map_coordinates
 
     if 'magx' in output:
         magx = output['magx'].T
