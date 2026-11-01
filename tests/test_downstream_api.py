@@ -196,3 +196,26 @@ def test_roto_tomo_regularization_pipeline(roto_tomo, d3d_server, d3d_sxr):
     assert T.shape == T_full.shape == (tok.nl, tok.npix)
     assert len(Bmat) == 4
     assert sparse.issparse(Ht) or isinstance(Ht, np.ndarray)
+
+    # HarmSolver (sparse LDL' + SVD) on noise-free synthetic data, run in-process
+    import queue
+    from conftest import phantom_on_grid
+    G0 = phantom_on_grid(tok, eq, [T0])[:, 0] + 1e-3
+    Hper, Hpar = roto_tomo.create_derivation_matrix(G0.reshape(-1, 1), Bmat, 4)
+    b = T @ G0
+    good = b > 0.02 * b.max()
+    berr = np.where(good, 0.01 * b.max(), np.inf)
+    npix = tok.npix
+    E = sparse.spdiags(np.exp(1j * theta_star_rz.flatten('F')), 0, npix, npix)
+    W = sparse.spdiags(1 / G0, 0, npix, npix, format='csc')
+    for n in (0, 1):  # n = 1 exercises the complex part of the solve
+        qin, qout = queue.Queue(), queue.Queue()
+        h = roto_tomo.HarmSolver(qin, qout, n, E, W, Ht, Hper, Hpar, T, BdMat, b, berr, tok.nl)
+        qin.put(0.5)
+        qin.put(None)
+        h.run()
+        G, retro, lam, chi2 = qout.get()
+        assert G.shape == (npix,) and np.all(np.isfinite(G))
+        if n == 0:
+            inside = ~BdMat.flatten('F')
+            assert np.corrcoef(G.real[inside], G0[inside])[0, 1] > 0.9

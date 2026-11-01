@@ -170,8 +170,8 @@ def outer_cycle(Tok, Bmat, danis, TT,Ts, fs, g, BdMat,tsteps,
     debug('===============Fast MFR================')
 
     iimax=15       # number of chi2 iterations loops (inner loops)
-    lam=ones((ifishmax+5,iimax+4))*NaN
-    chi2=ones((ifishmax+5,iimax+4))*NaN
+    lam=ones((ifishmax+5,iimax+4))*nan
+    chi2=ones((ifishmax+5,iimax+4))*nan
     
     lam[:,0] = 30  #lambda larger than lam_max
     chi2[:,0] =  log(mean(sum(fs**2, axis=0)/sum(fs!=0,axis=0)))

@@ -644,7 +644,7 @@ class shotfile:
          result = libddww.ddflist_(_error, _diaref, _lbuf, _buf, _length)
          self.GetError(error)
          if length.value != 0:
-            return np.int(buf[0:np.int(length)])
+            return int(buf[0:int(length)])
       return None
 
    def GetObjectHeader(self, name):

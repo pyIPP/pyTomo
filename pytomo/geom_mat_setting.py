@@ -703,7 +703,7 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
         wrong = (i == 0) | (j == 0)
 
 
-        inside = np.in1d( np.arange(len(X)), inside) & ~wrong
+        inside = np.isin(np.arange(len(X)), inside) & ~wrong
 
         return np.where(inside)[0]
                 

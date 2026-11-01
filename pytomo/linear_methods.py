@@ -11,7 +11,8 @@ from .shared_modules import prepare_inputs, create_derivation_matrix, make_postp
 import scipy.ndimage as ndi
 from scipy.optimize import nnls, _nnls
 from .annulus import get_bd_mat
-from sksparse.cholmod import  cholesky,CholmodWarning,CholmodError
+from sksparse.cholmod import cholesky  # only used by the obsolete solvers (to be removed)
+from .sparse_cholesky import ldl, to_dense, CholmodError, CholmodWarning
 #from scikits.sparse.cholmod import cholesky,CholmodWarning,CholmodError
 from  scipy.linalg import qr, qr_multiply, solve_triangular, cholesky_banded,eigh,svd, inv,lstsq,pinv
 from scipy.sparse.linalg import svds, eigsh
@@ -366,11 +367,11 @@ def PresolveQR(L,C, nx,ny,ndets,BdMat):
     #factor = cholesky(C) #C must by  regular
 
     try:
-        factor = cholesky(C, mode = 'simplicial')
-    except:
+        factor = ldl(C)
+    except (CholmodError, CholmodWarning):
         #solve case when B is singular
         C_trace = C.diagonal().sum()
-        factor = cholesky(C,C_trace*1e-18, mode = 'simplicial')
+        factor = ldl(C, C_trace*1e-18)
     
     D = factor.D()
     
@@ -383,8 +384,7 @@ def PresolveQR(L,C, nx,ny,ndets,BdMat):
     #LC =  np.dot(vt.T,(ut*s[:,None])).T    #L*C^-1  slow 
     
     L = L.tocsr()
-    LC = invsqrtD*factor.solve_L(factor.apply_P(L.T))
-    LC = LC.toarray()
+    LC = to_dense(invsqrtD @ factor.solve_L(factor.apply_P(L.T)))
 
     zero_ind = np.all(LC==0,axis=1)
     LC = LC[~zero_ind,:]
@@ -432,7 +432,7 @@ def PresolveQR(L,C, nx,ny,ndets,BdMat):
     V[~zero_ind,:] = np.dot(U/D[:,None],LC.T).T  #10ms
     
      #theoreticaly this integration step can be applied later on the final solution, it will be  faster( but just about just 20% on total)
-    V = factor.apply_Pt(factor.solve_Lt(invsqrtD*V)).T 
+    V = factor.apply_Pt(factor.solve_Lt(invsqrtD @ V)).T
     U = U.T
     
     #plot(D)
@@ -722,10 +722,10 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
     T = time.time()
     try:
         #assert ~singular, 'singular matrix'
-        F = cholesky(B, mode = 'simplicial') #5ms!!
-    except:# CholmodError, CholmodWarning:
+        F = ldl(B) #5ms!!
+    except (CholmodError, CholmodWarning):
         #solve case when B is singular
-        F = cholesky(B,B_trace*1e-18, mode = 'simplicial')
+        F = ldl(B, B_trace*1e-18)
         #pass
         
         
@@ -743,7 +743,7 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
     
     
     #invsqrtD = sparse.spdiags(1/np.sqrt(D),(0,),len(D),len(D))
-    zero_ins = np.array(LPK.sum(1)==0).ravel()|(F.D()<=0)
+    zero_ins = np.asarray(LPK.sum(1)==0).ravel()|(F.D()<=0)
     #pcolormesh(F.apply_Pt(double(zero_ins)).reshape(ny,nx,order='F')+BdMat.reshape(ny,nx,order='F'))
     #figure()
     #pcolormesh(BdMat.reshape(ny,nx,order='F'))
@@ -753,8 +753,7 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
     #IPython.embed()
         
     
-    if sparse.issparse(LPK): 
-        LPK = LPK.toarray() #2.5ms
+    LPK = to_dense(LPK) #2.5ms
         
     LPK = LPK[~zero_ins].T  #.5ms
     #LPK_ = (invsqrtD*LPK_).T

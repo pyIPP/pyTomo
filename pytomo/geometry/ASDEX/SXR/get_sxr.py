@@ -648,7 +648,7 @@ class loader_SXR():
 
         #estimate errorbars!!
         nt = len(tvec)
-        ind =  ~in1d(self.all_los,self.wrong_dets_damaged)
+        ind = ~isin(self.all_los, self.wrong_dets_damaged)
         wrong_data_ind = isnan(all_data)
         all_data[wrong_data_ind] = 0
         
