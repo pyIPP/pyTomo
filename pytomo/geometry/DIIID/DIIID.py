@@ -374,7 +374,8 @@ np.sqrt(max(data))
         mean_data = np.nanmean(data[ind_t],axis=0)
 
        #include also "nonstatistical noise"  by min_error and sigma
-        error =  np.hypot(error, np.single(mean_data*self.sigma),out=error)
+        # new array: error may be a view of the loader cache, which must not be modified
+        error = np.hypot(error, np.single(mean_data*self.sigma))
         error += np.abs(mean_data)*self.min_error
 
         print('loading time: %.1f s'%( time.time()-t))

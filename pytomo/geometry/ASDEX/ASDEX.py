@@ -378,7 +378,8 @@ class ASDEX(Tokamak):
         
 
        #include also "nonstatistical noise"  by min_error and sigma
-        error =  hypot(error, single(mean_data*self.sigma),out=error)
+        # new array: error may be a view of the loader cache, which must not be modified
+        error = hypot(error, single(mean_data*self.sigma))
         error += abs(mean_data)*self.min_error
 
         print('loading time: %.1f s'%( time.time()-t))

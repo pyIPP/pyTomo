@@ -1,0 +1,22 @@
+{
+ "svd2_mfi_aniso": {
+  "phantom_err": 0.08138576239561816,
+  "runtime_s": 2.67
+ },
+ "svd2_mfi_iso": {
+  "phantom_err": 0.08865305414946227,
+  "runtime_s": 1.24
+ },
+ "svd2_imgesson": {
+  "phantom_err": 0.2454612486923959,
+  "runtime_s": 2.81
+ },
+ "svd2_positive": {
+  "phantom_err": 0.08138576239561816,
+  "runtime_s": 1.94
+ },
+ "qr_mfi_aniso": {
+  "phantom_err": 0.0816099895136969,
+  "runtime_s": 1.97
+ }
+}
