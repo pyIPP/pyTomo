@@ -1,13 +1,14 @@
 """GUI smoke tests (offscreen Qt). They document the current GUI behaviour:
 the main window opens, resizes, and runs a reconstruction in a QThread."""
+import os
 import time
 
 import numpy as np
 import pytest
 
 pytest.importorskip('pytestqt')
-QtWidgets = pytest.importorskip('PyQt5.QtWidgets')
-from PyQt5.QtCore import QTimer  # noqa: E402
+qt = pytest.importorskip('pytomo.qt')
+from pytomo.qt import QTimer, QMessageBox  # noqa: E402
 
 from conftest import default_inputs  # noqa: E402
 
@@ -20,8 +21,8 @@ def window(qapp, d3d_server):
     from pytomo import GUI
     mp = pytest.MonkeyPatch()
     # never block on modal dialogs
-    mp.setattr(GUI.QMessageBox, 'question', staticmethod(lambda *a, **k: GUI.QMessageBox.Yes))
-    mp.setattr(GUI.QMessageBox, 'warning', staticmethod(lambda *a, **k: GUI.QMessageBox.Ok))
+    mp.setattr(QMessageBox, 'question', staticmethod(lambda *a, **k: QMessageBox.StandardButton.Yes))
+    mp.setattr(QMessageBox, 'warning', staticmethod(lambda *a, **k: QMessageBox.StandardButton.Ok))
     _, tok = _get_d3d_sxr(D3D_SHOT)
     inputs = default_inputs(solver=3, regularization=1, plot_all=False, postprocessing=False,
                             screen_width=1920, screen_height=1080)
@@ -33,6 +34,11 @@ def window(qapp, d3d_server):
     win.deleteLater()  # let Qt delete the C++ objects before Python's GC does (avoids exit segfault)
     qapp.processEvents()
     mp.undo()
+
+
+def test_binding(window):
+    print('Qt binding:', qt.API)
+    assert qt.API == os.environ.get('PYTOMO_QT', 'PyQt6')
 
 
 def test_main_window_opens(window):
@@ -70,3 +76,52 @@ def test_reconstruction_in_thread(window, qtbot):
     assert pix is not None and not pix.isNull()
     # documented, not enforced: worst event-loop stall during the computation
     print('max GUI stall %.0f ms' % (1e3 * max(latencies)))
+
+
+def test_cancel_reconstruction(window, qtbot):
+    """STOP must interrupt the worker between blocks (was a no-op: wrong Qt import)."""
+    import pytomo.main as M
+    calls = []
+    orig = M.interruption_requested
+    def requested():
+        calls.append(1)
+        return orig()
+    M.interruption_requested = requested
+    try:
+        window.thread.requestInterruption()  # before start: QThread resets it on start
+        window.actionStart()
+        window.thread.requestInterruption()
+        qtbot.waitUntil(lambda: not window.thread.isRunning(), timeout=180_000)
+    finally:
+        M.interruption_requested = orig
+    assert calls  # the worker polled for interruption
+
+
+def test_toggle_all_controls(window, qtbot):
+    """Every checkbox and combo box (and their slots) must work with the Qt binding in use."""
+    from pytomo.qt import QCheckBox, QComboBox
+    boxes = window.findChildren(QCheckBox)
+    combos = window.findChildren(QComboBox)
+    assert len(boxes) > 5 and len(combos) > 3
+    for b in boxes:
+        state = b.isChecked()
+        b.setChecked(not state)
+        b.setChecked(state)
+    for c in combos:
+        i = c.currentIndex()
+        for j in range(c.count()):
+            c.setCurrentIndex(j)
+        c.setCurrentIndex(i)
+    qtbot.wait(50)
+
+
+def test_data_setting_window(window, qtbot):
+    """The data selection / preprocessing window (data_preprocessing.py) opens and closes."""
+    from pytomo.data_preprocessing import DataSettingWindow
+    window.showSetting()
+    qtbot.wait(200)
+    wins = [w for w in window.findChildren(DataSettingWindow)]
+    assert wins and wins[-1].isVisible()
+    for w in wins:
+        w.close()
+    qtbot.wait(50)

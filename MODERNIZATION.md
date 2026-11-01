@@ -5,12 +5,16 @@ Status legend: **done** = implemented and verified by tests, **open** = not star
 
 ## Environments tested
 
-| | Python | NumPy | SciPy | Matplotlib | scikit-sparse | PyQt5 |
+| | Python | NumPy | SciPy | Matplotlib | scikit-sparse | Qt |
 |---|---|---|---|---|---|---|
-| oldest | 3.12.3 | 1.26.4 | 1.13.1 | 3.8.4 | 0.4.16 | 5.15.11 |
-| current | 3.13.18 | 2.5.4 | 1.18.1 | 3.11.2 | 0.4.16 | 5.15.11 |
+| oldest | 3.12.3 | 1.26.4 | 1.13.1 | 3.8.4 | 0.4.16 | PyQt6 6.12 |
+| current | 3.13.18 | 2.5.4 | 1.18.1 | 3.11.2 | 0.5.0 | PyQt6 6.12 |
 
-Not tested: Python 3.14, PyQt6/PySide6, real DIII-D/AUG/TCV database access, DIII-D bolometers.
+The full suite also runs with PyQt5 5.15 (`PYTOMO_QT=PyQt5`). scikit-sparse 0.5 requires
+SciPy >= 1.14, so the oldest environment necessarily uses 0.4.
+
+Not tested: Python 3.14, PySide6, real DIII-D/AUG/TCV database access (DIII-D data are
+confidential, all tests use the synthetic shot), DIII-D bolometers.
 
 ## Stage 0: inspection and test harness (done)
 
@@ -58,12 +62,37 @@ environment they differ by 1-8%, traced to the DIII-D flux-surface parameterizat
 (`mag_equ.Descur_fit_core`, order-20 polynomial fit in float32): the fitted surfaces
 move by up to 2 cm between NumPy versions. This is resolved by stage "equilibrium" below.
 
+## Stage 3: scikit-sparse 0.5 (done)
+
+- `pytomo/sparse_cholesky.py`: LDL' adapter with the 0.4 method names, used by the SVD2
+  and QR solvers and by roto_tomo. 0.4 and 0.5 give identical reconstructions (rel. diff
+  1e-14). Always factorizes in float64 (solver precision).
+- Fixed NumPy names removed before/at 2.0: `np.int`, `np.bool` (DIII-D bolometer
+  Savitzky-Golay smoothing was already broken on NumPy 1.26), `np.mat`, `NaN`, `float_`,
+  `in1d`; SciPy sparse `.H` (removed in 1.14) in roto_tomo.
+
+## Stage 4: Qt 6 (done)
+
+- `pytomo/qt.py` selects the binding: PyQt6, or PyQt5 if it is already loaded (roto_tomo
+  inside the PyQt5 pyspecview) or PyQt6 is missing. GUI.py, data_preprocessing.py and
+  roto_tomo import the Qt classes explicitly from it; enums are fully scoped
+  (`tools/qt6_enums.py`), `QDesktopWidget`/`exec_`/"plastique" replaced.
+- Fixed: the STOP button never interrupted the reconstruction (imported a non-existent
+  `PyQt5.QtCore.currentThread`); an interrupt was also caught and the block recomputed.
+- Fixed: CLI `--preview`, `--deriv`, `--proj` (undefined/non-relative imports, Qt4 backend).
+- Tests: all checkboxes/combo boxes toggled, data preprocessing window, cancel, roto_tomo
+  picks the host binding (PyQt5 and PyQt6 subprocesses).
+
+Plotting decision: Matplotlib embedded in Qt, figures built once and updated with
+`set_data` + blitting. Measured for an 80x120 tomogram with colorbar and flux surfaces:
+full redraw 28-30 ms/frame, `set_data` + blit ~8 ms, recomputed `contourf` 40-60 ms,
+pyqtgraph ~2 ms. pyqtgraph can be added later for individual views if needed.
+
 ## Findings for the next stages
 
 Compatibility
-- scikit-sparse 0.5 changed the cholmod API (`solve_L`, `apply_P`, `mode=` removed);
-  the code requires `scikit-sparse<0.5`. Either pin it or isolate the few cholmod calls
-  of the kept SVD2/QR path behind one small function.
+- The obsolete solvers (SVD, GEV, GSVD, sparse SVD variants) and minfisher still call
+  scikit-sparse 0.4 directly; they fail with 0.5 and are removed in the solver stage.
 - 128 uses of `interp1d`, 5 of `scipy.fftpack` (legacy APIs, not removed yet).
 - `exec` in `tokamak.py`, `eval` of user input for `--wrong_dets` in `pytomo.py`.
 
@@ -92,6 +121,8 @@ GUI
 - START deletes the whole tmp folder (`shutil.rmtree(tmp_folder)`).
 - During a reconstruction the event loop stalls for at most ~0.3 s (worker QThread).
 - Plots are written to PNG and loaded into fixed-size `QLabel`s.
+- GUI.py still star-imports make_graphs and prepare_data.
+- pyspecview itself is PyQt5; roto_tomo follows it automatically.
 
 ## Proposed order of the remaining stages
 

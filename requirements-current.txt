@@ -1,10 +1,10 @@
-# Current environment (modernization testing), tested with Python 3.13:
-# numpy 2.5.4, scipy 1.18.1, matplotlib 3.11.2, scikit-sparse 0.4.16, PyQt5 5.15.11
+# Current environment (modernization testing), tested with Python 3.13.18:
+# numpy 2.5.4, scipy 1.18.1, matplotlib 3.11.2, scikit-sparse 0.5.0, PyQt6 6.12.0
 numpy>=2
-scipy>=1.13
+scipy>=1.14
 matplotlib>=3.8
-scikit-sparse>=0.4.12,<0.5
-PyQt5>=5.15
+scikit-sparse>=0.5
+PyQt6>=6.5
 cython>=0.29
 setuptools
 pillow

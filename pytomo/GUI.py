@@ -12,13 +12,7 @@ qtscale = float(os.environ.get('QT_SCALE_FACTOR',1))
 
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-try:
-    from PyQt5.QtCore import *
-    from PyQt5.QtGui import *
-    from PyQt5.QtWidgets import *
-except:
-    from PyQt4.QtCore import *
-    from PyQt4.QtGui import *
+from .qt import (QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMessageBox, QObject, QPixmap, QProgressBar, QPushButton, QRect, QSizePolicy, QSlider, QSpacerItem, QSpinBox, QStyleFactory, QTabWidget, QThread, QToolButton, QVBoxLayout, QWidget, Qt, Signal, center_on_screen)
 
 
 sys.path.append('../')
@@ -59,12 +53,12 @@ class MainWindow(QMainWindow):
         self.gridLayout = QGridLayout(self.centralwidget)
         self.setWindowTitle('Tomography')
 
-        self.Expand = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.Fixed  = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.Expand = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.Fixed  = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
  
 
         self.main_tab = QTabWidget(self)
-        self.main_tab.setTabPosition(QTabWidget.West)
+        self.main_tab.setTabPosition(QTabWidget.TabPosition.West)
 
 
         self.gridLayout.addWidget(self.main_tab, 0, 0, 1,2)
@@ -83,7 +77,7 @@ class MainWindow(QMainWindow):
         #preview right
         self.Picture_recons_1 = QLabel()
         #self.Picture_recons_1.setText('Preview profile X')
-        self.Picture_recons_1.setAlignment(Qt.AlignCenter)
+        self.Picture_recons_1.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.Picture_recons_1.setScaledContents(True)
         self.Picture_recons_1.setSizePolicy(self.Fixed)
         self.horizontalLayout_rec.addWidget(self.Picture_recons_1)
@@ -91,13 +85,13 @@ class MainWindow(QMainWindow):
 
         #preview left
         self.Picture_recons_2 = QLabel()
-        self.Picture_recons_2.setAlignment(Qt.AlignCenter)
+        self.Picture_recons_2.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.Picture_recons_2.setScaledContents(True)
         self.Picture_recons_2.setSizePolicy(self.Fixed)
         self.horizontalLayout_rec.addWidget(self.Picture_recons_2)
         self.verticalLayout_rec.addLayout(self.horizontalLayout_rec)
         # slider
-        self.slider_rec = QSlider(Qt.Horizontal)
+        self.slider_rec = QSlider(Qt.Orientation.Horizontal)
         self.slider_rec_spin = QSpinBox()
         self.slider_rec.setVisible(False)
         self.slider_rec_spin.setVisible(False)
@@ -118,7 +112,7 @@ class MainWindow(QMainWindow):
             self.tables_dict['Overview'] = i_tab
             i_tab+=1
             self.OverviewPlot = QLabel()
-            self.OverviewPlot.setAlignment(Qt.AlignCenter)
+            self.OverviewPlot.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.change_overview_plots()
             self.horizontalLayout_over = QHBoxLayout()
             self.verticalLayout_over = QVBoxLayout(self.tab_widget_overview)
@@ -137,14 +131,14 @@ class MainWindow(QMainWindow):
         
         #SVD right
         self.Picture_SVD_1 = QLabel()
-        self.Picture_SVD_1.setAlignment(Qt.AlignCenter)
+        self.Picture_SVD_1.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.Picture_SVD_1.setScaledContents(True)
         self.Picture_SVD_1.setSizePolicy(self.Fixed)
         self.horizontalLayout_SVD.addWidget(self.Picture_SVD_1)
         #SVD left
 
         self.Picture_SVD_2 = QLabel()
-        self.Picture_SVD_2.setAlignment(Qt.AlignCenter)
+        self.Picture_SVD_2.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.Picture_SVD_2.setScaledContents(True)
         self.Picture_SVD_2.setSizePolicy(self.Fixed)
         self.horizontalLayout_SVD.addWidget(self.Picture_SVD_2)
@@ -152,7 +146,7 @@ class MainWindow(QMainWindow):
         
 
         # slider
-        self.slider_SVD = QSlider(Qt.Horizontal)
+        self.slider_SVD = QSlider(Qt.Orientation.Horizontal)
         self.slider_SVD_spin = QSpinBox()
         self.slider_SVD.setVisible(False)
         self.slider_SVD_spin.setVisible(False)
@@ -173,14 +167,14 @@ class MainWindow(QMainWindow):
 
         #postprocess right
         self.Picture_position_1 = QLabel()
-        self.Picture_position_1.setAlignment(Qt.AlignCenter)
+        self.Picture_position_1.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.Picture_position_1.setScaledContents(True)
         self.Picture_position_1.setSizePolicy(self.Fixed)
         self.gridLayout_position.addWidget(self.Picture_position_1, 0, 0)
 
         #postprocess left
         self.Picture_position_2 = QLabel()
-        self.Picture_position_2.setAlignment(Qt.AlignCenter)
+        self.Picture_position_2.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.Picture_position_2.setScaledContents(True)
         self.Picture_position_2.setSizePolicy(self.Fixed)
         self.gridLayout_position.addWidget(self.Picture_position_2, 0, 1)
@@ -199,17 +193,17 @@ class MainWindow(QMainWindow):
 
         # left
         self.Picture_emis_1 = QLabel()
-        self.Picture_emis_1.setAlignment(Qt.AlignCenter)
+        self.Picture_emis_1.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.Picture_emis_1.setScaledContents(True)
-        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.Picture_emis_1.setSizePolicy(sizePolicy)
         self.gridLayout_emis.addWidget(self.Picture_emis_1, 0, 0)
 
         # right
         self.Picture_emis_2 = QLabel()
-        self.Picture_emis_2.setAlignment(Qt.AlignCenter)
+        self.Picture_emis_2.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.Picture_emis_2.setScaledContents(True)
-        sizePolicy = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.Picture_emis_2.setSizePolicy(sizePolicy)
         self.gridLayout_emis.addWidget(self.Picture_emis_2, 0, 1)
 
@@ -228,14 +222,14 @@ class MainWindow(QMainWindow):
 
             #advanced left
             self.Picture_advanced_1 = QLabel()
-            self.Picture_advanced_1.setAlignment(Qt.AlignCenter)
+            self.Picture_advanced_1.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.Picture_advanced_1.setScaledContents(True)
             self.Picture_advanced_1.setSizePolicy(self.Fixed)
             self.gridLayout_advanced.addWidget(self.Picture_advanced_1, 0, 0)
 
             #advanced right
             self.Picture_advanced_2 = QLabel()
-            self.Picture_advanced_2.setAlignment(Qt.AlignCenter)
+            self.Picture_advanced_2.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.Picture_advanced_2.setScaledContents(True)
             self.Picture_advanced_2.setSizePolicy(self.Fixed)
             self.gridLayout_advanced.addWidget(self.Picture_advanced_2, 0, 1)
@@ -256,14 +250,14 @@ class MainWindow(QMainWindow):
 
         #Convergence left
         self.Picture_advanced2_1 = QLabel()
-        self.Picture_advanced2_1.setAlignment(Qt.AlignCenter)
+        self.Picture_advanced2_1.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.Picture_advanced2_1.setScaledContents(True)
         self.Picture_advanced2_1.setSizePolicy(self.Fixed)
         self.gridLayout_advanced2.addWidget(self.Picture_advanced2_1, 0, 0)
 
         #Convergence right
         self.Picture_advanced2_2 = QLabel()
-        self.Picture_advanced2_2.setAlignment(Qt.AlignCenter)
+        self.Picture_advanced2_2.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.Picture_advanced2_2.setScaledContents(True)
         self.Picture_advanced2_2.setSizePolicy(self.Fixed)
         self.gridLayout_advanced2.addWidget(self.Picture_advanced2_2, 0, 1)
@@ -283,7 +277,7 @@ class MainWindow(QMainWindow):
         
     
         self.Picture_asymmetry = QLabel()
-        self.Picture_asymmetry.setAlignment(Qt.AlignCenter)
+        self.Picture_asymmetry.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.Picture_asymmetry.setScaledContents(True)
         self.Picture_asymmetry.setSizePolicy(self.Fixed)
         self.horizontalLayout_Asymmetry.addWidget(self.Picture_asymmetry)
@@ -291,7 +285,7 @@ class MainWindow(QMainWindow):
 
         
         # slider
-        self.slider_Asymmetry = QSlider(Qt.Horizontal)
+        self.slider_Asymmetry = QSlider(Qt.Orientation.Horizontal)
         self.slider_Asymmetry_spin = QSpinBox()
         self.slider_Asymmetry.setVisible(False)
         self.slider_Asymmetry_spin.setVisible(False)
@@ -312,7 +306,7 @@ class MainWindow(QMainWindow):
         
     
         self.Picture_Sawtooths = QLabel()
-        self.Picture_Sawtooths.setAlignment(Qt.AlignCenter)
+        self.Picture_Sawtooths.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.Picture_Sawtooths.setScaledContents(True)
         self.Picture_Sawtooths.setSizePolicy(self.Fixed)
         self.horizontalLayout_Sawtooths.addWidget(self.Picture_Sawtooths)
@@ -331,14 +325,14 @@ class MainWindow(QMainWindow):
         
     
         self.Picture_Impur = QLabel()
-        self.Picture_Impur.setAlignment(Qt.AlignCenter)
+        self.Picture_Impur.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.Picture_Impur.setScaledContents(True)
         self.Picture_Impur.setSizePolicy(self.Fixed)
         self.horizontalLayout_Impur.addWidget(self.Picture_Impur)
         self.verticalLayout_Impur.addLayout(self.horizontalLayout_Impur)
 
         # slider
-        self.slider_Impur = QSlider(Qt.Horizontal)
+        self.slider_Impur = QSlider(Qt.Orientation.Horizontal)
         self.slider_Impur_spin = QSpinBox()
         self.slider_Impur.setVisible(False)
         self.slider_Impur_spin.setVisible(False)
@@ -361,7 +355,7 @@ class MainWindow(QMainWindow):
         #wave right
         self.Picture_polnum_1 = QLabel()
         #self.Picture_polnum_1.setText('wave profile left')
-        self.Picture_polnum_1.setAlignment(Qt.AlignCenter)
+        self.Picture_polnum_1.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.Picture_polnum_1.setScaledContents(True)
         self.Picture_polnum_1.setSizePolicy(self.Fixed)
         self.horizontalLayout_polnum.addWidget(self.Picture_polnum_1)
@@ -612,7 +606,7 @@ class MainWindow(QMainWindow):
 
         self.verticalLayout_solve2 = QVBoxLayout()
 
-        self.spacerItem_s1 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.spacerItem_s1 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         if self.tokamak.allow_self_calibration and len(self.tokamak.dets_index) <= 5:
             self.horizontalLayout_solver_4 = QHBoxLayout()
@@ -671,7 +665,7 @@ class MainWindow(QMainWindow):
         
         
         self.horizontalLayout_solver_9 = QHBoxLayout()
-        self.horizontalLayout_solver_9.setAlignment(Qt.AlignRight)
+        self.horizontalLayout_solver_9.setAlignment(Qt.AlignmentFlag.AlignRight)
 
         self.Positivity = QCheckBox("Positivity",  self.tab_widget_solve)
 
@@ -727,7 +721,7 @@ class MainWindow(QMainWindow):
 
         horizontalLayout = QHBoxLayout()
         
-        spacerItem = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        spacerItem = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         horizontalLayout.addItem(spacerItem)
 
         self.transform_label_r = QLabel("Radial order:")
@@ -752,7 +746,7 @@ class MainWindow(QMainWindow):
 
         horizontalLayout = QHBoxLayout()
 
-        spacerItem = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        spacerItem = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         horizontalLayout.addItem(spacerItem)
 
         self.divertor_label2 = QLabel("x")
@@ -763,7 +757,7 @@ class MainWindow(QMainWindow):
 
         horizontalLayout = QHBoxLayout()
 
-        spacerItem = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        spacerItem = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
 
        
@@ -801,7 +795,7 @@ class MainWindow(QMainWindow):
         self.gridLayout_4.addWidget(self.Allowboundary, 0, 0)
 
         self.horizontalLayout_3 = QHBoxLayout()
-        self.spacerItem4 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.spacerItem4 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         self.Precision_label = QLabel("Boundary regularization",self.groupBox_4)
         self.Precision_spin = QDoubleSpinBox(self.groupBox_4)
         self.Precision_spin.setRange(0.0,20.)
@@ -825,7 +819,7 @@ class MainWindow(QMainWindow):
             self.chooseRegularization.addItem(r)
         
 
-        self.spacerItem5 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.spacerItem5 = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         self.horizontalLayout_6 = QHBoxLayout()
         self.Anis_label = QLabel("Anisotropic ratio",self.groupBox_4)
         self.Anis_spin = QDoubleSpinBox(self.groupBox_4)
@@ -846,7 +840,7 @@ class MainWindow(QMainWindow):
         self.x_label = QLabel("x",self.groupBox_4)
         self.ny_spin = QSpinBox(self.groupBox_4)
         self.ny_spin.setRange(10,300)
-        self.spacerItem3 = QSpacerItem(10, 10, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.spacerItem3 = QSpacerItem(10, 10, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         self.Scale_label = QLabel("Scale errorbars",self.groupBox_4)
         self.Scale_spin = QDoubleSpinBox(self.groupBox_4)
         self.Scale_spin.setRange(0.01,100.0)
@@ -1069,9 +1063,7 @@ class MainWindow(QMainWindow):
 
 
     def setCenter(self):
-        frect = QDesktopWidget.frameGeometry(self)
-        frect.moveCenter(QDesktopWidget().availableGeometry(self).center());
-        self.move(frect.topLeft())
+        center_on_screen(self)
 
     def showSetting(self):
 
@@ -1139,7 +1131,7 @@ class MainWindow(QMainWindow):
         try:
             self.shot = int(self.lineEdit_Shot.text())
         except:
-            QMessageBox.warning(self,"Wrong discharge number", "Write here an appropriate discharge number ",QMessageBox.Ok)
+            QMessageBox.warning(self,"Wrong discharge number", "Write here an appropriate discharge number ",QMessageBox.StandardButton.Ok)
 
         self.setting['shot'] = self.shot
 
@@ -1397,7 +1389,7 @@ class MainWindow(QMainWindow):
             try:
                 make_svd(*output_list)
             except Exception as e:
-                QMessageBox.warning(self,"SVD problem", "SVD  failed\n "+str(e),QMessageBox.Ok)
+                QMessageBox.warning(self,"SVD problem", "SVD  failed\n "+str(e),QMessageBox.StandardButton.Ok)
                 return 1
 
 
@@ -1589,9 +1581,9 @@ class MainWindow(QMainWindow):
 
         if error == 2:
             QMessageBox.warning(self ,"Error",  "Not enough of operation memory,\
-                            select shorter time interval" ,QMessageBox.Ok)
+                            select shorter time interval" ,QMessageBox.StandardButton.Ok)
         else:
-            QMessageBox.warning(self,"Execution problem", "Reconstruction failed ",QMessageBox.Ok)
+            QMessageBox.warning(self,"Execution problem", "Reconstruction failed ",QMessageBox.StandardButton.Ok)
 
     def actionStart(self):
         """
@@ -1632,8 +1624,8 @@ class MainWindow(QMainWindow):
      
         if (steps > speed) and self.plot_all and self.reconstruct:
             reply = QMessageBox.question(self, 'Message', "Are you sure that you want to plot all "+str(steps)
-                                        +" snapshots? \n It can take quite long...", QMessageBox.Yes, QMessageBox.No)
-            if reply == QMessageBox.No:
+                                        +" snapshots? \n It can take quite long...", QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No)
+            if reply == QMessageBox.StandardButton.No:
                 self.progressBar.reset()
                 return
         
@@ -1677,13 +1669,13 @@ class MainWindow(QMainWindow):
         elif self.plot_poloidal_spectrum  and not self.reconstruct :
             self.updateUi(None)
         else:
-            QMessageBox.warning(self,"Missing action", 'Select an action on "Actions" list' ,QMessageBox.Ok)
+            QMessageBox.warning(self,"Missing action", 'Select an action on "Actions" list' ,QMessageBox.StandardButton.Ok)
 
         try:
             from sksparse.cholmod import  cholesky
             
         except:
-            QMessageBox.warning(self,"Import Error", "Can't find Cholesky decomposition for sparse matrices (module scikit.sparse) !!! \n Falling back to slower version" ,QMessageBox.Ok)
+            QMessageBox.warning(self,"Import Error", "Can't find Cholesky decomposition for sparse matrices (module scikit.sparse) !!! \n Falling back to slower version" ,QMessageBox.StandardButton.Ok)
 
         self.resize(int(self.setting['screen_width']/1.5), int(self.setting['screen_height']/1.5))
 
@@ -1692,9 +1684,9 @@ class MainThread(QThread):
     """
     Class running  in separated thread, call main solving function "main.py"
     """
-    newValue = pyqtSignal(int)
-    failed = pyqtSignal(int)
-    output = pyqtSignal(tuple)
+    newValue = Signal(int)
+    failed = Signal(int)
+    output = Signal(tuple)
 
     
     
@@ -1713,7 +1705,7 @@ class MainThread(QThread):
 
         try:
             output_list = tomography(self.setting, self.tokamak,  self.progress)
-        except KeyboardInterrupt:
+        except (KeyboardInterrupt, InterruptedError):
             self.newValue.emit(0)
             return
         
@@ -1863,7 +1855,7 @@ def TestData(tomography_object):
             try:
                  output_path = str(tomography_object.lineEdit_output.text())
             except:
-                QMessageBox.warning(tomography_object,"Input error", "Output path couldn't be loaded \n Disabling output"  ,QMessageBox.Ok)
+                QMessageBox.warning(tomography_object,"Input error", "Output path couldn't be loaded \n Disabling output"  ,QMessageBox.StandardButton.Ok)
                 enable_output = False
                 tomography_object.enableOutput.setChecked(False)
                 tomography_object.lineEdit_output.setEnabled(False)
@@ -1871,10 +1863,10 @@ def TestData(tomography_object):
                 return
 
     except NameError as details:
-        QMessageBox.warning(tomography_object,"Input error", details.message ,QMessageBox.Ok)
+        QMessageBox.warning(tomography_object,"Input error", details.message ,QMessageBox.StandardButton.Ok)
         return None,None
     except:
-        QMessageBox.warning(tomography_object,"Input error", "Check input values, shot is expected as integer"  ,QMessageBox.Ok)
+        QMessageBox.warning(tomography_object,"Input error", "Check input values, shot is expected as integer"  ,QMessageBox.StandardButton.Ok)
         return None,None
     if enable_output:
         if not os.path.isdir( output_path):
@@ -1889,23 +1881,23 @@ def TestData(tomography_object):
         if enable_output:
             os.listdir(output_path)
     except IOError as details:
-        QMessageBox.warning(tomography_object,"Error", "File doesn't exist: "+ str(details.filename)   ,QMessageBox.Ok)
+        QMessageBox.warning(tomography_object,"Error", "File doesn't exist: "+ str(details.filename)   ,QMessageBox.StandardButton.Ok)
         #raise
         return None,None
     except OSError as details:
-        QMessageBox.warning(tomography_object,"Error", "Folder doesn't exist: "+ str(details.filename)   ,QMessageBox.Ok)
+        QMessageBox.warning(tomography_object,"Error", "Folder doesn't exist: "+ str(details.filename)   ,QMessageBox.StandardButton.Ok)
         #raise
         return None,None
     except NameError as details:
-        QMessageBox.warning(tomography_object,"Error", details.message ,QMessageBox.Ok)
+        QMessageBox.warning(tomography_object,"Error", details.message ,QMessageBox.StandardButton.Ok)
         #raise
         return None,None
     except MemoryError:
-        QMessageBox.warning(tomography_object,"Error",  "Not enough of operation memory, select shorter time interval" ,QMessageBox.Ok)
+        QMessageBox.warning(tomography_object,"Error",  "Not enough of operation memory, select shorter time interval" ,QMessageBox.StandardButton.Ok)
         #raise
         return None,None
     except:
-        QMessageBox.warning(tomography_object,"Unknown Error", "Data couldn't be loaded\nIf you changed tokamak now\ntry to remove  tomography.npy file",QMessageBox.Ok)
+        QMessageBox.warning(tomography_object,"Unknown Error", "Data couldn't be loaded\nIf you changed tokamak now\ntry to remove  tomography.npy file",QMessageBox.StandardButton.Ok)
         #raise
         return None,None
     List =  os.listdir('./')
@@ -1917,7 +1909,7 @@ def main(setting, tokamak):
 
 
     app = QApplication(sys.argv)
-    app.setStyle(QStyleFactory.create("plastique"))
+    app.setStyle(QStyleFactory.create("Fusion"))  # "plastique" does not exist in Qt 6
     new_font = app.font()
     new_font.setPointSize(  12 )
     app.setFont( new_font )
@@ -1930,7 +1922,7 @@ def main(setting, tokamak):
     #app.resize(1050, 650)
 
     myapp.show()
-    app.exec_()
+    app.exec()
 
 
 

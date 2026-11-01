@@ -19,6 +19,8 @@ for p in (ROOT, TESTS):
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 os.environ.setdefault('MPLBACKEND', 'Agg')
+# pytest-qt must use the same binding as pytomo.qt (PYTOMO_QT=PyQt5 tests the PyQt5 fallback)
+os.environ.setdefault('PYTEST_QT_API', os.environ.get('PYTOMO_QT', 'PyQt6').lower())
 
 # isolated home, must be set before pytomo resolves '~'
 _HOME = tempfile.mkdtemp(prefix='pytomo_home_')

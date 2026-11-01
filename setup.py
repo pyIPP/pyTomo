@@ -57,15 +57,16 @@ setup(
     ext_modules=ext_modules,
     include_dirs=[np.get_include()],
     zip_safe=False,
-    python_requires=">=3.8",
+    python_requires=">=3.12",
     install_requires=[
-        "numpy",
-        "scipy>=1.1.0",
-        "matplotlib>=3.0.0",
+        "numpy>=1.26",
+        "scipy>=1.13",
+        "matplotlib>=3.8",
         "Pillow>=5.0.0",
         "netCDF4",
-        "scikit-sparse>=0.4.4",
+        "scikit-sparse>=0.4.12",
     ],
+    extras_require={"gui": ["PyQt6>=6.5"], "test": ["pytest", "pytest-qt"]},
     entry_points={
         'console_scripts': [
             'pytomo=pytomo.pytomo:main',

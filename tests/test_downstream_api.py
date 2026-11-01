@@ -219,3 +219,32 @@ def test_roto_tomo_regularization_pipeline(roto_tomo, d3d_server, d3d_sxr):
         if n == 0:
             inside = ~BdMat.flatten('F')
             assert np.corrcoef(G.real[inside], G0[inside])[0, 1] > 0.9
+
+
+@pytest.mark.parametrize('host', ['PyQt5', 'PyQt6'])
+def test_roto_tomo_follows_host_qt_binding(roto_tomo, host):
+    """Inside pyspecview (a PyQt5 application) roto_tomo must use PyQt5; standalone PyQt6."""
+    import subprocess
+    pytest.importorskip(host)
+    code = '''
+import os, sys
+os.environ['QT_QPA_PLATFORM'] = 'offscreen'
+sys.path[:0] = [%r, %r]
+import tests.fake_mds as fm; fm.install(fm.FakeServer({}))
+if %r == 'PyQt5':
+    import PyQt5.QtWidgets          # pyspecview imports PyQt5 first
+import roto_tomo.roto_tomo as R
+from pytomo import qt
+from matplotlib.figure import Figure
+app = qt.QApplication([])
+canvas = R.FigureCanvas(Figure())
+R.NavigationToolbar2(canvas, None)
+assert R.QMainWindow.__module__.startswith(%r), R.QMainWindow.__module__
+print(qt.API)
+''' % (PYSPECVIEW, os.path.dirname(os.path.dirname(fake_mds.__file__)), host, host)
+    env = dict(os.environ)
+    env.pop('PYTOMO_QT', None)
+    env.pop('QT_API', None)
+    r = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True, env=env, timeout=120)
+    assert r.returncode == 0, r.stderr[-2000:]
+    assert r.stdout.strip().splitlines()[-1] == host

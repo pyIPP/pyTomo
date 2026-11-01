@@ -323,22 +323,18 @@ def tomography(inputs, tokamak, progress = None):
                   
         results = []
         try:
-            from PyQt5.QtCore import currentThread
-        except:
-            currentThread = None
-     
-        try:
             from .tqdm import tqdm
             if not progress is None: progress.setNumSubSteps(len(sequence))
             for seq in tqdm(sequence,desc='Main cycle: '):
-                if currentThread is not None:
-                    if currentThread().isInterruptionRequested():
-                        raise Exception('Externally interrupted!')
+                if interruption_requested():
+                    raise InterruptedError('Externally interrupted!')
            
                 out = method(main_cycle, seq)  #   pool.imap(main_cycle, seq)  #!!!open main cycle !!!
                 gc.collect()
                 results.extend(out)
                 if not progress is None:  progress.iterateSubStep()
+        except InterruptedError:
+            raise
         except Exception as e:
             print('Error '+str(e))     #try to find the error
             out = list(map(main_cycle, seq)) 
@@ -429,6 +425,14 @@ def tomography(inputs, tokamak, progress = None):
 
     return inputs, tokamak, progress,output
 
+
+
+def interruption_requested():
+    """True if the GUI asked the worker thread to stop (the CLI does not import Qt)."""
+    for mod in ('PyQt6.QtCore', 'PyQt5.QtCore'):
+        if mod in sys.modules:
+            return sys.modules[mod].QThread.currentThread().isInterruptionRequested()
+    return False
 
 
 def pre_calibrate(tokamak, inputs, solver,ifishmax, data, error, 

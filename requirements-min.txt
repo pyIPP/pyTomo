@@ -1,10 +1,9 @@
-# Oldest supported environment (compatibility testing)
-# Python 3.12
+# Oldest supported environment (compatibility testing), Python 3.12
 numpy==1.26.4
 scipy==1.13.1
 matplotlib==3.8.4
-scikit-sparse>=0.4.12,<0.5   # 0.5 changed the cholmod API (no solve_L/apply_P/mode=)
-PyQt5>=5.15
+scikit-sparse>=0.4.12,<0.5  # 0.5 needs scipy>=1.14; pytomo/sparse_cholesky.py supports both APIs
+PyQt6>=6.5                  # PyQt5 >= 5.15 also works (used automatically inside PyQt5 apps)
 cython>=0.29
 setuptools
 pillow

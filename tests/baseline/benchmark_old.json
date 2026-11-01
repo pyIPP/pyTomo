@@ -1,13 +1,13 @@
 {
- "load data + equilibrium": 2.254,
- "geometry matrix": 0.233,
- "prepare data (51 slices)": 1.096,
- "regularization matrix (aniso MFI)": 0.132,
- "reconstruction SVD2 (51 slices)": 1.818,
- "reconstruction SVD2 + positivity (51 slices)": 1.904,
- "reconstruction QR (51 slices)": 2.059,
- "plots + profile export": 0.49,
- "peak RSS MB": 435.2,
+ "load data + equilibrium": 2.349,
+ "geometry matrix": 0.245,
+ "prepare data (51 slices)": 1.441,
+ "regularization matrix (aniso MFI)": 0.114,
+ "reconstruction SVD2 (51 slices)": 1.826,
+ "reconstruction SVD2 + positivity (51 slices)": 2.005,
+ "reconstruction QR (51 slices)": 1.808,
+ "plots + profile export": 0.509,
+ "peak RSS MB": 427.4,
  "versions": {
   "python": "3.12.3",
   "numpy": "1.26.4"
