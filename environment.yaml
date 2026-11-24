@@ -12,7 +12,7 @@ channels:
 
 dependencies:
   # Python version - require 3.8+ for modern features and security support
-  - python>=3.8
+  - python>=3.12
 
   # ============================================================
   # BUILD TOOLS (for compiling Cython extensions)
@@ -24,20 +24,20 @@ dependencies:
   # ============================================================
   # CORE DEPENDENCIES (REQUIRED)
   # ============================================================
-  - numpy>=1.15.0
-  - scipy>=1.1.0
-  - matplotlib>=3.0.0
+  - numpy>=1.26
+  - scipy>=1.13
+  - matplotlib>=3.8
   - pillow>=5.0.0
   - netcdf4
 
   # Sparse matrix operations (all available on conda-forge)
-  - scikit-sparse>=0.4.4
+  - scikit-sparse>=0.4.12
   - suitesparse  # System library required by scikit-sparse
   - openblas
   - lapack
 
-  # GUI support - required by GUI.py
-  - pyqt
+  # GUI support (PyQt6 from pip, see the end of the list)
+  - pip
 
   # Interactive Python - used in multiple modules for debugging
   - ipython
@@ -47,6 +47,9 @@ dependencies:
   # ============================================================
   # MDS+ data access - required for tokamak data acquisition
   - mdsplus
+
+  - pip:
+      - PyQt6>=6.5  # GUI; PyQt5 ('pyqt' on conda-forge) also works
 
 # ============================================================
 # IMPORTANT NOTE

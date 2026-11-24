@@ -544,24 +544,25 @@ def main():
         tok.prepare_tokamak()
  
     if inputs['show_preview']:
-        from matplotlib.backends.backend_qt4agg import FigureCanvasQT as FigureCanvas
-        import matplotlib.pylab as plt
+        from . import qt  # noqa: F401  selects the Qt binding for matplotlib
+        import matplotlib.pyplot as plt
+        from .prepare_data import preview
+        plt.switch_backend('QtAgg')
         preview(plt.gcf(),inputs, tok,True, True)
         plt.show()
-        print('preview')
-        plt.pause(100)
-
         sys.exit(0)
 
     elif inputs['deriv']:
-        from graph_derivation import graph_derivation
+        from . import qt  # noqa: F401
+        import matplotlib.pyplot as plt
+        from .graph_derivation import graph_derivation
+        plt.switch_backend('QtAgg')
         graph_derivation(4, tok)
-        show()
-        
+        plt.show()
         sys.exit(0)
         
     elif inputs['proj']:
-        from geom_mat_setting import loadgeometry,plot_projection_space
+        from .geom_mat_setting import loadgeometry,plot_projection_space
         
         xchords, ychords, distance, nl,virt_chord  = loadgeometry(tok.geometry_path, list(tok.detectors_dict.keys()),100)   
         plot_projection_space(tok,xchords, ychords, virt_chord,nl)
@@ -597,31 +598,13 @@ def startGUI(inputs, tok):
 
 
 
-    if sys.platform == 'linux2':
-        f=os.popen("xset -q")
-        if len(f.readlines()) < 10:
-            print('X server not availible\n Try to set export DISPLAY=":0.0" \n Switching to noGUI version')
-            tok.prepare_tokamak()
-
-            startCUI(inputs, tok)
-            sys.exit(0)
-            
-            
-            
-            
     try:
-        import PyQt5.QtCore,  PyQt5.QtGui ,PyQt5.QtWidgets
         from . import GUI
     except ImportError as details:
-        try:
-            import PyQt4.QtCore,PyQt4.QtGui
-            from . import GUI
-
-        except ImportError as details:
-            print('Install PyQt4 or PyQt5!!!!  Fallback to noGUI version')
-            tok.prepare_tokamak()
-            startCUI(inputs, tok)
-            return
+        print('PyQt6 (or PyQt5) is not available: %s\nFallback to noGUI version' % details)
+        tok.prepare_tokamak()
+        startCUI(inputs, tok)
+        return
     try:
         GUI.main(inputs, tok)
     except:

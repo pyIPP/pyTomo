@@ -3,23 +3,10 @@
 import sys, os, random
 import matplotlib
 
-try:
-    from PyQt5.QtCore import *
-    from PyQt5.QtGui import *
-    from PyQt5.QtWidgets import *
-    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from .qt import (QAction, QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, QGridLayout, QGroupBox, QHBoxLayout, QIcon, QLabel, QLineEdit, QMainWindow, QMessageBox, QPalette, QPushButton, QSizePolicy, QSlider, QSpacerItem, QSpinBox, QTabWidget, QVBoxLayout, QWidget, Qt, center_on_screen)
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 
-except:
-    from PyQt4.QtCore import *
-    from PyQt4.QtGui import *
-
-        
-    from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-    try:
-        from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
-    except:
-        from matplotlib.backends.backend_qt4agg import NavigationToolbar as NavigationToolbar
-        
 from matplotlib.figure import Figure
 import numpy as np
 from . import config
@@ -310,14 +297,14 @@ class SVDFilter():
             slider_harm.setRange(2, 10)
             slider_harm.setValue(self.n_harm)
             slider_harm.setTracking(True)
-            slider_harm.setTickPosition(QSlider.TicksBelow)
+            slider_harm.setTickPosition(QSlider.TickPosition.TicksBelow)
             slider_harm.setTickInterval(1)
             
         if not slider_svd is None:
             slider_svd.setRange(2, 10)
             slider_svd.setValue(self.n_svd)
             slider_svd.setTracking(True)
-            slider_svd.setTickPosition(QSlider.TicksBelow)
+            slider_svd.setTickPosition(QSlider.TickPosition.TicksBelow)
             slider_svd.setTickInterval(1)
 
         self.actual = False
@@ -1091,7 +1078,7 @@ class SpectraViewer(object):
         sgamma.setRange(0.01*self.sdpi, 1*self.sdpi)
         sgamma.setValue(.5*self.sdpi)
         sgamma.setTracking(True)
-        sgamma.setTickPosition(QSlider.NoTicks)
+        sgamma.setTickPosition(QSlider.TickPosition.NoTicks)
         
         #self.sgamma = Slider(self.ax_gamma, 'Gamma',0.01*self.sdpi,
                              #1*self.sdpi, valinit=.5,valfmt=u'%0.1f')
@@ -1102,7 +1089,7 @@ class SpectraViewer(object):
         snfft.setRange(6*self.sdpi, 16*self.sdpi)
         snfft.setValue(13*self.sdpi)
         snfft.setTracking(True)
-        snfft.setTickPosition(QSlider.NoTicks)
+        snfft.setTickPosition(QSlider.TickPosition.NoTicks)
         
         
         self.method.addItem("STFT")
@@ -1729,11 +1716,11 @@ class DataSettingWindow(QMainWindow):
 
         self.setWindowTitle('Data selection / Preprocessing')
 
-        self.Expand = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.Fixed  = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.Expand = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.Fixed  = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
         self.main_tab = QTabWidget(self)
-        self.main_tab.setTabPosition(QTabWidget.North)
+        self.main_tab.setTabPosition(QTabWidget.TabPosition.North)
 
         self.gridLayout.addWidget(self.main_tab, 0, 0, 1,2)
         
@@ -1808,7 +1795,7 @@ class DataSettingWindow(QMainWindow):
         self.canvas_data = FigureCanvas(self.fig_data)
         self.canvas_data.setParent(self.cWidget)
         
-        c =  self.cWidget.palette().color(QPalette.Base)
+        c =  self.cWidget.palette().color(QPalette.ColorRole.Base)
         self.fig_data.patch.set_facecolor((c.red()/255., c.green()/255., c.blue()/255.))
 
         self.canvas_data.setSizePolicy(self.Expand)
@@ -1854,8 +1841,8 @@ class DataSettingWindow(QMainWindow):
         self.tmax_spin = QDoubleSpinBox()
         self.tmax_spin.setKeyboardTracking(False)
 
-        spacerItem = QSpacerItem(40, 20, QSizePolicy.Expanding, 
-                                       QSizePolicy.Minimum)
+        spacerItem = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, 
+                                       QSizePolicy.Policy.Minimum)
 
         self.OkButton=QPushButton("OK")
         #self.tvec = self.tokamak.tvec
@@ -1920,9 +1907,7 @@ class DataSettingWindow(QMainWindow):
         #self.resize(500, 500)
         self.resize(400, 400)
 
-        frect = QDesktopWidget.frameGeometry(self)
-        frect.moveCenter(QDesktopWidget().availableGeometry(self.parent).center());
-        self.move(frect.topLeft())
+        center_on_screen(self)
 
         self.tmin_spin.setRange(self.tokamak.min_tvec, self.tokamak.max_tvec)
         self.tmax_spin.setRange(self.tokamak.min_tvec, self.tokamak.max_tvec)
@@ -1973,7 +1958,7 @@ class DataSettingWindow(QMainWindow):
         self.parent.tmax_spin.setValue(value)
 
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Escape:
+        if event.key() == Qt.Key.Key_Escape:
             self.close()
 
 
@@ -1987,7 +1972,7 @@ class DataSettingWindow(QMainWindow):
             except:
                 wrong_dets_pref = []
                 QMessageBox.warning(self,"Input problem",
-                    "Wrong detectors are in bad format, use ...,10,11,13:15,...",QMessageBox.Ok)
+                    "Wrong detectors are in bad format, use ...,10,11,13:15,...",QMessageBox.StandardButton.Ok)
                 
         elif init:     # do not remove on init
             wrong_dets_pref = config.wrong_dets_pref
@@ -2066,7 +2051,7 @@ class DataSettingWindow(QMainWindow):
             self.canvas_data.draw()
 
         except:
-            QMessageBox.warning(self,"Loading problem", "Data couldn't be loaded\nIf you changed tokamak now\ntry to remove tomography.npy file",QMessageBox.Ok)
+            QMessageBox.warning(self,"Loading problem", "Data couldn't be loaded\nIf you changed tokamak now\ntry to remove tomography.npy file",QMessageBox.StandardButton.Ok)
             traceback.print_exc()
 
             return
@@ -2123,7 +2108,7 @@ class DataSettingWindow(QMainWindow):
         
         #self.fig.patch.set_alpha(0.5)
         #self.fig.patch.set_facecolor('white')
-        c =  self.cWidget.palette().color(QPalette.Base)
+        c =  self.cWidget.palette().color(QPalette.ColorRole.Base)
         
         self.fig_spec.patch.set_facecolor((c.red()/255., c.green()/255., c.blue()/255.))
         
@@ -2162,8 +2147,8 @@ class DataSettingWindow(QMainWindow):
         #
         
         #from view_spectra import SpectraViewer
-        self.snfft = QSlider(Qt.Horizontal)
-        self.sgamma = QSlider(Qt.Horizontal)
+        self.snfft = QSlider(Qt.Orientation.Horizontal)
+        self.sgamma = QSlider(Qt.Orientation.Horizontal)
         self.method  = QComboBox(self.cWidget)
 
         
@@ -2258,22 +2243,22 @@ class DataSettingWindow(QMainWindow):
         # 
         hbox1 = QHBoxLayout()
         hbox1.addWidget(self.mpl_toolbar)
-        hbox1.setAlignment( self.mpl_toolbar, Qt.AlignVCenter)
+        hbox1.setAlignment( self.mpl_toolbar, Qt.AlignmentFlag.AlignVCenter)
         hbox2 = QHBoxLayout()
 
         for w in [ self.run_button,det_label2,self.detector,# self.grid_cb,
                   slider_label3, self.method]:
             hbox2.addWidget(w)
-            hbox2.setAlignment(w, Qt.AlignVCenter)
+            hbox2.setAlignment(w, Qt.AlignmentFlag.AlignVCenter)
         
         #hbox2.setAlignment(self.run_button, Qt.AlignVCenter)
 
-        hbox2.setAlignment( slider_label3, Qt.AlignRight)
-        hbox2.setAlignment( det_label2, Qt.AlignRight)
+        hbox2.setAlignment( slider_label3, Qt.AlignmentFlag.AlignRight)
+        hbox2.setAlignment( det_label2, Qt.AlignmentFlag.AlignRight)
 
         for w in [ slider_label1, self.sgamma,slider_label2,self.snfft]:
             hbox1.addWidget(w)
-            hbox1.setAlignment(w, Qt.AlignRight)
+            hbox1.setAlignment(w, Qt.AlignmentFlag.AlignRight)
         
         vbox = QVBoxLayout()
         vbox.addWidget(self.canvas_spec)
@@ -2330,7 +2315,7 @@ class DataSettingWindow(QMainWindow):
         
         #self.fig_svd.patch.set_alpha(0.5)
         #self.fig_svd.patch.set_facecolor('white')
-        c =  self.cWidget.palette().color(QPalette.Base)
+        c =  self.cWidget.palette().color(QPalette.ColorRole.Base)
         
         self.fig_svd.patch.set_facecolor((c.red()/255., c.green()/255., c.blue()/255.))
         #ax = self.fig_svd.add_subplot(111)
@@ -2349,8 +2334,8 @@ class DataSettingWindow(QMainWindow):
         slider_label1 = QLabel('N SVD:')
         slider_label2 = QLabel('N HARM:')
         
-        self.nsvd = QSlider(Qt.Horizontal)
-        self.nharm = QSlider(Qt.Horizontal)
+        self.nsvd = QSlider(Qt.Orientation.Horizontal)
+        self.nharm = QSlider(Qt.Orientation.Horizontal)
         self.nsvd.setToolTip('Set number of used SVD components')
         self.nharm.setToolTip('Set number of filtered harmononics')
         
@@ -2375,7 +2360,7 @@ class DataSettingWindow(QMainWindow):
         for w in [ self.mpl_toolbar_svd,slider_label1, self.nsvd,slider_label2,
                   self.nharm,self.run_button2,self.run_button3]:
             hbox.addWidget(w)
-            hbox.setAlignment(w, Qt.AlignRight)
+            hbox.setAlignment(w, Qt.AlignmentFlag.AlignRight)
             
 
         
@@ -2416,7 +2401,7 @@ class DataSettingWindow(QMainWindow):
         self.canvas_res = FigureCanvas(self.fig_res)
         self.canvas_res.setParent(self.cWidget)
         
-        c =  self.cWidget.palette().color(QPalette.Base)
+        c =  self.cWidget.palette().color(QPalette.ColorRole.Base)
         
         self.fig_res.patch.set_facecolor((c.red()/255., c.green()/255., c.blue()/255.))
  
@@ -2516,9 +2501,7 @@ class DataSettingWindow(QMainWindow):
                 
                 
     def setCenter(self):
-        frect = QDesktopWidget.frameGeometry(self)
-        frect.moveCenter(QDesktopWidget().availableGeometry(self).center());
-        self.move(frect.topLeft())
+        center_on_screen(self)
 
     def create_action(  self, text, slot=None, shortcut=None, 
                         icon=None, tip=None, checkable=False):

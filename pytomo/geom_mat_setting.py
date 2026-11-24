@@ -4,7 +4,7 @@ import time
 from scipy.interpolate import interpolate
 from scipy import sparse
 import sys, os
-from numpy import *
+import numpy as np
 from scipy.sparse import spdiags, eye
 import gc
 from .annulus import get_bd_mat
@@ -46,11 +46,11 @@ def geom_mat_setting(tokamak,nx, ny, virt_chord, path=None):
         try:
             path = tokamak.geometry_path_program
             print(path,name)
-            d = load(path+name, allow_pickle=True,encoding='latin1')
+            d = np.load(path+name, allow_pickle=True,encoding='latin1')
         except:
             path = tokamak.geometry_path
             print(path,name)
-            d = load(path+name, allow_pickle=True,encoding='latin1')
+            d = np.load(path+name, allow_pickle=True,encoding='latin1')
 
         print('Load geometry matrix from: ',path  )
 
@@ -72,11 +72,11 @@ def geom_mat_setting(tokamak,nx, ny, virt_chord, path=None):
 
             #plot_projection_space(tokamak,xchords, ychords, virt_chord,nl)
        
-            assert isnan(tokamak.nl) or nl == tokamak.nl, 'wrong number of LOS  '+str(nl)+' '+str(tokamak.nl)
+            assert np.isnan(tokamak.nl) or nl == tokamak.nl, 'wrong number of LOS  '+str(nl)+' '+str(tokamak.nl)
          
             Tmat,Xchords,Ychords = generate_matrix(xchords, ychords, distance,virt_chord,nl,nx, ny, tokamak)
-            tokamak.Xchords = single(Xchords)
-            tokamak.Ychords = single(Ychords)
+            tokamak.Xchords = np.single(Xchords)
+            tokamak.Ychords = np.single(Ychords)
         print('  in %.2fs'%(time.time()-t))
         #just for "ilustration" it calculated for the midlle of the tvec
         try:
@@ -84,7 +84,7 @@ def geom_mat_setting(tokamak,nx, ny, virt_chord, path=None):
         except:
             BdMat= None
         path = tokamak.geometry_path
-        savez_compressed(path+name, T=Tmat,X=Xchords, Y=Ychords, xgrid = tokamak.xgrid,
+        np.savez_compressed(path+name, T=Tmat,X=Xchords, Y=Ychords, xgrid = tokamak.xgrid,
                   ygrid = tokamak.ygrid, BdMat = BdMat)
 
 
@@ -124,23 +124,23 @@ def loadgeometry(geometry_path,cameras, virt_chord):
     nl = 0
 
     for i,c in enumerate(cameras):
-        xchord= loadtxt(geometry_path+'detector_'+c+'_x.txt')
-        ychord= loadtxt(geometry_path+'detector_'+c+'_y.txt')
+        xchord= np.loadtxt(geometry_path+'detector_'+c+'_x.txt')
+        ychord= np.loadtxt(geometry_path+'detector_'+c+'_y.txt')
     
-        ychord = atleast_2d(ychord).T
-        xchord = atleast_2d(xchord).T
+        ychord = np.atleast_2d(ychord).T
+        xchord = np.atleast_2d(xchord).T
         
-        ndet_los = size(xchord,1)
+        ndet_los = np.size(xchord,1)
         if len(xchord) == 2 and len(ychord) == 2 and virt_chord > 1 :
             print("cannot use virtual chords !!")
             virt_chord = 1
         try:
-            dist_tmp = loadtxt(geometry_path+'dist_'+c+'.txt')
-            if size(dist_tmp) == 1:
-                dist_tmp = ones(ndet_los)*dist_tmp
+            dist_tmp = np.loadtxt(geometry_path+'dist_'+c+'.txt')
+            if np.size(dist_tmp) == 1:
+                dist_tmp = np.ones(ndet_los)*dist_tmp
                 
         except:
-            dist_tmp = zeros(ndet_los) ;  #distance of chords from the main axes, usually = 0
+            dist_tmp = np.zeros(ndet_los) ;  #distance of chords from the main axes, usually = 0
             
         nl += ndet_los
      
@@ -152,7 +152,7 @@ def loadgeometry(geometry_path,cameras, virt_chord):
             input path and format of geometric data\n"+geometry_path+'detector_%%s_x.txt')
 
     #=====================  Generate the geometric matrix ======================
-    return hstack(xchords), hstack(ychords), hstack(distance), nl, virt_chord
+    return np.hstack(xchords), np.hstack(ychords), np.hstack(distance), nl, virt_chord
 
 
 
@@ -160,10 +160,10 @@ def virt_chords(achord, bchord, virt_chord, dist):
     """
     Prepare virtual chords from loaded data if there are three columns in file.
     """
-    n_chord = size(achord,1)
+    n_chord = np.size(achord,1)
     n_senz = virt_chord*n_chord
 
-    distance = repeat(dist,virt_chord)
+    distance = np.repeat(dist,virt_chord)
 
 
     swap = False
@@ -171,32 +171,32 @@ def virt_chords(achord, bchord, virt_chord, dist):
         swap = True
         achord ,bchord  = bchord , achord 
     elif len(bchord) == 2:
-        bchord = vstack((bchord[0,:], bchord[1,:]))
+        bchord = np.vstack((bchord[0,:], bchord[1,:]))
         return achord, bchord, distance
 
 
-    achords = tile(achord, (virt_chord,1)).reshape(2,-1,order='F')
+    achords = np.tile(achord, (virt_chord,1)).reshape(2,-1,order='F')
  
-    bchords =  zeros((2, n_senz))
+    bchords =  np.zeros((2, n_senz))
 
-    bchords[1,:] = tile(bchord[2,:], (virt_chord,1)).flatten(order='F')
+    bchords[1,:] = np.tile(bchord[2,:], (virt_chord,1)).flatten(order='F')
 
 
-    tmp_chord = zeros(n_senz)
+    tmp_chord = np.zeros(n_senz)
 
     for i in range(n_chord):
         da = achord[1,i] - achord[0,i]
         db2 = bchord[1,i]- bchord[2,i]
         db1 = bchord[0,i]- bchord[2,i]
 
-        alpha_1 = arctan2(bchord[0,i]-bchord[2,i], da)
-        alpha_2 = arctan2(bchord[1,i]-bchord[2,i], da)
+        alpha_1 = np.arctan2(bchord[0,i]-bchord[2,i], da)
+        alpha_2 = np.arctan2(bchord[1,i]-bchord[2,i], da)
         
     
-        dalpha = (alpha_1-alpha_2+pi)%(2*pi)-pi
+        dalpha = (alpha_1-alpha_2+np.pi)%(2*np.pi)-np.pi
   
         for j in range(virt_chord):
-            bchords[0,i*virt_chord+j]=tan(alpha_2+dalpha/(virt_chord-1+1e-6)*(j+0.5e-6))*da +bchord[2,i]
+            bchords[0,i*virt_chord+j]=np.tan(alpha_2+dalpha/(virt_chord-1+1e-6)*(j+0.5e-6))*da +bchord[2,i]
 
     if swap:
         achords,bchords = bchords, achords  
@@ -240,19 +240,19 @@ def plot_projection_space(tokamak,xchords, ychords, virt_chord,nl):
         B,D = y
 
         E,F = x0,y0  #center of the plasma 
-        xi = arctan2( (D-B),(C-A))
+        xi = np.arctan2( (D-B),(C-A))
 
-        p = ((B-F)/(D-B)+(E-A)/(C-A))/hypot(1/(C-A), 1/(D-B))
-        return -p*sign(xi+pi/2)*sign(xi-pi/2),pi-(xi+pi)%pi
+        p = ((B-F)/(D-B)+(E-A)/(C-A))/np.hypot(1/(C-A), 1/(D-B))
+        return -p*np.sign(xi+np.pi/2)*np.sign(xi-np.pi/2),np.pi-(xi+np.pi)%np.pi
     
     def TransformBoundary(bx,by,x0,y0,theta):
         
-        proj_boundary = zeros((len(theta), 2))
+        proj_boundary = np.zeros((len(theta), 2))
         bx = bx - x0
         by = by - y0
         for i,t in enumerate(theta):
-            bx_ = bx*cos(t)-by*sin(t)
-            by_ = bx*sin(t)+by*cos(t)
+            bx_ = bx*np.cos(t)-by*np.sin(t)
+            by_ = bx*np.sin(t)+by*np.cos(t)
             proj_boundary[i] = by_.min(), by_.max()
             
         return -proj_boundary
@@ -262,25 +262,25 @@ def plot_projection_space(tokamak,xchords, ychords, virt_chord,nl):
     rhop,X0,Y0 = tokamak.mag_equilibrium(tokamak.tvec.mean(), return_mean=True,surf_slice=[0,])
     X0,Y0 = X0[:,0].mean(),Y0[:,0].mean()
     
-    theta = linspace(0,pi,100)
+    theta = np.linspace(0,np.pi,100)
     
     
-    xbnd, ybnd  = loadtxt(tokamak.geometry_path+'border.txt',unpack=True)
+    xbnd, ybnd  = np.loadtxt(tokamak.geometry_path+'border.txt',unpack=True)
 
 
     chamber_bnd = TransformBoundary(xbnd, ybnd,X0,Y0,theta)
 
 
     fig,ax = plt.subplots()
-    rho_max = amax(abs(chamber_bnd))
-    ax.fill_between(rad2deg(theta),chamber_bnd[:,0] , rho_max, interpolate=True, color='.9',edgecolor='k')
-    ax.fill_between(rad2deg(theta),chamber_bnd[:,1], -rho_max, interpolate=True, color='.9',edgecolor='k')
+    rho_max = np.amax(abs(chamber_bnd))
+    ax.fill_between(np.rad2deg(theta),chamber_bnd[:,0] , rho_max, interpolate=True, color='.9',edgecolor='k')
+    ax.fill_between(np.rad2deg(theta),chamber_bnd[:,1], -rho_max, interpolate=True, color='.9',edgecolor='k')
     ax.set_ylim(-rho_max,rho_max)
     xbnd, ybnd = tokamak.get_boundary(1000, time=time).T
     from matplotlib.ticker import MaxNLocator
 
     chamber_bnd = TransformBoundary(xbnd, ybnd,X0,Y0,theta)
-    ax.plot(rad2deg(theta),chamber_bnd ,'k--')
+    ax.plot(np.rad2deg(theta),chamber_bnd ,'k--')
     proj_space_coord = []    
     for i,(det, ind_colors) in enumerate(cam_ind.items()):
         
@@ -292,7 +292,7 @@ def plot_projection_space(tokamak,xchords, ychords, virt_chord,nl):
         ndets = X.shape[1]
         p,xi = Transformation(X[:,12*ndets//20],Y[:,12*ndets//20],X0,Y0)
 
-        ax.text(rad2deg(xi.T),p.T,det,backgroundcolor='w',fontsize=13)
+        ax.text(np.rad2deg(xi.T),p.T,det,backgroundcolor='w',fontsize=13)
 
         
         for ind,c in ind_colors:
@@ -300,10 +300,10 @@ def plot_projection_space(tokamak,xchords, ychords, virt_chord,nl):
 
             p,xi = Transformation( xchords[:,ind],ychords[:,ind],X0,Y0)
             
-            ax.plot(rad2deg(xi.T),p.T,','+c)
-            ax.plot(rad2deg(xi[:,virt_chord//2]),p[:,virt_chord//2],'o'+c)
+            ax.plot(np.rad2deg(xi.T),p.T,','+c)
+            ax.plot(np.rad2deg(xi[:,virt_chord//2]),p[:,virt_chord//2],'o'+c)
            
-            proj_space_coord.append([rad2deg(xi[:,virt_chord//2]),p[:,virt_chord//2]])
+            proj_space_coord.append([np.rad2deg(xi[:,virt_chord//2]),p[:,virt_chord//2]])
     
             
     ax.set_xlabel('$\\xi $ [deg]')
@@ -311,9 +311,9 @@ def plot_projection_space(tokamak,xchords, ychords, virt_chord,nl):
     ax.set_ylim(-rho_max,rho_max)
     ax.set_xlim(0,180)
     ax.axhline(0,ls='--',c='k')
-    ax.text(1.01/pi*180,0.02,'Plasma core')
-    ax.text(.39/pi*180,-.73,'LCFS')
-    ax.text(.69/pi*180,-0.90,'Borders')
+    ax.text(1.01/np.pi*180,0.02,'Plasma core')
+    ax.text(.39/np.pi*180,-.73,'LCFS')
+    ax.text(.69/np.pi*180,-0.90,'Borders')
     ax.xaxis.set_major_locator(MaxNLocator(6))
 
     plt.show()
@@ -322,40 +322,40 @@ def plot_projection_space(tokamak,xchords, ychords, virt_chord,nl):
     from .phantom_generator import phantom_generator
     print('ready')
 
-    _,_,_,G0 = phantom_generator(tokamak, array(4), profile = 'Gaussian', hollowness = 0.98,edge = 0.7)
+    _,_,_,G0 = phantom_generator(tokamak, np.array(4), profile = 'Gaussian', hollowness = 0.98,edge = 0.7)
     G0 =  G0.mean(1).reshape(tokamak.ny, tokamak.nx,order='F')
     rvec, zvec = tokamak.xgrid+tokamak.dx/2, tokamak.ygrid+tokamak.dy/2
     try:
         #load a specific profile
         name = 'Emissivity_4.513-4.514_rec_30812.npz'
-        data = load('./tmp/'+name)
-        G0 = (single(data['gres'])*data['gres_norm']).mean(-1)
+        data = np.load('./tmp/'+name)
+        G0 = (np.single(data['gres'])*data['gres_norm']).mean(-1)
         rvec, zvec = data['rvec'], data['zvec']
     except:
         pass
 
-    theta = linspace(0,pi,200)
-    p = linspace(ax.get_ylim()[0], ax.get_ylim()[1],200)
-    sinogram = zeros((len(theta), len(p)),dtype=single)
+    theta = np.linspace(0,np.pi,200)
+    p = np.linspace(ax.get_ylim()[0], ax.get_ylim()[1],200)
+    sinogram = np.zeros((len(theta), len(p)),dtype=np.single)
 
     
     
-    scaling = array([rvec[1]-rvec[0],zvec[1]-zvec[0]])
-    offset = array([rvec[0],zvec[0]])
+    scaling = np.array([rvec[1]-rvec[0],zvec[1]-zvec[0]])
+    offset = np.array([rvec[0],zvec[0]])
     
-    from scipy.ndimage.interpolation import map_coordinates
+    from scipy.ndimage import map_coordinates
     #WARNING it is not exact flax surface averadge!!
-    X,Y = meshgrid(p,p)
+    X,Y = np.meshgrid(p,p)
 
 
     
     from scipy.integrate import trapz
 
     for i,t in enumerate(theta):
-        X_ = X*cos(t)-Y*sin(t)+X0
-        Y_ = X*sin(t)+Y*cos(t)+Y0
+        X_ = X*np.cos(t)-Y*np.sin(t)+X0
+        Y_ = X*np.sin(t)+Y*np.cos(t)+Y0
 
-        coords = c_[X_.ravel(),Y_.ravel()].T
+        coords = np.c_[X_.ravel(),Y_.ravel()].T
         idx = (coords-offset[:,None])/ scaling[:,None]
         map_prof = map_coordinates(G0.T,idx,order=2)
         map_prof = map_prof.reshape(X.shape)
@@ -363,35 +363,35 @@ def plot_projection_space(tokamak,xchords, ychords, virt_chord,nl):
         sinogram[i] =  trapz(map_prof, p, axis=1)
     
 
-    sinogram/= amax(sinogram)
+    sinogram/= np.amax(sinogram)
     
-    ax.contour(theta/pi*180, p, sinogram[::-1].T,linspace(0.01,1,10),vmin=0,vmax=1,colors='0.5', linewidths = 0.5)
+    ax.contour(theta/np.pi*180, p, sinogram[::-1].T,np.linspace(0.01,1,10),vmin=0,vmax=1,colors='0.5', linewidths = 0.5)
 
     plt.figure()
 
-    proj_space = hstack(proj_space_coord)
+    proj_space = np.hstack(proj_space_coord)
     
     
-    data = load('./tmp/data_%d.npz'%tokamak.shot)
+    data = np.load('./tmp/data_%d.npz'%tokamak.shot)
     dets = data['dets']
     err = data['err'][:,dets].mean(0)
     data = data['data'][:,dets].mean(0)
-    ind = isfinite(err)
+    ind = np.isfinite(err)
     proj_space = proj_space[:,dets][:,ind]
     data = data[ind]
 
     
     from scipy.interpolate import griddata
    
-    grid_x, grid_y = mgrid[-1.2:1.2:1000j, 0:180:1000j]
+    grid_x, grid_y = np.mgrid[-1.2:1.2:1000j, 0:180:1000j]
     
     figure()
 
-    pointsx = hstack((proj_space[0],proj_space[0]-180,180+proj_space[0]))
-    pointsy = hstack((proj_space[1],-proj_space[1],-proj_space[1]))
-    values = hstack((data,)*3)
+    pointsx = np.hstack((proj_space[0],proj_space[0]-180,180+proj_space[0]))
+    pointsy = np.hstack((proj_space[1],-proj_space[1],-proj_space[1]))
+    values = np.hstack((data,)*3)
     D = griddata( (pointsx,pointsy), values,  (grid_y, grid_x), method='nearest',rescale=True)
-    plt.pcolormesh(grid_y.T, grid_x.T,sqrt(D).T,vmin=0,vmax=sqrt(amax(data)),cmap='nipy_spectral')
+    plt.pcolormesh(grid_y.T, grid_x.T,np.sqrt(D).T,vmin=0,vmax=np.sqrt(np.amax(data)),cmap='nipy_spectral')
     plt.plot(proj_space[0],proj_space[1],'wo',markeredgecolor='k')
     plt.ylim(-.7, .7)
     plt.xlabel('$\\xi$ [deg]')
@@ -425,21 +425,21 @@ def plot_projection_space(tokamak,xchords, ychords, virt_chord,nl):
         for i in range(len(proj_space_coord[I][0])-1):
             if stop:break
             for j in range(len(proj_space_coord[J][0])-1):
-                Q0 = c_[proj_space_coord[I]][:,i]
-                P0 = c_[proj_space_coord[J]][:,j]
-                Q1 = diff(c_[proj_space_coord[I]][:,i:i+2],axis=1)
-                P1 = diff(c_[proj_space_coord[J]][:,j:j+2],axis=1)
-                t = linalg.solve(c_[P1,-Q1],Q0-P0)
+                Q0 = np.c_[proj_space_coord[I]][:,i]
+                P0 = np.c_[proj_space_coord[J]][:,j]
+                Q1 = np.diff(np.c_[proj_space_coord[I]][:,i:i+2],axis=1)
+                P1 = np.diff(np.c_[proj_space_coord[J]][:,j:j+2],axis=1)
+                t = np.linalg.solve(np.c_[P1,-Q1],Q0-P0)
                 #print i,j,t
-                if all((t>0)&(t<1)) and abs(Q1[0])< 10 and abs(P1[0])< 10 :
-                    i = i+t[1]+sum([len(a[0]) for a in proj_space_coord[:I]])
-                    j = j+t[0]+sum([len(a[0]) for a in proj_space_coord[:J]])
+                if np.all((t>0)&(t<1)) and abs(Q1[0])< 10 and abs(P1[0])< 10 :
+                    i = i+t[1]+np.sum([len(a[0]) for a in proj_space_coord[:I]])
+                    j = j+t[0]+np.sum([len(a[0]) for a in proj_space_coord[:J]])
                     stop=True
                     pairs[name] = (i,j)
                     break
 
     
-    data = load('./tmp/data_%d.npz'%tokamak.shot)
+    data = np.load('./tmp/data_%d.npz'%tokamak.shot)
     tvec = data['tvec']
     dets_dict = data['dets_dict']
     data = data['data']
@@ -449,17 +449,17 @@ def plot_projection_space(tokamak,xchords, ychords, virt_chord,nl):
     from scipy.interpolate import interp1d
 
     figure()
-    proj_space = hstack(proj_space_coord)
+    proj_space = np.hstack(proj_space_coord)
     ticks = []
     c= 'r','g','b','k','y','m','0.5'
     for i,(name,(I,J)) in enumerate(pairs.items()):
-        x = arange(proj_space.shape[1])
-        if floor(I) in dets and ceil(I) in dets and floor(J) in dets and ceil(J) in dets:
-            y1 = exp(interp1d(x, log(data),axis=1,kind='linear',assume_sorted=True)(I))
-            y2 = exp(interp1d(x, log(data),axis=1,kind='linear',assume_sorted=True)(J))
-            errorbar(len(ticks),nanmean(y2/y1), std(y2/y1),c='r',fmt='x')
+        x = np.arange(proj_space.shape[1])
+        if np.floor(I) in dets and np.ceil(I) in dets and np.floor(J) in dets and np.ceil(J) in dets:
+            y1 = np.exp(interp1d(x, np.log(data),axis=1,kind='linear',assume_sorted=True)(I))
+            y2 = np.exp(interp1d(x, np.log(data),axis=1,kind='linear',assume_sorted=True)(J))
+            errorbar(len(ticks),np.nanmean(y2/y1), np.std(y2/y1),c='r',fmt='x')
             ticks.append(name)
-    xticks( arange(len(ticks)),ticks, rotation='horizontal')
+    xticks( np.arange(len(ticks)),ticks, rotation='horizontal')
     xlim(-.5,len(ticks)-.5)
     ylim(.8,1.2)
     axhline(1)
@@ -494,13 +494,13 @@ def generate_matrix(xchords, ychords, distance,virt_chord,nl,nx, ny,  tokamak):
     
     #===================== use custom profile of chords =======================
 
-    fk = ones(virt_chord)/virt_chord
+    fk = np.ones(virt_chord)/virt_chord
         
     if virt_chord > 1:
         if os.path.isfile(geometry_path+'virt_chord_profile.txt'):
-            fk =  loadtxt(geometry_path+'virt_chord_profile.txt').T
-            fk  = interp(linspace(0,1,virt_chord), linspace(0,1,len(fk)),fk)
-            fk = fk/sum(fk)
+            fk =  np.loadtxt(geometry_path+'virt_chord_profile.txt').T
+            fk  = np.interp(np.linspace(0,1,virt_chord), np.linspace(0,1,len(fk)),fk)
+            fk = fk/np.sum(fk)
         else:
             debug( 'virt_chord_profile not availible')
     
@@ -508,7 +508,7 @@ def generate_matrix(xchords, ychords, distance,virt_chord,nl,nx, ny,  tokamak):
         Tmat,Xchords,Ychords = gen_cython(xchords, ychords, distance,nx, ny, tokamak,fk)
     except:
         raise
-        if any(distance != 0) or alpha != 0: #distance of chords from the main axes, usually = 0
+        if np.any(distance != 0) or alpha != 0: #distance of chords from the main axes, usually = 0
             print("Check your Cython/Pyrex/Numpy instalation!!")
             raise NameError("Nonlinear chord are not supported in non-Cython version")
         
@@ -619,14 +619,14 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
 
     # a) pole X a Y musí obsahovat vsechny hodnoty od xmin do xmax a ymin do ymax
 
-    nl = size(xchord,1)
+    nl = np.size(xchord,1)
    
     print("generuji chordy")
     ## ============== chordy ==============================
-    a = zeros(nl)
-    b = zeros(nl)
-    c = zeros(nl)
-    d = zeros(nl)
+    a = np.zeros(nl)
+    b = np.zeros(nl)
+    c = np.zeros(nl)
+    d = np.zeros(nl)
     for k in range(nl):
         a[k] = (xchord[1,k]-xchord[0,k]+1e-8)/(zchord[1,k]-zchord[0,k]+1e-8)
         b[k] = (ychord[1,k]-ychord[0,k]+1e-8)/(zchord[1,k]-zchord[0,k]+1e-8)
@@ -637,9 +637,9 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
     print("matice chord")
     Nsteps = 500
     
-    X = zeros((Nsteps, nl), dtype=single)
-    Y = zeros((Nsteps, nl), dtype=single)
-    Z = zeros((Nsteps, nl), dtype=single)
+    X = np.zeros((Nsteps, nl), dtype=np.single)
+    Y = np.zeros((Nsteps, nl), dtype=np.single)
+    Z = np.zeros((Nsteps, nl), dtype=np.single)
 
     # perform interpolation to a better coordinatet
     for k in range(nl):
@@ -647,25 +647,25 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
         #Y[:,k] = a[k]*X[:,k] + c[k]
         #Z[:,k] = b[k]*X[:,k] + d[k]
         if tokamak.cam_coord[2] < 0:
-            Z[:,k] = linspace(-xmax, xmax, Nsteps)
+            Z[:,k] = np.linspace(-xmax, xmax, Nsteps)
         else:
-            Z[:,k] = linspace(xmax, -xmax, Nsteps)
+            Z[:,k] = np.linspace(xmax, -xmax, Nsteps)
         X[:,k] = a[k]*Z[:,k] + c[k]
         Y[:,k] = b[k]*Z[:,k] + d[k]
 
     del a,b,c,d
     
-    R = sqrt(X**2 + Z**2)
+    R = np.sqrt(X**2 + Z**2)
     
 
     ## ==============pixely ==========================================
     zoom = tokamak.pixel_zoom
     tokamak.nl /= zoom**2
     npix = tokamak.nx*tokamak.ny*zoom**2
-    tok_ny = double(tokamak.ny*zoom)
-    tok_nx = double(tokamak.nx*zoom)
-    xgrid = linspace(xmin, xmax, tok_nx)
-    ygrid = linspace(ymin, ymax, tok_ny)
+    tok_ny = np.double(tokamak.ny*zoom)
+    tok_nx = np.double(tokamak.nx*zoom)
+    xgrid = np.linspace(xmin, xmax, tok_nx)
+    ygrid = np.linspace(ymin, ymax, tok_ny)
     dx = xgrid[1] - xgrid[0]
     dy = ygrid[1] - ygrid[0]
     
@@ -678,15 +678,15 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
 
     from .annulus import get_bd_mat
     BdMat_tmp = get_bd_mat(tokamak, nx_tmp , ny_tmp,time=(tokamak.tmin+tokamak.tmax)/2) 
-    BdMat_tmp = reshape(BdMat_tmp, (ny_tmp, nx_tmp), order='F')
+    BdMat_tmp = np.reshape(BdMat_tmp, (ny_tmp, nx_tmp), order='F')
     
 
     def get_inside(X,Y,Z,k):
         #r = sqrt(X[:,k]**2 + Z[:,k]**2)
-        r = hypot(X[:,k],Z[:,k] )
+        r = np.hypot(X[:,k],Z[:,k] )
         y = Y[:,k]
-        i = int_((r - xmin)/(xmax-xmin)*nx_tmp)
-        j = int_((y - ymin)/(ymax-ymin)*ny_tmp)
+        i = np.int_((r - xmin)/(xmax-xmin)*nx_tmp)
+        j = np.int_((y - ymin)/(ymax-ymin)*ny_tmp)
         #print i,j
         i[ (i < 0) | (i >= nx_tmp) ] = 0
         j[ (j < 0) | (j >= ny_tmp) ] = 0
@@ -696,24 +696,24 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
           
         inside = medfilt(inside, 5)  # remove some problems with multiple bound. crossing
            
-        inside = where(inside)[0]
+        inside = np.where(inside)[0]
         if len(inside) == 1:  # avoid problems with 1px crossbourders
-            inside = concatenate([inside, [inside[-1] + 1]])
+            inside = np.concatenate([inside, [inside[-1] + 1]])
                 
         wrong = (i == 0) | (j == 0)
 
 
-        inside = in1d( arange(len(X)), inside) & ~wrong
+        inside = np.isin(np.arange(len(X)), inside) & ~wrong
 
-        return where(inside)[0]
+        return np.where(inside)[0]
                 
     def clean_chords(X,Y,Z):
         """ detect chords in chamber and remove parts that shouldn't be visible
         """
-        nl = size(X,1)
-        Xch = ones((2,nl))*nan
-        Ych = ones((2,nl))*nan
-        Zch = ones((2,nl))*nan
+        nl = np.size(X,1)
+        Xch = np.ones((2,nl))*np.nan
+        Ych = np.ones((2,nl))*np.nan
+        Zch = np.ones((2,nl))*np.nan
         
         for k in range(nl):
             inside = get_inside(X,Y,Z,k)   
@@ -722,8 +722,8 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
             #plot(sqrt(X[:,k]**2+Z[:,k]**2), Y[:,k], ':')
             #plot(sqrt(X[inside,k]**2+Z[inside,k]**2), Y[inside,k], 'k')
                 
-            end = where(abs(diff( inside )) > 1)[0]
-            end  = setdiff1d( end, [0])
+            end = np.where(abs(np.diff( inside )) > 1)[0]
+            end  = np.setdiff1d( end, [0])
 
             if len(end) > 0:
                 inside = inside[:end[0]]
@@ -768,10 +768,10 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
     diao=eye(npix,npix, 1,format='csc')# reference upper nearest neighbors
     diau=eye(npix,npix, -1,format='csc') # reference lower nearest neighbors
 
-    diag_mat = array([diam, diar, dial, diao, diau])/5
+    diag_mat = np.array([diam, diar, dial, diao, diau])/5
 
-    bd_vec = (get_bd_mat(tokamak,time=(tokamak.tmin+tokamak.tmax)/2) != 0) * sum(diag_mat,0)**2
-    bd_vec = reshape(bd_vec, (tok_ny, tok_nx), order='F')
+    bd_vec = (get_bd_mat(tokamak,time=(tokamak.tmin+tokamak.tmax)/2) != 0) * np.sum(diag_mat,0)**2
+    bd_vec = np.reshape(bd_vec, (tok_ny, tok_nx), order='F')
     
     bd = tokamak.get_boundary()
     #imshow(bd_vec,  interpolation="nearest", extent=tokamak.area_axis); colorbar()
@@ -800,12 +800,12 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
         N = 50
 
 
-        bd_vec = (1-BdMat)  * sum(diag_mat,0)
-        bd_vec = reshape(bd_vec, (tok_ny, tok_nx), order='F')
+        bd_vec = (1-BdMat)  * np.sum(diag_mat,0)
+        bd_vec = np.reshape(bd_vec, (tok_ny, tok_nx), order='F')
 
-        Xpix = zeros((N, npix))
-        Ypix = zeros((N, npix))
-        Zpix = zeros((N, npix))
+        Xpix = np.zeros((N, npix))
+        Ypix = np.zeros((N, npix))
+        Zpix = np.zeros((N, npix))
 
         print("generuji pixely")
 
@@ -817,22 +817,22 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
             r0 = xgrid[k//tok_ny]
             y0 = ygrid[k%tok_ny]
             center = (xmax+xmin)/2
-            phi = linspace(0,2*pi, N)  #linspace(pi/2,pi+pi/2, N)+pi
+            phi = np.linspace(0,2*np.pi, N)  #linspace(pi/2,pi+pi/2, N)+pi
             Q = 5
-            alpha =   linspace(0,2*pi/Q, N)
+            alpha =   np.linspace(0,2*np.pi/Q, N)
 
             #Xpix[:,k] = r0*cos(phi)
             #Ypix[:,k] = y0
             #Zpix[:,k] = r0*sin(phi)
 
-            R = sqrt( (r0 - center)**2 + y0**2 )
-            alpha_0 = arctan2((r0 - center), y0)
-            r = R * sin(alpha+alpha_0)+center 
-            y = R * cos(alpha+alpha_0) 
+            R = np.sqrt( (r0 - center)**2 + y0**2 )
+            alpha_0 = np.arctan2((r0 - center), y0)
+            r = R * np.sin(alpha+alpha_0)+center 
+            y = R * np.cos(alpha+alpha_0) 
                     
-            Xpix[:,k] = r * cos(phi)
+            Xpix[:,k] = r * np.cos(phi)
             Ypix[:,k] =  y 
-            Zpix[:,k] = r * sin(phi)
+            Zpix[:,k] = r * np.sin(phi)
 
         #show()
         
@@ -840,7 +840,7 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
 
 
     BdMat =  get_bd_mat(tokamak,time=(tokamak.tmin+tokamak.tmax)/2)
-    BdMat = reshape(BdMat, (-1), order='F')
+    BdMat = np.reshape(BdMat, (-1), order='F')
 
     ############################################################x
     Xpix, Ypix, Zpix = get_pix(BdMat)
@@ -886,7 +886,7 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
     
     
 
-    Rch = sqrt(Xch**2 + Zch**2)
+    Rch = np.sqrt(Xch**2 + Zch**2)
 
     if not tokamak.allow_reflections :
         Tmat = geom_mat_gen(Xch, Ych, Zch, tokamak,tokamak.nx*zoom,tokamak.ny*zoom, nl, tokamak.geometry_axis )
@@ -900,12 +900,12 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
      
     # ============ compass ============================
      
-    D = sqrt((Xch[-1,:]-Xch[0,:])**2 +(Ych[-1,:]-Ych[0,:])**2 + (Zch[-1,:]-Zch[0,:])**2)
+    D = np.sqrt((Xch[-1,:]-Xch[0,:])**2 +(Ych[-1,:]-Ych[0,:])**2 + (Zch[-1,:]-Zch[0,:])**2)
     
 
 
     def norm(a):
-        return sqrt(sum(a**2))
+        return np.sqrt(np.sum(a**2))
 
     
     
@@ -914,7 +914,7 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
        
     
     bd = tokamak.get_boundary(500, boundary_simple )
-    BdMat = get_bd_mat(tokamak, boundary = boundary_simple) * sum(diag_mat,0) != 0
+    BdMat = get_bd_mat(tokamak, boundary = boundary_simple) * np.sum(diag_mat,0) != 0
     
 
     
@@ -928,12 +928,12 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
 
     def get_diff_model(r,y):
         d = (r - bd[:,0])**2 + (y - bd[:,1])**2 
-        s = sort(argsort(d)[:2])
+        s = np.sort(np.argsort(d)[:2])
 
         [r,y] = bd[s[0],:]  # smoother position  
         
-        Nvec  = array( [bd[s[1],0] -bd[s[0],0] , bd[s[1],1]-bd[s[0],1] ])
-        Nvec = copy(Nvec)
+        Nvec  = np.array( [bd[s[1],0] -bd[s[0],0] , bd[s[1],1]-bd[s[0],1] ])
+        Nvec = np.copy(Nvec)
         Nvec[0] *= -1
         Nvec[[0,1]] = Nvec[[1,0]]
         Nvec /= norm(Nvec)
@@ -942,20 +942,20 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
         y = ((y - ymin)/(ymax-ymin)*tok_ny)
         pos_x = (X - x)/tok_nx
         pos_y = (Y - y)/tok_ny 
-        D = 1./ sqrt( pos_x ** 2 + pos_y **2 )
-        D[isinf(D)] = amax(D[~isinf(D)])
+        D = 1./ np.sqrt( pos_x ** 2 + pos_y **2 )
+        D[np.isinf(D)] = np.amax(D[~np.isinf(D)])
         #D = blur_image(D, 1)
         
-        pos = hstack([reshape(pos_x*dx, (-1,1)), reshape(pos_y*dy, (-1,1))])
+        pos = np.hstack([np.reshape(pos_x*dx, (-1,1)), np.reshape(pos_y*dy, (-1,1))])
         #pos = pos / repmat(sqrt(sum(pos**2,1)), 2,1).T
-        pos = pos/sqrt(sum(pos**2,1))[:,None]
-        proj_angle = abs(dot(pos, Nvec))
-        proj_angle = reshape(proj_angle, (tok_nx, tok_ny))
+        pos = pos/np.sqrt(np.sum(pos**2,1))[:,None]
+        proj_angle = abs(np.dot(pos, Nvec))
+        proj_angle = np.reshape(proj_angle, (tok_nx, tok_ny))
         D = D*proj_angle
         
         #D[D>0.5]  = 0.5
         
-        D[reshape(BdMat, (tok_ny, tok_ny), order="F")] = 0
+        D[np.reshape(BdMat, (tok_ny, tok_ny), order="F")] = 0
         
         #imshow(D, extent=tokamak.area_axis, interpolation = "nearest" )
         #colorbar()
@@ -965,45 +965,45 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
         #D[D < 0 ] = 0
         return D
 
-    X,Y = meshgrid(arange(tok_nx), arange(tok_ny) )
+    X,Y = np.meshgrid(np.arange(tok_nx), np.arange(tok_ny) )
 
     try:
-        diff_model_full = load( tokamak.geometry_path + "diff_model_full.npy")
+        diff_model_full = np.load( tokamak.geometry_path + "diff_model_full.npy")
     except:
         print("diff model")
-        diff_model_full = zeros((npix, nl), dtype="single")
+        diff_model_full = np.zeros((npix, nl), dtype="single")
 
         for i in range(nl):
             #print i
-            r = sqrt(Xch[1,i]**2 + Zch[1,i]**2)
+            r = np.sqrt(Xch[1,i]**2 + Zch[1,i]**2)
             y = Ych[1,i]
             model = get_diff_model(r,y)
-            diff_model_full[:,i] = reshape( model , (-1), order="F")
+            diff_model_full[:,i] = np.reshape( model , (-1), order="F")
         diff_model_full[diff_model_full < 0] = 0
-        limit = amax(diff_model_full)/5
+        limit = np.amax(diff_model_full)/5
         diff_model_full[ diff_model_full >  limit ] = limit  # remove too strong points 
-        save(tokamak.geometry_path +  'diff_model_full.npy', diff_model_full)
+        np.save(tokamak.geometry_path +  'diff_model_full.npy', diff_model_full)
     
-    model = sum(diff_model_full, 0)
+    model = np.sum(diff_model_full, 0)
 
     
     
 
     print("generate")
-    diff_model_G = zeros((npix, npix), dtype="single")
+    diff_model_G = np.zeros((npix, npix), dtype="single")
 
 
-    for i in arange(tok_nx):
-        for j in arange(tok_ny):
+    for i in np.arange(tok_nx):
+        for j in np.arange(tok_ny):
 
             model = get_diff_model(tokamak.xgrid[i],tokamak.ygrid[j])
         
-            model[isnan(model)] = 0
+            model[np.isnan(model)] = 0
 
-            diff_model_G[:,i*tok_nx+j] = reshape( model , (-1), order="F")
+            diff_model_G[:,i*tok_nx+j] = np.reshape( model , (-1), order="F")
 
     print("plotting")
-    max_g = nanmax(diff_model_G)
+    max_g = np.nanmax(diff_model_G)
     diff_model_G[ diff_model_G > max_g/20 ] = max_g/20
     
 
@@ -1028,9 +1028,9 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
         
     try:
         xxx
-        Tmat_reflections = load(tokamak.geometry_path + 'Tmat_reflections.npy').item()
-        projections  = load(tokamak.geometry_path + 'projections.npy')
-        Tmat_diffusion  = load(tokamak.geometry_path + 'Tmat_diffusion.npy')
+        Tmat_reflections = np.load(tokamak.geometry_path + 'Tmat_reflections.npy').item()
+        projections  = np.load(tokamak.geometry_path + 'projections.npy')
+        Tmat_diffusion  = np.load(tokamak.geometry_path + 'Tmat_diffusion.npy')
 
     except:
         #raise
@@ -1041,12 +1041,12 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
         #print shape(Tmat_reflections), Tmat_reflections,  (npix, nl)
         #exit()
         
-        Tmat_diffusion = zeros((npix, nl), dtype="single")
+        Tmat_diffusion = np.zeros((npix, nl), dtype="single")
 
         
         
-        projections = zeros(nl)
-        norm_angle = zeros((3, nl))
+        projections = np.zeros(nl)
+        norm_angle = np.zeros((3, nl))
 
         ##########################
         vchords = 20
@@ -1061,46 +1061,46 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
         
         #x = linspace(1./vchords,1, vchords)
         #[X,Y] = meshgrid(x,x)
-        X = random.rand(vchords, vchords)
-        Y = random.rand(vchords, vchords)
-        theta0 = arccos(1-b*X)
-        phi0 = 2*pi*Y
+        X = np.random.rand(vchords, vchords)
+        Y = np.random.rand(vchords, vchords)
+        theta0 = np.arccos(1-b*X)
+        phi0 = 2*np.pi*Y
         
         #from mpl_toolkits.mplot3d import Axes3D
         #fig = figure()
         #ax = fig.gca(projection='3d')
 
-        vec = zeros((vchords**2, 3))
-        vec[:,2] = sin(ravel(phi0))*sin(ravel(theta0))
-        vec[:,1] = cos(ravel(phi0))*sin(ravel(theta0))
-        vec[:,0] = cos(ravel(theta0))
+        vec = np.zeros((vchords**2, 3))
+        vec[:,2] = np.sin(np.ravel(phi0))*np.sin(np.ravel(theta0))
+        vec[:,1] = np.cos(np.ravel(phi0))*np.sin(np.ravel(theta0))
+        vec[:,0] = np.cos(np.ravel(theta0))
 
         
         #ax.plot(vec[:,0],vec[:,1], vec[:,2] , 'bo')
         #show()
         
         
-        chords_tmp = zeros((2, nl, 3), dtype="single")
+        chords_tmp = np.zeros((2, nl, 3), dtype="single")
         chords_tmp[:,:,0] = Xch
         chords_tmp[:,:,1] = Ych
         chords_tmp[:,:,2] = Zch
 
         for i in range(nl):
             #if mod(i, 121): continue
-            chords = zeros(( Nsteps,vchords**2, 3 ), dtype="single") + nan
-            weights_chords = zeros((vchords**2), dtype="single") + nan
+            chords = np.zeros(( Nsteps,vchords**2, 3 ), dtype="single") + np.nan
+            weights_chords = np.zeros((vchords**2), dtype="single") + np.nan
 
             start = chords_tmp[0,i,:]
             end = chords_tmp[1,i,:]
             Vvec = end - start
             Vvec /= norm(Vvec)
             
-            R = sqrt(end[0]**2 + end[2]**2)
+            R = np.sqrt(end[0]**2 + end[2]**2)
             Y = end[1]
             d = (R - bd[:,0])**2 + (Y - bd[:,1])**2 
-            phi = arctan2(end[0] , end[2])
+            phi = np.arctan2(end[0] , end[2])
             #print phi
-            s = sort(argsort(d)[:2])
+            s = np.sort(np.argsort(d)[:2])
             
             #plot(R,  chords_all[j][1,i,1], 'o')
             #plot( bd[s,0],  bd[s,1], '.')
@@ -1112,7 +1112,7 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
             #tok_nx
 
         
-            Nvec = array( [bd[s[1],0] -bd[s[0],0] , bd[s[1],1]-bd[s[0],1] ])
+            Nvec = np.array( [bd[s[1],0] -bd[s[0],0] , bd[s[1],1]-bd[s[0],1] ])
             Nvec[0] *= -1
             Nvec[[0,1]] = Nvec[[1,0]]
             #print Nvec[0]
@@ -1124,12 +1124,12 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
 
 
 
-            Nvec = array([sin(phi)*Nvec[0], Nvec[1], cos(phi)*Nvec[0]])
+            Nvec = np.array([np.sin(phi)*Nvec[0], Nvec[1], np.cos(phi)*Nvec[0]])
             Nvec /= norm(Nvec)
             
             #Nvec = Nvec*abs(1+0.05*random.randn(3))
             
-            end = array([sin(phi)*bd[s,0], bd[s,1],  cos(phi)*bd[s,0] ])
+            end = np.array([np.sin(phi)*bd[s,0], bd[s,1],  np.cos(phi)*bd[s,0] ])
             end = end[:,0]
             #end = array()
 
@@ -1168,16 +1168,16 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
             #print angle[i]
             #print end
             
-            projection  =   dot(Vvec, Nvec) /  ( norm(Vvec)*norm(Nvec) ) 
+            projection  =   np.dot(Vvec, Nvec) /  ( norm(Vvec)*norm(Nvec) ) 
             projections[i] = abs(projection)**alpha
             
             #print "sum(Vvec*Nvec)", sum(Vvec*Nvec)
-            Rvec = ( Vvec - 2*(sum(Vvec*Nvec)) *Nvec ) *2
+            Rvec = ( Vvec - 2*(np.sum(Vvec*Nvec)) *Nvec ) *2
             Rvec /= norm(Rvec)
             #r = sqrt( sum(Rvec **2))
             r  = 1
-            phi = arctan2( Rvec[0], Rvec[1] )
-            theta = arctan2( Rvec[2], sqrt(Rvec[0]**2 + Rvec[1]**2) )
+            phi = np.arctan2( Rvec[0], Rvec[1] )
+            theta = np.arctan2( Rvec[2], np.sqrt(Rvec[0]**2 + Rvec[1]**2) )
 
 
             #ax.plot([end[0],end[0]+Rvec[0]],[end[1],end[1]+Rvec[1]],[end[2],end[2]+Rvec[2]], 'g-o')
@@ -1186,7 +1186,7 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
             #show()
             #phi0[0,0] = 0
             #theta0[0,0] = 0
-            vec[0,:] = zeros(3)
+            vec[0,:] = np.zeros(3)
             vec[0,0] = 1
 
             
@@ -1195,12 +1195,12 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
             #rot[1,:] = [ sin(theta)*cos(phi), r*cos(theta)*cos(phi), r*sin(theta)*sin(phi)]
             #rot[2,:] = [ cos(theta), -r*sin(theta), 0]
 
-            rot = zeros((3,3))
-            rot[0,:] = [ cos(theta)*sin(phi), r*sin(theta)*sin(phi), -r*cos(theta)*cos(phi)]
-            rot[1,:] = [ cos(theta)*cos(phi), r*sin(theta)*cos(phi), r*cos(theta)*sin(phi)]
-            rot[2,:] = [ sin(theta), -r*cos(theta), 0]
+            rot = np.zeros((3,3))
+            rot[0,:] = [ np.cos(theta)*np.sin(phi), r*np.sin(theta)*np.sin(phi), -r*np.cos(theta)*np.cos(phi)]
+            rot[1,:] = [ np.cos(theta)*np.cos(phi), r*np.sin(theta)*np.cos(phi), r*np.cos(theta)*np.sin(phi)]
+            rot[2,:] = [ np.sin(theta), -r*np.cos(theta), 0]
 
-            Lvec =  dot(rot, vec.T * r).T
+            Lvec =  np.dot(rot, vec.T * r).T
             
             #Lvec =  repmat(copy(Rvec), vchords**2, 1)
 
@@ -1215,36 +1215,36 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
             #show()
                 
             for k in range(vchords**2):
-                if dot(Lvec[k,:],Nvec) < 0:
+                if np.dot(Lvec[k,:],Nvec) < 0:
                     continue
                 
-                tmp_chord = array([end,  end+Lvec[k,:]*(xmax - xmin)*2 ]) # (Vvec - Vvec*parvec)/20 ])
+                tmp_chord = np.array([end,  end+Lvec[k,:]*(xmax - xmin)*2 ]) # (Vvec - Vvec*parvec)/20 ])
                 
-                chords[:, k, 0] = interp1d([0,1], tmp_chord[:,0],assume_sorted=True )(linspace(0,1,Nsteps)).T 
-                chords[:, k, 1] = interp1d([0,1], tmp_chord[:,1],assume_sorted=True )(linspace(0,1,Nsteps)).T 
-                chords[:, k, 2] = interp1d([0,1], tmp_chord[:,2],assume_sorted=True )(linspace(0,1,Nsteps)).T 
-                weights_chords[k] = abs(dot(  Lvec[k,:] , Rvec ))**alpha #  / max( dot(Lvec[k,:],Nvec), abs(dot(Vvec,Nvec)), 0.5)
+                chords[:, k, 0] = interp1d([0,1], tmp_chord[:,0],assume_sorted=True )(np.linspace(0,1,Nsteps)).T 
+                chords[:, k, 1] = interp1d([0,1], tmp_chord[:,1],assume_sorted=True )(np.linspace(0,1,Nsteps)).T 
+                chords[:, k, 2] = interp1d([0,1], tmp_chord[:,2],assume_sorted=True )(np.linspace(0,1,Nsteps)).T 
+                weights_chords[k] = abs(np.dot(  Lvec[k,:] , Rvec ))**alpha #  / max( dot(Lvec[k,:],Nvec), abs(dot(Vvec,Nvec)), 0.5)
 
 
 
             out = clean_chords(chords[:,:,0],chords[:,:,1],chords[:,:,2])
-            chords = zeros((2, vchords**2, 3))
+            chords = np.zeros((2, vchords**2, 3))
             for k in range(3):
                 chords[:,:,k] = out[k]
                 
-            chords_0 = zeros((Nsteps, vchords**2,3))
+            chords_0 = np.zeros((Nsteps, vchords**2,3))
             
 
 
             # !!  SIMULATE REFLECTED CHORDS AND REPLACE ILUMINATION BY DIFF. LIGHT 
             for k in range(vchords**2):
-                chords_0[:, k, 0] = interp1d([0,1], chords[:,k,0] )(linspace(0,1,Nsteps)).T 
-                chords_0[:, k, 1] = interp1d([0,1], chords[:,k,1] )(linspace(0,1,Nsteps)).T 
-                chords_0[:, k, 2] = interp1d([0,1], chords[:,k,2] )(linspace(0,1,Nsteps)).T 
+                chords_0[:, k, 0] = interp1d([0,1], chords[:,k,0] )(np.linspace(0,1,Nsteps)).T 
+                chords_0[:, k, 1] = interp1d([0,1], chords[:,k,1] )(np.linspace(0,1,Nsteps)).T 
+                chords_0[:, k, 2] = interp1d([0,1], chords[:,k,2] )(np.linspace(0,1,Nsteps)).T 
 
-                r = sqrt( chords[1,k,0]**2 + chords[1,k,2]**2 )
+                r = np.sqrt( chords[1,k,0]**2 + chords[1,k,2]**2 )
                 y = chords[1,k,1]
-                if isnan(r):
+                if np.isnan(r):
                     #print "nan r", r
                     continue
                 r = int((r-xmin)/(xmax-xmin)*tok_nx)
@@ -1306,14 +1306,14 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
             print("i%d/%d"%(i, nl))
 
         Tmat_reflections = sparse.csc_matrix(Tmat_reflections, dtype="single")
-        save(tokamak.geometry_path + 'Tmat_reflections.npy', Tmat_reflections)
+        np.save(tokamak.geometry_path + 'Tmat_reflections.npy', Tmat_reflections)
         
 
-        save(tokamak.geometry_path + 'Tmat_diffusion.npy', Tmat_diffusion)
+        np.save(tokamak.geometry_path + 'Tmat_diffusion.npy', Tmat_diffusion)
 
 
         
-        save(tokamak.geometry_path + 'projections.npy', projections)
+        np.save(tokamak.geometry_path + 'projections.npy', projections)
         
         
         
@@ -1400,14 +1400,14 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
     
         
     #print shape(Tmat_reflections), shape(Tmat_reflections.sum(0)), tokamak.camera_res
-    T = array(reshape(Tmat_reflections.sum(0), tokamak.camera_res))
+    T = np.array(np.reshape(Tmat_reflections.sum(0), tokamak.camera_res))
     
     #imshow(T, interpolation="nearest")
     #show()
     
     #print projections
     #print shape(projections), tokamak.camera_res
-    T = array(reshape(projections, tokamak.camera_res))
+    T = np.array(np.reshape(projections, tokamak.camera_res))
     
     #imshow(T, interpolation="nearest")
     #show()
@@ -1646,10 +1646,10 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
     
     N = 100
 
-    Xch =  interp1d([0,1], Xch.T)(linspace(0,1,N)).T
-    Ych =  interp1d([0,1], Ych.T)(linspace(0,1,N)).T
-    Zch =  interp1d([0,1], Zch.T)(linspace(0,1,N)).T
-    Rch = hypot(Xch, Zch)
+    Xch =  interp1d([0,1], Xch.T)(np.linspace(0,1,N)).T
+    Ych =  interp1d([0,1], Ych.T)(np.linspace(0,1,N)).T
+    Zch =  interp1d([0,1], Zch.T)(np.linspace(0,1,N)).T
+    Rch = np.hypot(Xch, Zch)
     
     
     #Tmat = Tmat.T
@@ -1814,10 +1814,10 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
     name = 'chords_' + str(nx)+str(npix) + str(zoom)+".npy"
     try:
         xxx
-        Tmat_1 = load( name ).item()
+        Tmat_1 = np.load( name ).item()
     except:
         Tmat_1 = geom_mat_gen_3D(Xch,Ych,Zch, tokamak,nx,ny,nz,nl, coord)
-        save(name, Tmat_1)
+        np.save(name, Tmat_1)
 
     if cam_zoom > 1:
         from .orthogonal_trans import zoom_matrix
@@ -1830,8 +1830,8 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
     gc.collect()
 
     
-    T = array( Tmat_1.sum(axis = 0) )
-    T = reshape(T, (tokamak.camera_res[1], tokamak.camera_res[0]) , order="F")
+    T = np.array( Tmat_1.sum(axis = 0) )
+    T = np.reshape(T, (tokamak.camera_res[1], tokamak.camera_res[0]) , order="F")
 
    
     
@@ -1841,10 +1841,10 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
     name = 'pixels_' + str(nx)+str(npix) + str(zoom)+".npy"
     try:
         xxx
-        Tmat_2 = load( name).item()
+        Tmat_2 = np.load( name).item()
     except:
         Tmat_2 = geom_mat_gen_3D(Xpix,Ypix,Zpix, tokamak,nx,ny,nz, npix, coord)
-        save(name, Tmat_2)
+        np.save(name, Tmat_2)
         
     if zoom > 1:
         from .orthogonal_trans import zoom_matrix
@@ -1856,9 +1856,9 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
     ######save('tmat', Tmat_2)
     ######exit()
     ######print "plotting"
-    T = array(Tmat_2.sum(axis = 0))
+    T = np.array(Tmat_2.sum(axis = 0))
     #print("=========================")
-    T = reshape(T, (tok_ny, tok_nx), order="F")
+    T = np.reshape(T, (tok_ny, tok_nx), order="F")
     #print((shape(T), sum(T)))
     #print(T)
     #print((where(T> 0)))
@@ -1914,7 +1914,7 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
     #print((shape(Tmat_1), shape(Tmat_2)))
     
     Tmat = Tmat_1.T * Tmat_2
-    Tmat = Tmat.astype(float64)
+    Tmat = Tmat.astype(np.float64)
    
     #print((Tmat_1.sum().sum()))
     #print((Tmat_2.sum().sum()))
@@ -1929,7 +1929,7 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
     #print shape(Tmat)
 
     #print("plotting")
-    n = size(Tmat,0)
+    n = np.size(Tmat,0)
     #pcolor( reshape( sum( Tmat.toarray(), 1) , (tokamak.camera_res[0],tokamak.camera_res[1]) ))
     ##(tokamak.camera_res[0],tokamak.camera_res[1])))
     #colorbar()
@@ -1942,7 +1942,7 @@ def generate_3D_matrix(xchord, ychord, zchord, tokamak):
     #show()
 
     #print shape(Tmat), (tokamak.ny, tokamak.nx), shape( sum( Tmat.toarray(), 0) )
-    n = size(Tmat,1)
+    n = np.size(Tmat,1)
     
     #pcolor( reshape( sum( Tmat.toarray(), 0) , (tokamak.ny, tokamak.nx), order="F"))
     #colorbar()
@@ -1986,7 +1986,7 @@ def smooth_3D_mat(mat, nx, ny, nz):   #(mat, ker, nx, ny, nz):
     #ny = 100
     #nz = 100
     ker = 0.5
-    N = size(mat,0)
+    N = np.size(mat,0)
     from time import sleep
 
     mat0 = mat
@@ -1995,26 +1995,26 @@ def smooth_3D_mat(mat, nx, ny, nz):   #(mat, ker, nx, ny, nz):
     print("done")
     
     #print shape(mat)
-    iker = ceil(2*ker)
-    ind = arange(-iker,iker+1, dtype=int)
+    iker = np.ceil(2*ker)
+    ind = np.arange(-iker,iker+1, dtype=int)
 
-    [X,Y,Z] = mgrid[-iker:(iker+1), -iker:(iker+1), -iker:(iker+1)]
+    [X,Y,Z] = np.mgrid[-iker:(iker+1), -iker:(iker+1), -iker:(iker+1)]
 
     #[X,Y] = meshgrid(ind,ind)
-    kernel = exp( - (X**2 + Y**2 + Z**2) / ker**2 )
-    kernel /= sum(kernel)
-    kernel = ravel(kernel)
+    kernel = np.exp( - (X**2 + Y**2 + Z**2) / ker**2 )
+    kernel /= np.sum(kernel)
+    kernel = np.ravel(kernel)
 
     #print kernel
     
-    ind = ravel(X + Y * nz + Z * ny * nz)
+    ind = np.ravel(X + Y * nz + Z * ny * nz)
 
     print(("spdiag", len(ind)))
 
     #exit()
 
-    m = dot(ones( (N, len(ind)) ) ,   diag(kernel)  )
-    m = array(m).T
+    m = np.dot(np.ones( (N, len(ind)) ) ,   np.diag(kernel)  )
+    m = np.array(m).T
 
     sleep(2)
     
@@ -2049,13 +2049,13 @@ def load_geom_3D(geometry_path,cameras):
     
     for i,c in enumerate(cameras):
         try:
-            xchords.append(load(geometry_path+'detector_'+c+'_x.npy'))
-            ychords.append(load(geometry_path+'detector_'+c+'_y.npy'))
-            zchords.append(load(geometry_path+'detector_'+c+'_z.npy'))
+            xchords.append(np.load(geometry_path+'detector_'+c+'_x.npy'))
+            ychords.append(np.load(geometry_path+'detector_'+c+'_y.npy'))
+            zchords.append(np.load(geometry_path+'detector_'+c+'_z.npy'))
         except:
-            xchords.append(loadtxt(geometry_path+'detector_'+c+'_x.txt'))
-            ychords.append(loadtxt(geometry_path+'detector_'+c+'_y.txt'))
-            zchords.append(loadtxt(geometry_path+'detector_'+c+'_z.txt'))
+            xchords.append(np.loadtxt(geometry_path+'detector_'+c+'_x.txt'))
+            ychords.append(np.loadtxt(geometry_path+'detector_'+c+'_y.txt'))
+            zchords.append(np.loadtxt(geometry_path+'detector_'+c+'_z.txt'))
         
         
     #i = 0
@@ -2064,9 +2064,9 @@ def load_geom_3D(geometry_path,cameras):
         #print i
 
         #i += 1
-    xchords = squeeze(array(xchords)).T
-    ychords = squeeze(array(ychords)).T
-    zchords = squeeze(array(zchords)).T
+    xchords = np.squeeze(np.array(xchords)).T
+    ychords = np.squeeze(np.array(ychords)).T
+    zchords = np.squeeze(np.array(zchords)).T
     
 
 
@@ -2076,7 +2076,7 @@ def load_geom_3D(geometry_path,cameras):
         #raise NameError("Program couldn't import any geometric chords, check input path and format of geometric data\n"+geometry_path+'/detector_'+str(i)+'_z.txt')
     ##=====================  Generate the geometric matrix ======================
 
-    nl = size(xchords,1)
+    nl = np.size(xchords,1)
 
 
     return xchords, ychords, zchords, nl

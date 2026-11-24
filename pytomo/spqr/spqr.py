@@ -16,8 +16,8 @@ spqrlib = ctypes.cdll.LoadLibrary(os.path.dirname(__file__) + os.path.sep + "spq
 # void qr_solve(double const *A_data, double const *A_row, double const *A_col, size_t A_nnz, size_t A_m, size_t A_n, double const *b_data, double *x_data)
 spqrlib.qr_solve.argtypes = [
         ndpointer(dtype=np.float64, ndim=1, flags='C_CONTIGUOUS'), # A_data
-        ndpointer(dtype=np.int, ndim=1, flags='C_CONTIGUOUS'), # A_row
-        ndpointer(dtype=np.int, ndim=1, flags='C_CONTIGUOUS'), # A_col
+        ndpointer(dtype=np.int_, ndim=1, flags='C_CONTIGUOUS'), # A_row
+        ndpointer(dtype=np.int_, ndim=1, flags='C_CONTIGUOUS'), # A_col
         c_size_t,  # A_nnz
         c_size_t,  # A_m
         c_size_t,  # A_n
@@ -28,8 +28,8 @@ spqrlib.qr_solve.restype = None
 
 spqrlib.qr_solve_csr.argtypes = [
         ndpointer(dtype=np.float64, ndim=1, flags='C_CONTIGUOUS'), # A_data
-        ndpointer(dtype=np.int, ndim=1, flags='C_CONTIGUOUS'), # A_row
-        ndpointer(dtype=np.int, ndim=1, flags='C_CONTIGUOUS'), # A_col
+        ndpointer(dtype=np.int_, ndim=1, flags='C_CONTIGUOUS'), # A_row
+        ndpointer(dtype=np.int_, ndim=1, flags='C_CONTIGUOUS'), # A_col
         c_size_t,  # A_nnz
         c_size_t,  # A_m
         c_size_t,  # A_n
@@ -41,8 +41,8 @@ spqrlib.qr_solve_csr.restype = None
 
 spqrlib.qr_sparse_csc.argtypes = [
         ndpointer(dtype=np.float64, ndim=1, flags='C_CONTIGUOUS'), # A_data
-        ndpointer(dtype=np.int, ndim=1, flags='C_CONTIGUOUS'), # A_row
-        ndpointer(dtype=np.int, ndim=1, flags='C_CONTIGUOUS'), # A_col
+        ndpointer(dtype=np.int_, ndim=1, flags='C_CONTIGUOUS'), # A_row
+        ndpointer(dtype=np.int_, ndim=1, flags='C_CONTIGUOUS'), # A_col
         c_size_t,  # A_nnz
         c_size_t,  # A_m
         c_size_t,  # A_n
@@ -65,8 +65,8 @@ spqrlib.qr_sparse_csc.restype = c_long
 
 spqrlib.qr_sparse_csc_r.argtypes = [
         ndpointer(dtype=np.float64, ndim=1, flags='C_CONTIGUOUS'), # A_data
-        ndpointer(dtype=np.int, ndim=1, flags='C_CONTIGUOUS'), # A_row
-        ndpointer(dtype=np.int, ndim=1, flags='C_CONTIGUOUS'), # A_col
+        ndpointer(dtype=np.int_, ndim=1, flags='C_CONTIGUOUS'), # A_row
+        ndpointer(dtype=np.int_, ndim=1, flags='C_CONTIGUOUS'), # A_col
         c_size_t,  # A_nnz
         c_size_t,  # A_m
         c_size_t,  # A_n
@@ -372,8 +372,8 @@ def main():
     
     #print Qx[0],Qi[0],Qp[0]
          #ndpointer(dtype=np.float64, ndim=1, flags='C_CONTIGUOUS'), # A_data
-        #ndpointer(dtype=np.int, ndim=1, flags='C_CONTIGUOUS'), # A_row
-        #ndpointer(dtype=np.int, ndim=1, flags='C_CONTIGUOUS'), # A_col
+        #ndpointer(dtype=np.int_, ndim=1, flags='C_CONTIGUOUS'), # A_row
+        #ndpointer(dtype=np.int_, ndim=1, flags='C_CONTIGUOUS'), # A_col
         #c_size_t,  # A_nnz
         #c_size_t,  # A_m
         #c_size_t,  # A_n

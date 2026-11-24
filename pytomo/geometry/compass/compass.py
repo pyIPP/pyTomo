@@ -240,7 +240,7 @@ class COMPASS(Tokamak):
                 ind_wrong = int_(array( [ ind_wrong, [48] ]))
                 
                 data -= min_data
-                data[:,ind_wrong] = NaN
+                data[:,ind_wrong] = nan
 
 
                 savez(data_path , data = single(data), tvec = tvec, dets = dets)
@@ -648,7 +648,7 @@ class COMPASS(Tokamak):
 
                 
                 data -= min_data
-                data[:,ind_wrong] = NaN
+                data[:,ind_wrong] = nan
 
                 
                 savez(data_path , data = single(data), tvec = tvec, dets = dets)
@@ -690,9 +690,9 @@ class COMPASS(Tokamak):
 
     def convert_mag_equilibrium(self,magnet_field, periodical = True):
         """
-        Convert magnetic field from field separated by NaN to (M)x(N+1) field + (boundary), it is used by some tokamak classes. Interpolate field to have the same points in all surfaces
+        Convert magnetic field from field separated by nan to (M)x(N+1) field + (boundary), it is used by some tokamak classes. Interpolate field to have the same points in all surfaces
 
-        Magnet_field must end with NaN and must have no NaN at the first line
+        Magnet_field must end with nan and must have no nan at the first line
 
         :param array mag_field: Converted magnetic field
         :var int nsurf: Number of surfaces in final field

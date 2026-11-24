@@ -12,8 +12,8 @@ except:
     import  config_loc  as config
 
     pass
-from numpy import *
-from matplotlib.pylab import *
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 
@@ -97,27 +97,27 @@ def xraypaths(shot, toroidal=False):
         if shot >= 177100:
             #from 2019  
             #sxrgeom_plot3: load in geometry for 2017 SXR45U view chords
-            zslit_45= array(( 73.1,)*8+( 78.1,)*4)/100
-            rslit_45= array((230.4,)*8+(227.2,)*4)/100
+            zslit_45= np.array(( 73.1,)*8+( 78.1,)*4)/100
+            rslit_45= np.array((230.4,)*8+(227.2,)*4)/100
             
-            rwall_45 = array([2.19 , 1.98 ,  1.53, 1.12  , 1.01 , 1.01 , 1.01 ,1.01, 1.01, 1.01, 1.01, 1.01]);
-            zwall_45 = array([-0.83 ,-1.06 ,-1.24 ,-1.34 ,-1.01 ,-0.65 ,-0.28 ,0.06, 0.20, 0.37, 0.61, 0.81]);
+            rwall_45 = np.array([2.19 , 1.98 ,  1.53, 1.12  , 1.01 , 1.01 , 1.01 ,1.01, 1.01, 1.01, 1.01, 1.01]);
+            zwall_45 = np.array([-0.83 ,-1.06 ,-1.24 ,-1.34 ,-1.01 ,-0.65 ,-0.28 ,0.06, 0.20, 0.37, 0.61, 0.81]);
 
-            xangle_45 = rad2deg(arctan2(zwall_45-zslit_45, rwall_45-rslit_45))
+            xangle_45 = np.rad2deg(np.arctan2(zwall_45-zslit_45, rwall_45-rslit_45))
             
             
-            rwall_195 = array([1.048,1.163,1.240,1.291,1.406,1.547,1.636,1.713,1.879,1.994,2.135,2.275 ]);
-            zwall_195 = array([1.129,1.103,1.141,1.219,1.180,1.064,1.012,1.025,1.012,0.999,0.845,0.509 ]);
+            rwall_195 = np.array([1.048,1.163,1.240,1.291,1.406,1.547,1.636,1.713,1.879,1.994,2.135,2.275 ]);
+            zwall_195 = np.array([1.129,1.103,1.141,1.219,1.180,1.064,1.012,1.025,1.012,0.999,0.845,0.509 ]);
             zslit_195 = -0.834
             rslit_195 = 2.378
             
-            xangle_195 = rad2deg(arctan2(zwall_195-zslit_195, rwall_195-rslit_195))
+            xangle_195 = np.rad2deg(np.arctan2(zwall_195-zslit_195, rwall_195-rslit_195))
             
             
                        
-            rxray  = r_[rslit_45, rslit_195*ones(12), rslit_195*ones(12)]*100
-            zxray  = r_[zslit_45, zslit_195*ones(12), zslit_195*ones(12)]*100
-            xangle = r_[xangle_45,xangle_195,xangle_195]
+            rxray  = np.r_[rslit_45, rslit_195*np.ones(12), rslit_195*np.ones(12)]*100
+            zxray  = np.r_[zslit_45, zslit_195*np.ones(12), zslit_195*np.ones(12)]*100
+            xangle = np.r_[xangle_45,xangle_195,xangle_195]
 
             
  
@@ -151,22 +151,22 @@ def xraypaths(shot, toroidal=False):
 
             #show()
                           #sxrgeom_plot3: load in geometry for 2017 SXR45U view chords
-            zxray_new= array(( 73.1,)*8+( 78.1,)*4)
-            rxray_new= array((230.4,)*8+(227.2,)*4)
+            zxray_new= np.array(( 73.1,)*8+( 78.1,)*4)
+            rxray_new= np.array((230.4,)*8+(227.2,)*4)
             
-            Rfin = array([2.19 , 1.98 ,  1.53, 1.12  , 1.01 , 1.01 , 1.01 ,1.01, 1.01, 1.01, 1.01, 1.01]);
-            Zfin = array([-0.83 ,-1.06 ,-1.24 ,-1.34 ,-1.01 ,-0.65 ,-0.28 ,0.06, 0.20, 0.37, 0.61, 0.81]);
+            Rfin = np.array([2.19 , 1.98 ,  1.53, 1.12  , 1.01 , 1.01 , 1.01 ,1.01, 1.01, 1.01, 1.01, 1.01]);
+            Zfin = np.array([-0.83 ,-1.06 ,-1.24 ,-1.34 ,-1.01 ,-0.65 ,-0.28 ,0.06, 0.20, 0.37, 0.61, 0.81]);
 
-            xangle_new = rad2deg(arctan2(Zfin-zxray_new/100, Rfin-rxray_new/100))
+            xangle_new = np.rad2deg(np.arctan2(Zfin-zxray_new/100, Rfin-rxray_new/100))
        
-            rxray_old = zeros(12) + 233.61
-            zxray_old = zeros(12) + 78.62 
-            xangle_old = array([ 227.94, 231.91, 236.02, 240.03, 244.11, 246.11, 
+            rxray_old = np.zeros(12) + 233.61
+            zxray_old = np.zeros(12) + 78.62 
+            xangle_old = np.array([ 227.94, 231.91, 236.02, 240.03, 244.11, 246.11, 
                 248.14, 250.07, 252.04, 253.95, 255.83, 259.47 ])
             
-            rxray  = r_[rxray_new, rxray_old, rxray_old]
-            zxray  = r_[zxray_new, -zxray_old, -zxray_old]
-            xangle = r_[xangle_new,-xangle_old,-xangle_old]
+            rxray  = np.r_[rxray_new, rxray_old, rxray_old]
+            zxray  = np.r_[zxray_new, -zxray_old, -zxray_old]
+            xangle = np.r_[xangle_new,-xangle_old,-xangle_old]
       
                     
             #print 'xxx', zxray
@@ -175,46 +175,46 @@ def xraypaths(shot, toroidal=False):
             #BUG it is wrong!!!!
 
             #sxrgeom_plot3: load in geometry for 2017 SXR45U view chords
-            zxray_new= array(( 73.1,)*8+( 78.1,)*4)
-            rxray_new= array((230.4,)*8+(227.2,)*4)
+            zxray_new= np.array(( 73.1,)*8+( 78.1,)*4)
+            rxray_new= np.array((230.4,)*8+(227.2,)*4)
             
-            Rfin = array([2.19 , 1.98 ,  1.53, 1.12  , 1.01 , 1.01 , 1.01 ,1.01, 1.01, 1.01, 1.01, 1.01]);
-            Zfin = array([-0.83 ,-1.06 ,-1.24 ,-1.34 ,-1.01 ,-0.65 ,-0.28 ,0.06, 0.20, 0.37, 0.61, 0.81]);
+            Rfin = np.array([2.19 , 1.98 ,  1.53, 1.12  , 1.01 , 1.01 , 1.01 ,1.01, 1.01, 1.01, 1.01, 1.01]);
+            Zfin = np.array([-0.83 ,-1.06 ,-1.24 ,-1.34 ,-1.01 ,-0.65 ,-0.28 ,0.06, 0.20, 0.37, 0.61, 0.81]);
 
-            xangle_new = rad2deg(arctan2(Zfin-zxray_new/100, Rfin-rxray_new/100))
+            xangle_new = np.rad2deg(np.arctan2(Zfin-zxray_new/100, Rfin-rxray_new/100))
        
-            rxray_old = zeros(12) + 233.61
-            zxray_old = zeros(12) + 78.62 
+            rxray_old = np.zeros(12) + 233.61
+            zxray_old = np.zeros(12) + 78.62 
             xangle_old = [ 227.94, 231.91, 236.02, 240.03, 244.11, 246.11, 
                 248.14, 250.07, 252.04, 253.95, 255.83, 259.47 ]
             
-            rxray  = r_[rxray_new, rxray_old, rxray_old]
-            zxray  = r_[zxray_new, zxray_old, zxray_old]
-            xangle = r_[xangle_new,xangle_old,xangle_old]
+            rxray  = np.r_[rxray_new, rxray_old, rxray_old]
+            zxray  = np.r_[zxray_new, zxray_old, zxray_old]
+            xangle = np.r_[xangle_new,xangle_old,xangle_old]
 
         elif shot >= 134917:
-            rxray = zeros(12) + 233.61
-            zxray = zeros(12) + 78.62 
+            rxray = np.zeros(12) + 233.61
+            zxray = np.zeros(12) + 78.62 
             xangle = [ 227.94, 231.91, 236.02, 240.03, 244.11, 246.11, 
                 248.14, 250.07, 252.04, 253.95, 255.83, 259.47 ]
         elif shot >= 130868:
-            rxray = zeros(12) + 233.61
-            zxray = zeros(12) + 78.62
+            rxray = np.zeros(12) + 233.61
+            zxray = np.zeros(12) + 78.62
             xangle=[236.124, 240.224, 241.936, 243.979, 246.014, 248.345, 250.409,
                 252.682, 256.106, 259.752, 263.364, 267.078]
         elif shot >= 112250:
-            rxray = zeros(12) + 233.61
-            zxray = zeros(12) + 78.62
+            rxray = np.zeros(12) + 233.61
+            zxray = np.zeros(12) + 78.62
             xangle = [227.381,229.443,231.505,233.617,237.791,242.040,
                 246.281,250.455,254.484,258.415,262.154,265.926]
         elif shot >= 108690:
-            rxray = zeros(12) + 233.61
-            zxray = zeros(12) + 78.62
+            rxray = np.zeros(12) + 233.61
+            zxray = np.zeros(12) + 78.62
             xangle = [227.401,229.523,231.579,233.633,237.713,241.750,
                 245.905,249.886,253.810,257.618,261.196,264.833]
         elif shot >= 91000:
-            rxray = zeros(12) + 232.0   
-            zxray = zeros(12) + 78.56
+            rxray = np.zeros(12) + 232.0   
+            zxray = np.zeros(12) + 78.56
         #     xangle = [234.60,236.60,238.60,240.70,244.70,248.70,
         #		252.60,256.40,260.10,263.60,266.40,270.00]
             xangle = [225.60,227.60,229.60,231.70,235.70,239.70,
@@ -223,9 +223,9 @@ def xraypaths(shot, toroidal=False):
             raise Exception('Toroidal X-ray is not available for shots earlier than 91000.')
         
         if len(xangle) == 12:
-            xangle = r_[(xangle,)*3]
-            rxray  = r_[(rxray, )*3]
-            zxray  = r_[(zxray, )*3]
+            xangle = np.r_[(xangle,)*3]
+            rxray  = np.r_[(rxray, )*3]
+            zxray  = np.r_[(zxray, )*3]
 
     else:
         #------------------------------------------------------------------------------
@@ -270,29 +270,29 @@ def xraypaths(shot, toroidal=False):
             # print,'Xraypaths: for shots between 80744 and 91378.'
 
 
-            r_0s1 = zeros(16) + 248.9
-            z_0s1 = zeros(16) - 10.7
+            r_0s1 = np.zeros(16) + 248.9
+            z_0s1 = np.zeros(16) - 10.7
             theta_0s1 = [123.69,126.68,131.24,135.83,140.40,144.89,147.82,154.86,
                     157.87,160.92,163.98,167.06,170.12,173.15,176.13,179.05]
 
-            r_0s17 = zeros(16) + 248.9
-            z_0s17 = zeros(16) - 14.7
+            r_0s17 = np.zeros(16) + 248.9
+            z_0s17 = np.zeros(16) - 14.7
             theta_0s17= [180.33,183.22,186.18,189.19,192.24,195.30,198.36,201.40,
                     204.41,210.46,214.38,218.87,223.45,228.06,232.64,235.64]
 
-            r_2s1 = zeros(16) + 197.6
-            z_2s1 = zeros(16) + 130.1
+            r_2s1 = np.zeros(16) + 197.6
+            z_2s1 = np.zeros(16) + 130.1
             theta_2s1 = [290.17,285.65,281.05,277.98,274.92,271.89,268.91,265.98,
                     258.94,255.94,251.89,249.83,246.76,243.72,239.22,234.85]
 
-            r_2s17 = zeros(16) + 194.5
-            z_2s17 = zeros(16) + 132.6
+            r_2s17 = np.zeros(16) + 194.5
+            z_2s17 = np.zeros(16) + 132.6
             theta_2s17= [233.85,232.41,230.94,227.96,224.94,221.89,218.81,215.74,
                     212.70,209.68,202.71,199.71,196.72,193.69,190.63,187.56]
 
-            xangle = r_[theta_0s1,theta_0s17,theta_2s1,theta_2s17]
-            rxray  = r_[    r_0s1,    r_0s17,    r_2s1,    r_2s17]
-            zxray  = r_[    z_0s1,    z_0s17,    z_2s1,    z_2s17]
+            xangle = np.r_[theta_0s1,theta_0s17,theta_2s1,theta_2s17]
+            rxray  = np.r_[    r_0s1,    r_0s17,    r_2s1,    r_2s17]
+            zxray  = np.r_[    z_0s1,    z_0s17,    z_2s1,    z_2s17]
 
         elif shot < 127721:
         #   New arrays (P1 and M1) from Robin Snider.   tbt
@@ -345,9 +345,9 @@ def xraypaths(shot, toroidal=False):
                     ,235.3,235.3,235.3,235.3,235.3,235.3  
                     ,235.3,235.3]
 
-            xangle = r_[theta_top, theta_side]
-            rxray  = r_[   r_top,     r_side]
-            zxray  = r_[    z_top,     z_side]
+            xangle = np.r_[theta_top, theta_side]
+            rxray  = np.r_[   r_top,     r_side]
+            zxray  = np.r_[    z_top,     z_side]
             
             
      
@@ -383,7 +383,7 @@ def xraypaths(shot, toroidal=False):
                 -78.1,-78.1,-78.1,-78.1,-78.1,-78.1,-78.1,-78.1] 		
 
 
-            xangle = array(xangle)
+            xangle = np.array(xangle)
             #xangle[16:32],xangle[48:64] = copy(xangle[48:64][::-1]),copy(xangle[16:32][::-1])#NOTE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! wrong geometry!!!
             
             
@@ -400,8 +400,8 @@ def xraypaths(shot, toroidal=False):
                       177.02,181.18,185.27,189.24,193.07,196.74,200.22,203.50]
             
             
-            rxray = array([230.4]*16+[227.2]*16+[230.4]*16+[227.2]*16)
-            zxray = array([ 73.1]*16+[ 78.1]*16+[-73.1]*16+[-78.1]*16)
+            rxray = np.array([230.4]*16+[227.2]*16+[230.4]*16+[227.2]*16)
+            zxray = np.array([ 73.1]*16+[ 78.1]*16+[-73.1]*16+[-78.1]*16)
 
             ##; Bottom channels
             #rwallbot = array([ 221, 209, 197, 182, 163, 147, 129, 112, 
@@ -427,14 +427,14 @@ def xraypaths(shot, toroidal=False):
     
 
 
-    rxray = array(rxray)/100.
-    zxray = array(zxray)/100.
+    rxray = np.array(rxray)/100.
+    zxray = np.array(zxray)/100.
 
-    angle =  deg2rad(xangle) 
+    angle =  np.deg2rad(xangle) 
     
     
-    rxray2 = rxray  + 3 * cos(angle)
-    zxray2 = zxray  + 3 * sin(angle)
+    rxray2 = rxray  + 3 * np.cos(angle)
+    zxray2 = zxray  + 3 * np.sin(angle)
     
     #Z = 0.000,0.964,0.968,1.001,1.019,1.077,1.070,1.096,1.113,1.138,1.147,1.165,1.217,\
     #1.217,1.162,1.162,1.163,1.165,1.166,1.166,1.169,1.172,1.176,1.183,1.183,1.185,\
@@ -536,7 +536,7 @@ def get_filter(shot, PA):
                   {'description':'Low Te SXR', 'aperture':'1 mm x 3 mm slit', 'foil':'1.3 mm thick tantalum', 'filter':'12 um Be','pinhole diameter':1.95e3},
                   {'description':'Visible light', 'aperture':'1 mm x 3 mm slit', 'foil':'25 um thick moly', 'filter':'1 mm fused silica','pinhole diameter':1.95e3},
                   {'description':'Hi Te SXR', 'aperture':'1 mm x 3 mm slit', 'foil':'25 um thick moly', 'filter':'125 um Be','pinhole diameter':1.95e3}]
-    if PA and year in r_[2014:2019]:
+    if PA and year in np.r_[2014:2019]:
         settings=[{'description':'Closed', 'aperture':'closed', 'foil':'none', 'filter':'none','pinhole diameter':0.0},
                   {'description':'Disruption prad', 'aperture':'200 um pinhole', 'foil':'50 um thick SS', 'filter':'none','pinhole diameter':200.0},
                   {'description':'ELM prad', 'aperture':'300 um x 3 mm slit', 'foil':'25 um thick moly', 'filter':'none','pinhole diameter':1070.},#870.0},
@@ -611,7 +611,7 @@ def get_calib(shot,calib_path,cam):
             do_read = True
     index.close()
     # Find settings for our shot
-    wh = where(array(shots) >= shot)[0]
+    wh = np.where(np.array(shots) >= shot)[0]
     # Go back one for the change shot
     try:
         whs = wh[0]-1
@@ -680,21 +680,21 @@ def get_calib_fact(shot, geometry_path,  toroidal=False):
             # Element area (m^2)
             el_area = 2 * 5/1e6
             # Aperture area (m^2)
-            ap_area = 0.25*pi*(pinhole/1e6)**2
+            ap_area = 0.25*np.pi*(pinhole/1e6)**2
             # Distance from center (cm) in eight steps
-            dist_from_ctr = ( arange(-nch/2,nch/2) + 0.5 ) * 0.212 #   % [cm]
+            dist_from_ctr = ( np.arange(-nch/2,nch/2) + 0.5 ) * 0.212 #   % [cm]
             tanpsi = dist_from_ctr / ctr_to_pinhole
             cos4 = (tanpsi**2 + 1.)**(-2.)
-            thick_factor = abs(tanpsi) * (-4./pi) * (pinhole_thick/pinhole) + 1.
+            thick_factor = abs(tanpsi) * (-4./np.pi) * (pinhole_thick/pinhole) + 1.
 
             #measured for filter 5 (high Te)
             if cam == '90RM1':
-                etendue  = array( [2.141,2.338,2.528,2.702,2.882,2.695,2.728,2.985,
+                etendue  = np.array( [2.141,2.338,2.528,2.702,2.882,2.695,2.728,2.985,
                                    2.989,2.971,2.858,2.711,2.538,2.349,2.152,1.900,
                                    2.074,2.331,2.589,2.836,3.056,3.234,3.356,3.41,
                                    3.382,3.282,3.122,2.914,2.675,2.419,2.161,1.91])*1e-8
             if cam == '90RP1':
-                etendue  = array( [1.845,2.073,2.302,2.523,2.72,2.671,2.813,3.015,
+                etendue  = np.array( [1.845,2.073,2.302,2.523,2.72,2.671,2.813,3.015,
                                    3.031,2.948,2.811,2.631,2.421,2.195,1.965,1.74,
                                    1.881,2.182,2.425,2.663,2.882,3.069,3.211,3.296,
                                    3.314,3.259,3.142,2.975,2.769,2.539,2.297,2.055])*1e-8
@@ -702,12 +702,12 @@ def get_calib_fact(shot, geometry_path,  toroidal=False):
             if filter == 3:
                 #measured, thick slits for low Te
                 if cam == '90RM1':
-                    etendue  = array( [1.749,2.18,2.442,2.646,2.754,2.558,2.592,2.783,
+                    etendue  = np.array( [1.749,2.18,2.442,2.646,2.754,2.558,2.592,2.783,
                                        2.824,2.833,2.783,2.646,2.504,2.309,2.031,1.765,
                                        2.347,2.646,2.895,3.098,3.244,3.352,3.414,3.447,
                                        3.447,3.352,3.211,3.053,2.866,2.625,2.23,1.661])*1e-8
                 if cam == '90RP1':
-                    etendue  = array( [1.628,2.068,2.356,2.546,2.648,2.607,2.713,2.847,
+                    etendue  = np.array( [1.628,2.068,2.356,2.546,2.648,2.607,2.713,2.847,
                                        2.945,2.859,2.758,2.632,2.498,2.315,2.067,1.645,
                                        1.877,2.076,2.292,2.479,2.658,2.766,2.865,2.931,
                                        2.946,2.905,2.803,2.654,2.492,2.23,1.873,1.279])*1e-8
@@ -728,13 +728,13 @@ def get_calib_fact(shot, geometry_path,  toroidal=False):
             # Element area (m^2)
             el_area = 4.1*0.75/1e6
             # Aperture area (m^2)
-            ap_area = 0.25*pi*(pinhole/1e6)**2# 12*1/1e6
+            ap_area = 0.25*np.pi*(pinhole/1e6)**2# 12*1/1e6
             #pinhole = ap_area*
             # Distance from center (cm) in eight steps
-            dist_from_ctr = ( arange(-nch//2,nch//2) + 0.5 ) * 0.095 #   % [cm]
+            dist_from_ctr = ( np.arange(-nch//2,nch//2) + 0.5 ) * 0.095 #   % [cm]
             tanpsi = dist_from_ctr / ctr_to_pinhole
             cos4 = (tanpsi**2 + 1.)**(-2.)
-            thick_factor = abs(tanpsi) * (-4./pi) * (pinhole_thick/pinhole) + 1.
+            thick_factor = abs(tanpsi) * (-4./np.pi) * (pinhole_thick/pinhole) + 1.
 
             # overall factor to account for optics...units: m-2 sr-1  it is 1/etendue
             etendue = cos4*thick_factor*el_area*ap_area/ctr_to_pinhole**2*1e4
@@ -747,8 +747,8 @@ def get_calib_fact(shot, geometry_path,  toroidal=False):
         #print 0.35*5e-4*(resistor*gain)
         
 
-        calib = 4*pi/term/(resistor*gain)/eff_resp/etendue
-        print('calib '+cam+' %.2e  W/m^2/V  '%mean(calib)+ ' %.2e  W/V  '%mean(calib*el_area))
+        calib = 4*np.pi/term/(resistor*gain)/eff_resp/etendue
+        print('calib '+cam+' %.2e  W/m^2/V  '%np.mean(calib)+ ' %.2e  W/V  '%np.mean(calib*el_area))
         
         
         #W = C*plocha*Volty
@@ -787,7 +787,7 @@ def mds_load(params):
             output.append(MDSconn.get(tdi).data())
         except:
             print('missing data:'+ tdi)
-            output.append(array(0, ndmin=1))
+            output.append(np.array(0, ndmin=1))
 
             
     if tree is not None: 
@@ -801,7 +801,7 @@ def mds_par_load(mds_server,  TDI,  numTasks,tree=None,shot=None):
 
     #load a junks of a single vector
 
-    TDI = array_split(TDI, min(numTasks, len(TDI)))
+    TDI = np.array_split(TDI, min(numTasks, len(TDI)))
 
     args = [(mds_server, tree,shot, tdi) for tdi in TDI]
 
@@ -923,11 +923,11 @@ class loader_SXR():
             self.cam_ind[c] = list(range(count,count+self.n_diods))
             count+= self.n_diods
         
-        self.all_los = hstack([self.detectors_dict[c] for c in cams])
+        self.all_los = np.hstack([self.detectors_dict[c] for c in cams])
         self.n_dets = len(cams)
         self.nl = self.n_diods*self.n_dets
-        self.dets_index = [array(v) for k,v in self.cam_ind.items()]
-        self.dets = arange(self.nl)
+        self.dets_index = [np.array(v) for k,v in self.cam_ind.items()]
+        self.dets = np.arange(self.nl)
         
         self.fast_downsample = 1
         self.fast_data_downsapled=False
@@ -939,7 +939,7 @@ class loader_SXR():
             catch_path = os.path.join(self.geometry_path,'data','%d_%s_fast.npz'%(self.shot, suffix))
             if config.useCache:
                 try:
-                    data_file = load(catch_path,allow_pickle=True,encoding='latin1' )
+                    data_file = np.load(catch_path,allow_pickle=True,encoding='latin1' )
                     self.tvec_fast = data_file['tvec'] 
                 except:
                     pass
@@ -970,12 +970,12 @@ class loader_SXR():
 
                 
             
-            self.tvec = hstack(self.tvec_fast)#.reshape(-1,self.fast_downsample).mean(1) #dowsample
+            self.tvec = np.hstack(self.tvec_fast)#.reshape(-1,self.fast_downsample).mean(1) #dowsample
         else:
             suffix = 'TA' if self.toroidal else 'PA'
             catch_path = os.path.join(self.geometry_path,'data','%d_%s.npz'%(self.shot, suffix))
             if os.path.isfile(catch_path) and config.useCache:
-                self.tvec = load(catch_path,allow_pickle=True,encoding='latin1')['tvec']
+                self.tvec = np.load(catch_path,allow_pickle=True,encoding='latin1')['tvec']
                 
             elif self.MDSconn is not None:
                 cam = cams[0] if toroidal else cams[0][:-1]
@@ -1012,7 +1012,7 @@ class loader_SXR():
         corrections = 'det_pos_corr_null'
         corrections = 'det_pos_corr_new'
 
-        pos_corr = loadtxt(path+'/'+corrections+'.txt',
+        pos_corr = np.loadtxt(path+'/'+corrections+'.txt',
                            dtype={'names': ('det', 'angle'),'formats': ('U6',  'f4')})
         pos_corr =  {k:item for k,item in pos_corr}
  
@@ -1037,7 +1037,7 @@ class loader_SXR():
             Z2 = self.z_end[det]
             THETA = self.theta[det]
 
-            m_alpha = mean(abs(abs(arctan2(Z2-Z1,R2-R1))-pi/2))
+            m_alpha = np.mean(abs(abs(np.arctan2(Z2-Z1,R2-R1))-np.pi/2))
 
             for ich,ch in enumerate(channels):
                 r1 = R1[ich]
@@ -1048,16 +1048,16 @@ class loader_SXR():
 
                 coord_dict[det].append([[r1,r2, z1,z2]])
 
-                dAngle = deg2rad(theta-mean(THETA))
-                if dAngle > pi: dAngle-= 2*pi
+                dAngle = np.deg2rad(theta-np.mean(THETA))
+                if dAngle > np.pi: dAngle-= 2*np.pi
      
 
-                alpha = arctan2(z2-z1,r2-r1)
+                alpha = np.arctan2(z2-z1,r2-r1)
                 #print det
                 if det  in pos_corr:
-                    alpha+= deg2rad(pos_corr[det])
+                    alpha+= np.deg2rad(pos_corr[det])
                 #print(det, pos_corr)
-                L = hypot(r2-r1, z2-z1)
+                L = np.hypot(r2-r1, z2-z1)
                 if L == 0: L = 1;alpha = 1
                 
                 cam_geom = self.cam_geom[suffix]
@@ -1071,34 +1071,34 @@ class loader_SXR():
       
                 
                 Delta1 = Px/Dx*Delta/(1+Px/Dx)
-                theta = arctan(Px/2/Delta1)
+                theta = np.arctan(Px/2/Delta1)
 
                 #angle between axis of the camera and LOS
-                theta*= cos(dAngle)
+                theta*= np.cos(dAngle)
                                 
-                delta = tan(Dy/2./Delta)
+                delta = np.tan(Dy/2./Delta)
                 delta*= 0.5
-                dist = r1*sin(arctan(delta/cos(arctan((z2-z1+1e-6)/(r2-r1+1e-6)))))
+                dist = r1*np.sin(np.arctan(delta/np.cos(np.arctan((z2-z1+1e-6)/(r2-r1+1e-6)))))
                 dist_file.write('%5.4f\n'%abs(dist))
     
-                if m_alpha<pi/4:       
-                    Lr = L*abs(sin(alpha)/sin(pi-theta-alpha))
-                    Ll = L*abs(sin(pi-alpha)/sin(alpha-theta))
+                if m_alpha<np.pi/4:       
+                    Lr = L*abs(np.sin(alpha)/np.sin(np.pi-theta-alpha))
+                    Ll = L*abs(np.sin(np.pi-alpha)/np.sin(alpha-theta))
                     
-                    xfile.write('%5.4f %5.4f %5.4f\n'%(r1+Ll*cos(alpha-theta),r1+Lr*cos(alpha+theta),r1))
-                    yfile.write('%5.4f %5.4f\n'%(z1+Lr*sin(alpha+theta),z1))
+                    xfile.write('%5.4f %5.4f %5.4f\n'%(r1+Ll*np.cos(alpha-theta),r1+Lr*np.cos(alpha+theta),r1))
+                    yfile.write('%5.4f %5.4f\n'%(z1+Lr*np.sin(alpha+theta),z1))
                     
-                    verts.append([[r1,z1],[r1+Ll*cos(alpha-theta),z1+Lr*sin(alpha+theta) ]
-                                    ,[r1+Lr*cos(alpha+theta),z1+Lr*sin(alpha+theta)]])
+                    verts.append([[r1,z1],[r1+Ll*np.cos(alpha-theta),z1+Lr*np.sin(alpha+theta) ]
+                                    ,[r1+Lr*np.cos(alpha+theta),z1+Lr*np.sin(alpha+theta)]])
 
                 else:
-                    if tan(pi-abs(alpha)-theta)*tan(pi-abs(alpha)+theta)<0 and sin(pi/2+alpha)>0:
+                    if np.tan(np.pi-abs(alpha)-theta)*np.tan(np.pi-abs(alpha)+theta)<0 and np.sin(np.pi/2+alpha)>0:
                         #solve special case for almost exactly vertical LOS
                         z21 = z2  
                         z22 = z2+1e-2
                     else:
-                        z21 = z1-(r2-r1)*tan(pi-abs(alpha)-theta)*sign(alpha)
-                        z22 = z1-(r2-r1)*tan(pi-abs(alpha)+theta)*sign(alpha)
+                        z21 = z1-(r2-r1)*np.tan(np.pi-abs(alpha)-theta)*np.sign(alpha)
+                        z22 = z1-(r2-r1)*np.tan(np.pi-abs(alpha)+theta)*np.sign(alpha)
                      
                     yfile.write('%5.4f %5.4f %5.4f\n'%(z21,z22,z1))
                     xfile.write('%5.4f %5.4f\n'%(r2,r1))
@@ -1110,7 +1110,7 @@ class loader_SXR():
  
 
     
-    def get_data_fast(self,tmin=-inf,tmax=inf,calib=True):
+    def get_data_fast(self,tmin=-np.inf,tmax=np.inf,calib=True):
     
         num_MDS_Tasks = 8
         MDSserver = self.MDSconn.hostspec
@@ -1118,15 +1118,15 @@ class loader_SXR():
 
         if self.shot < 136162:
             raise Exception('loading from old DAS is not implemented')
-        indmin = where([t[-1] > tmin for t in self.tvec_fast])[0][0]
-        indmax = where([t[ 0] < tmax for t in self.tvec_fast])[0][-1]+1
-        index = unique(r_[0,indmin:indmax])
+        indmin = np.where([t[-1] > tmin for t in self.tvec_fast])[0][0]
+        indmax = np.where([t[ 0] < tmax for t in self.tvec_fast])[0][-1]+1
+        index = np.unique(np.r_[0,indmin:indmax])
         
         #print tmin, tmax,index 
         
         cam_ind = {c:slice(ii[0],ii[-1]+1) for c,ii in self.cam_ind.items()} 
         
-        tvec = hstack(self.tvec_fast[indmin:indmax])  
+        tvec = np.hstack(self.tvec_fast[indmin:indmax])  
         
         #self.cache_fast
         
@@ -1136,7 +1136,7 @@ class loader_SXR():
             if os.path.isfile(catch_path):
                 
                 try:
-                    data_file = load(catch_path,allow_pickle=True,encoding='latin1')
+                    data_file = np.load(catch_path,allow_pickle=True,encoding='latin1')
                     self.cache_fast = data_file['cache_fast'].item()
                 except Exception as e:
                     print(e)
@@ -1170,7 +1170,7 @@ class loader_SXR():
                     for ch in channels:#downsample to 125kHz
                         #supress spikes?
                         if self.fast_downsample  > 1:
-                            self.cache_fast[i][cam][ch] = median(data[j].reshape(-1,self.fast_downsample),1)#.mean(1)
+                            self.cache_fast[i][cam][ch] = np.median(data[j].reshape(-1,self.fast_downsample),1)#.mean(1)
                         else:
                             self.cache_fast[i][cam][ch] = data[j]
                         #print self.cache_fast[i][cam][ch].dtype
@@ -1178,7 +1178,7 @@ class loader_SXR():
         
         #print catch_path
         if len(TDI) > 0 and config.useCache:
-            savez_compressed(catch_path, tvec=self.tvec_fast, cache_fast=self.cache_fast)
+            np.savez_compressed(catch_path, tvec=self.tvec_fast, cache_fast=self.cache_fast)
             #save the cache
             
 
@@ -1188,10 +1188,10 @@ class loader_SXR():
         data = []
         for cam, channels in self.detectors_dict.items():
             for ch in channels:
-               data.append(hstack([self.cache_fast[i][cam][ch] for i in range(indmin,indmax)]))
+               data.append(np.hstack([self.cache_fast[i][cam][ch] for i in range(indmin,indmax)]))
         
-        data  = vstack(data).T
-        data_err = zeros_like(data)
+        data  = np.vstack(data).T
+        data_err = np.zeros_like(data)
     
 
         #remove corrupted channels
@@ -1202,12 +1202,12 @@ class loader_SXR():
         try:
             nt = len(tvec)
             ind_t = slice(0,nt)
-            if nt > 2000:  ind_t = r_[0, unique(randint(nt,size=1000)),nt-1]
+            if nt > 2000:  ind_t = np.r_[0, np.unique(np.random.randint(nt,size=1000)),nt-1]
             from ...shared_modules import fast_svd
             U,S,V = fast_svd(data[ind_t],min(30,nt//3))
 
             #assume that the differnce between data and SVD retrofit is only noise 
-            data_err+= std(data[ind_t]-dot(U, V*S[:,None]),0)
+            data_err+= np.std(data[ind_t]-np.dot(U, V*S[:,None]),0)
         except:pass
 
 
@@ -1226,7 +1226,7 @@ class loader_SXR():
 
         #calibrate raw signals
         if calib:
-            tvec_offset, data_offset,_ = self.get_data_fast(tmin=-inf,tmax=.2, calib=False)
+            tvec_offset, data_offset,_ = self.get_data_fast(tmin=-np.inf,tmax=.2, calib=False)
             data -= data_offset.mean(0)
             data_offset-= data_offset.mean(0)
             data_err+= data_offset.std(0)/10  
@@ -1257,7 +1257,7 @@ class loader_SXR():
             if os.path.isfile(catch_path):
                 try:
                     #eeeee
-                    data_file = load(catch_path,allow_pickle=True,encoding='latin1')
+                    data_file = np.load(catch_path,allow_pickle=True,encoding='latin1')
                     tvec = data_file['tvec']
                     data = data_file['data']
                     data_err = data_file['data_error']
@@ -1289,8 +1289,8 @@ class loader_SXR():
             index = list(range(self.nl))
 
         else: # new shots have only ch 1 - 28 digitized slow in each array
-            index = r_[0:28, 32:60]
-            self.wrong_dets = r_[28:32, 60:64]
+            index = np.r_[0:28, 32:60]
+            self.wrong_dets = np.r_[28:32, 60:64]
             
         t = time.time()
         #print 'loading data'
@@ -1306,7 +1306,7 @@ class loader_SXR():
                 TDIcalls += [TDIcall%(cam,cam,int(ch.split('_')[-1])) for ch in channels]
             if fetch_errors:
                 TDIcalls += ['error_of(%s)'%tdi for tdi in TDIcalls]
-            TDIcalls = array(TDIcalls) 
+            TDIcalls = np.array(TDIcalls) 
             #print(TDIcalls)
             
         else:
@@ -1314,7 +1314,7 @@ class loader_SXR():
             for cam, channels in self.detectors_dict.items():
                 if not self.toroidal: cam = cam[:-1]
                 TDIcalls += [TDIcall%(cam,ch.split('_')[-1], self.shot) for ch in channels]
-            TDIcalls = array(TDIcalls)[index]
+            TDIcalls = np.array(TDIcalls)[index]
             
         
         MDSserver = self.MDSconn.hostspec
@@ -1329,17 +1329,17 @@ class loader_SXR():
         
         from IPython import embed
  
-        data = zeros((nt, self.nl), dtype='single')
-        data_error = zeros_like(data)+1e-6
+        data = np.zeros((nt, self.nl), dtype='single')
+        data_error = np.zeros_like(data)+1e-6
         
         #embed()
 
         for i,ch in enumerate(index):
-            data[:size(out[i]),ch] = out[i]
-            data[size(out[i]):,ch] = out[i][-1]
+            data[:np.size(out[i]),ch] = out[i]
+            data[np.size(out[i]):,ch] = out[i][-1]
             if self.fast_data_downsapled and not isinstance(out[self.nl+i],str) and fetch_errors:
-                data_error[:size(out[i]),ch] = out[self.nl+i]
-            data_error[size(out[i]):,ch] = inf  #data from TA system are 2s longer than from PA system
+                data_error[:np.size(out[i]),ch] = out[self.nl+i]
+            data_error[np.size(out[i]):,ch] = np.inf  #data from TA system are 2s longer than from PA system
         
         data_error[:] = abs(data)*0.02+data.max(1)[:,None]*0.01
         
@@ -1365,7 +1365,7 @@ class loader_SXR():
         else:
             
             overburned = abs(data) > 4.6  #only a rough value, different for each LOS
-            overburned[:,-12:] = data[:,-12:]>array((5.5,)*4+(4,)*8)[None,:]
+            overburned[:,-12:] = data[:,-12:]>np.array((5.5,)*4+(4,)*8)[None,:]
 
         
         #data[overburned] = nan
@@ -1383,7 +1383,7 @@ class loader_SXR():
         self.hardcoded_corrections(tvec, data,data_error)
 
         
-        use_dets = ~isin(self.dets, self.wrong_dets)
+        use_dets = ~np.isin(self.dets, self.wrong_dets)
         offset = tvec < .1
 
 
@@ -1393,13 +1393,13 @@ class loader_SXR():
             # cameras with the same noise 
         
             if self.toroidal:
-                noise_cam_ind = {'TOR': hstack((self.cam_ind['45R1'], self.cam_ind['195R1']))}
+                noise_cam_ind = {'TOR': np.hstack((self.cam_ind['45R1'], self.cam_ind['195R1']))}
             else:
-                noise_cam_ind = {'90RP1': hstack((self.cam_ind['90RP1a'], self.cam_ind['90RP1b'])),
-                                '90RM1': hstack((self.cam_ind['90RM1a'], self.cam_ind['90RM1b']))}
+                noise_cam_ind = {'90RP1': np.hstack((self.cam_ind['90RP1a'], self.cam_ind['90RP1b'])),
+                                '90RM1': np.hstack((self.cam_ind['90RM1a'], self.cam_ind['90RM1b']))}
                 noise_cam_ind = self.cam_ind
-                noise_cam_ind = {'90RP1a': hstack((self.cam_ind['90RP1a'], self.cam_ind['90RP1b'])),
-                                '90RM1': hstack((self.cam_ind['90RM1a'], self.cam_ind['90RM1b']))}
+                noise_cam_ind = {'90RP1a': np.hstack((self.cam_ind['90RP1a'], self.cam_ind['90RP1b'])),
+                                '90RM1': np.hstack((self.cam_ind['90RM1a'], self.cam_ind['90RM1b']))}
 
 
 
@@ -1407,7 +1407,7 @@ class loader_SXR():
             noise_cam_ind = {c:slice(ii[0],ii[-1]+1) for c,ii in noise_cam_ind.items()} 
 
             data_ = (data[offset]-data[offset].mean(0))
-            filtered_data = copy(data)
+            filtered_data = np.copy(data)
  
             from scipy import signal
             fnq = (nt-1)/(tvec[-1]-tvec[0])/2
@@ -1426,30 +1426,30 @@ class loader_SXR():
                 nt_ = next_fast_len(nt)
                 #filter tunned to match the real low pass filter of the slow digitizer
                 bd, ad = signal.ellip(8, 0.01, 100, fmax/fnq*0.97, 'low')
-                h = zeros(nt_)
+                h = np.zeros(nt_)
                 h[0] = 1
-                H = np.fft.rfft(signal.lfilter(bd,ad,h))
+                H = plt.np.fft.rfft(signal.lfilter(bd,ad,h))
                 SNR = 100
                 #make deconvolution and filtering kernel
-                G = conj(H)/(H*conj(H)+1./SNR)
+                G = np.conj(H)/(H*np.conj(H)+1./SNR)
             
             for cam, ind in noise_cam_ind.items():
                 if not self.toroidal and False:
-                    ind_finit = any(isfinite(data_error),1)
+                    ind_finit = np.any(np.isfinite(data_error),1)
                     err = data_error[ind_finit,ind].mean(0)*(data_[:,ind].std(0)+1e-6)
-                    u,s,v = linalg.svd(data_[:,ind].T/err[:,None], full_matrices=False)#SVD veighted be prescribed error
-                    u[isfinite(err),0] *= err[isfinite(err)]
+                    u,s,v = np.linalg.svd(data_[:,ind].T/err[:,None], full_matrices=False)#SVD veighted be prescribed error
+                    u[np.isfinite(err),0] *= err[np.isfinite(err)]
                     
-                    u2,s2,v2 = linalg.svd(data_[:,ind].T, full_matrices=False)#SVD veighted be prescribed error
+                    u2,s2,v2 = np.linalg.svd(data_[:,ind].T, full_matrices=False)#SVD veighted be prescribed error
       
                     noise =  (data[:,ind][:,-1]/  u2[-1,0])/s2[0]
-                    filtered_data[:,ind] -= outer(u2[:,0]*s2[0], noise ).T #outer(noise, u[:,0])
+                    filtered_data[:,ind] -= np.outer(u2[:,0]*s2[0], noise ).T #outer(noise, u[:,0])
 
                 
                 if G is not None:
                     #signal deconvolution and low pass filtering
-                    fsig_filt = np.fft.rfft(filtered_data[:,ind],nt_, axis=0)
-                    filtered_data[:,ind] = np.fft.irfft(G[:,None]*fsig_filt,axis=0)[:nt]
+                    fsig_filt = plt.np.fft.rfft(filtered_data[:,ind],nt_, axis=0)
+                    filtered_data[:,ind] = plt.np.fft.irfft(G[:,None]*fsig_filt,axis=0)[:nt]
               
 
             data = filtered_data 
@@ -1462,7 +1462,7 @@ class loader_SXR():
                 if downsample >1:
                     tvec = tvec[:nt].reshape(-1,downsample).mean(1)
                     data_error = data_error[:nt].reshape(-1,downsample, data.shape[1]).mean(1)+data[offset].std(0)/2
-                    data_error+= (diff(data[:nt].reshape(-1,downsample, data.shape[1]),2,axis=1)).std(1)*3
+                    data_error+= (np.diff(data[:nt].reshape(-1,downsample, data.shape[1]),2,axis=1)).std(1)*3
                     data = data[:nt].reshape(-1,downsample, data.shape[1]).mean(1)
                     overburned = overburned[:nt].reshape(-1,downsample, data.shape[1]).mean(1)>0.1
             
@@ -1477,7 +1477,7 @@ class loader_SXR():
             data -= ((b2-b1)/(a2-a1)*(tvec[:,None]-a1)+b1)
 
 
-        offset_err = sqrt(mean(data[tvec<.3]**2,0))/sqrt(sqrt(sum(tvec<.3)))
+        offset_err = np.sqrt(np.mean(data[tvec<.3]**2,0))/np.sqrt(np.sqrt(np.sum(tvec<.3)))
         data_error +=  offset_err[None,:]  #factor 2 is just manul tunning
 
         cam_ind = {c:slice(ii[0],ii[-1]+1) for c,ii in self.cam_ind.items()} 
@@ -1494,13 +1494,13 @@ class loader_SXR():
         
         
         #trick to replace missign fast channel by a slow data 
-        if all(std(data[:,[15,20]],0)<100):
+        if np.all(np.std(data[:,[15,20]],0)<100):
             try:
-                slow_data = load(catch_path+'_')
-                data[:,15] = np.interp(tvec,slow_data['tvec'],slow_data['data'][:,15])
-                data[:,20] = np.interp(tvec,slow_data['tvec'],slow_data['data'][:,20])
-                data_error[:,15] = np.interp(tvec,slow_data['tvec'],slow_data['data_error'][:,15])
-                data_error[:,20] = np.interp(tvec,slow_data['tvec'],slow_data['data_error'][:,20])
+                slow_data = np.load(catch_path+'_')
+                data[:,15] = plt.np.interp(tvec,slow_data['tvec'],slow_data['data'][:,15])
+                data[:,20] = plt.np.interp(tvec,slow_data['tvec'],slow_data['data'][:,20])
+                data_error[:,15] = plt.np.interp(tvec,slow_data['tvec'],slow_data['data_error'][:,15])
+                data_error[:,20] = plt.np.interp(tvec,slow_data['tvec'],slow_data['data_error'][:,20])
             except:
                 pass
         
@@ -1509,7 +1509,7 @@ class loader_SXR():
         
         ##store data for faster loading 
         if config.useCache:
-            savez_compressed(catch_path,tvec=tvec, data=data, data_error=data_error,
+            np.savez_compressed(catch_path,tvec=tvec, data=data, data_error=data_error,
                                 wrong_det = self.wrong_dets_damaged)
 
         imin,imax = tvec.searchsorted([tmin,tmax])
@@ -1547,7 +1547,7 @@ class loader_SXR():
             
             #signal is inversed? 
             ch = self.cam_ind['90RP1b'][5]
-            data[:,ch]*= sign(mean(data[:,ch]))
+            data[:,ch]*= np.sign(np.mean(data[:,ch]))
             data_err[:,ch]*=100
             
        
@@ -1638,10 +1638,10 @@ class loader_SXR():
     
  
 def min_fine(x,y): #find extrem with subpixel precision
-    i = argmin(y)
+    i = np.argmin(y)
     if i==0 or i == len(y)-1: return y[i],x[i]    #not working at the edge! 
-    A = x[i-1:i+2]**2, x[i-1:i+2], ones(3)
-    a,b,c = linalg.solve(array(A).T,y[i-1:i+2])
+    A = x[i-1:i+2]**2, x[i-1:i+2], np.ones(3)
+    a,b,c = np.linalg.solve(np.array(A).T,y[i-1:i+2])
     
     ymin =  c-b**2/(4*a)
     xmin = -b/(2*a) 
@@ -1664,11 +1664,11 @@ def main():
     MDSconn = mds.Connection(mds_server )
     
     shots = [147008,147010,147013,147014,147015,147016,147017,147018,147019,147022,147023,147024,147025,147026,147027,147028,147029,147030,147032,147033,147034,147035,147036,147043,147044,147045,147046,147047,147048,147051,147055,147059,147062,147063,147066,147067,147068,147069,147070,147071,147072,147078,147079,147080,147082,147084,147092,147094,147095,148775,148776,148777,148778,148780,148781,148783,148784,148785,148786,148787,148788,148789,148790,148791,148792,148793,148794,148796,148797,148798,148799,148800,148801,148802,148803,148804,149392,149393,149394,149395,149396,149397,149398,149399,149400,149401,149403,149404,149405,149406,149407,149408,149409,149410,149411,149412,149413,149414,149415,149416,149682,149683,149685,149686,149687,149688,149689,149691,149692,149693,149694,149695,149696,149697,149698,153132,153133,153134,153135,153136,153137,153139,153140,153141,153142,153143,153144,153145,154971,154976,154979,154980,154981,154982,154983,154984,154985,154986,154987,154988,154989,154990,154991,154992,154993,154994,154995,154996,154997,157444,157445,157446,157447,157448,157449,157450,157451,157452,157453,157454,157455,157456,157457,157458,157459,157460,157461,157462,157531,157813,157814,157815,157817,157818,157819,157820,157836,157838,157841,157858,157859,157860,157862,157865,157866,157867,157870,157871,160093,160094,160095,160096,160099,160101,160102,160103,160104,160123,160147,160149,168969,168970,168971,168972,168973,168974,168976,168977,168980,168981,168982,168983,168984,168985,168986,168987,168988,168989,168990,168991,170478,170479,170480,170481,170483,170484,171222,171223,171224,171226,173608,173609,173610,173611,173612,173613,173614,173615,173618,173621,173622,173623,173624,173625,173627,173628,173630,173632,173633,173634,173635,173636,173637,173642,173643,173646,173647,173648,173649,174480,174481,174482,174483,174486,174487,174488,174490,174491,174492,174493,175302,175305,175309,175313,180447,180448,180455,180458,180461,185211,185212,185213,185306,185312,185314,185332,185333,185334,185344,185352,185353,185356,185399,185403,185404,185408,185412,186600,186601,186602,186603,186604,186605,186606,186607,186608,186609,186610,186611,186612,186613,186614,186939,186953,187082]
-    for shot in arange(173600, 193000):
+    for shot in np.arange(173600, 193000):
      
         t = MDSconn.get('PTDATA2("SX90PF20_1",%d)'%shot)
 
-        if np.size(t.data()) < 2:
+        if plt.np.size(t.data()) < 2:
             continue
         MDSconn.openTree('D3D', shot)
         print(shot, MDSconn.get(r'\D3D::TOP.COMMENTS:BRIEF').data())
@@ -1688,8 +1688,8 @@ def main():
     x2 = MDSconn.get(PTNAME%('H',1,shot)).data()
     t2 = MDSconn.get('dim_of(_x)').data()
   
-    x_ = (x-mean(x))/std(x)
-    x2_ = (x2-mean(x2))/std(x2)
+    x_ = (x-np.mean(x))/np.std(x)
+    x2_ = (x2-np.mean(x2))/np.std(x2)
         
     import IPython
     IPython.embed()
@@ -1718,19 +1718,19 @@ def main():
     x2_ = x2_[ind]
     
     
-    fx=np.fft.rfft(x_)
-    fx2=np.fft.rfft(x2_)
-    fx_ = zeros_like(fx2)
+    fx=plt.np.fft.rfft(x_)
+    fx2=plt.np.fft.rfft(x2_)
+    fx_ = np.zeros_like(fx2)
     fx_[:len(fx)] = fx
     
-    plot(abs(fx)/len(x_)) 
-    plot(abs(fx2)/len(x2_)) 
-    show()
+    plt.plot(abs(fx)/len(x_)) 
+    plt.plot(abs(fx2)/len(x2_)) 
+    plt.show()
     
     
-    x2r = reshape(x2, (100,-1))
+    x2r = np.reshape(x2, (100,-1))
     
-    x2r = reshape(x2, (-1,500))
+    x2r = np.reshape(x2, (-1,500))
 
     
     
@@ -1757,7 +1757,7 @@ def main():
     #shot = 175860
     #exit()
     
-    shots = loadtxt('/home/tomas/Desktop/DIII-D/carbon_database/database1.txt').T[0]
+    shots = np.loadtxt('/home/tomas/Desktop/DIII-D/carbon_database/database1.txt').T[0]
     #154858
     #sxr_ta = loader_SXR(shot, '/home/tomas/tomography/geometry/DIIID/SXR/',MDSconn, False, True)
     #tvec_ta, sxr_ta, _ = sxr_ta.get_data(0,6)
@@ -1765,7 +1765,7 @@ def main():
         os.mkdir('sxr_database')
     except:
         pass
-    for shot in arange(176979, 183000):
+    for shot in np.arange(176979, 183000):
          #import IPython
         #IPython.embed()
         t = MDSconn.get('PTDATA2("SX90PF20",%d)'%shot)
@@ -1773,7 +1773,7 @@ def main():
             print(shot, t)
         except:
             continue
-        if np.size(t.data()) < 2:
+        if plt.np.size(t.data()) < 2:
             continue
         
         
@@ -1783,45 +1783,45 @@ def main():
         tvec_pa, sxr_pa, _ = sxr_pa.get_data(1,6)
         N = len(tvec_pa)/1000
 
-        imshow(sxr_pa[:len(sxr_pa)/N*N].reshape(-1,N,sxr_pa.shape[1]).mean(1),aspect='auto',interpolation='nearest', vmin=0, origin='lower')
-        savefig('sxr_database/%d.png'%shot)
-        clf()
+        plt.imshow(sxr_pa[:len(sxr_pa)/N*N].reshape(-1,N,sxr_pa.shape[1]).mean(1),aspect='auto',interpolation='nearest', vmin=0, origin='lower')
+        plt.savefig('sxr_database/%d.png'%shot)
+        plt.clf()
         
         
     #sxr_pa = sxr_pa[:,:32]
 
     exit()
     
-    SXR = hstack((sxr_pa[:,:32],sxr_ta[:,:12]))
+    SXR = np.hstack((sxr_pa[:,:32],sxr_ta[:,:12]))
     
-    cov_mat_ = corrcoef(SXR,rowvar=False)
+    cov_mat_ = np.corrcoef(SXR,rowvar=False)
     cov_mat_[32:,:-12]
     
-    COV = copy(cov_mat_[:-12,32:])
+    COV = np.copy(cov_mat_[:-12,32:])
     COV[10:,2:] = 0
-    COV[~isfinite(COV)] = 0
-    imshow(COV, vmin=0.9,vmax=1, cmap='seismic', interpolation='nearest', origin='lower',aspect='auto');colorbar();show()
+    COV[~np.isfinite(COV)] = 0
+    plt.imshow(COV, vmin=0.9,vmax=1, cmap='seismic', interpolation='nearest', origin='lower',aspect='auto');plt.colorbar();plt.show()
     
     
-    x = array([min_fine(arange(32),-c) for c in COV.T])[:,1]
-    x_ = polyval(polyfit(arange(12),x,3),arange(12))
+    x = np.array([min_fine(np.arange(32),-c) for c in COV.T])[:,1]
+    x_ = np.polyval(np.polyfit(np.arange(12),x,3),np.arange(12))
     
-    plot(SXR.mean(0))
-    plot(x_,sxr_ta[:,:12].mean(0) )
+    plt.plot(SXR.mean(0))
+    plt.plot(x_,sxr_ta[:,:12].mean(0) )
 
     from scipy.interpolate import interp1d
     
-    y_ = interp1d(arange(32), SXR[:,:32].mean(0),kind='quadratic')(x_)
-    plot(x_,y_)
+    y_ = interp1d(np.arange(32), SXR[:,:32].mean(0),kind='quadratic')(x_)
+    plt.plot(x_,y_)
     
     
     
     eten_correction =  y_/sxr_ta[:,:12].mean(0)
     eten_correction[-1] = 1.5
-    eten_correction_ = polyval(polyfit(arange(12),eten_correction,3),arange(12))
-    plot(eten_correction)
-    plot(eten_correction_)
-    show()
+    eten_correction_ = np.polyval(np.polyfit(np.arange(12),eten_correction,3),np.arange(12))
+    plt.plot(eten_correction)
+    plt.plot(eten_correction_)
+    plt.show()
     
     
 
@@ -1829,22 +1829,22 @@ def main():
 
     
     #from matplotlib.pylab import *
-    ion()
+    plt.ion()
     
-    plot(tvec_fast.reshape(-1,25).mean(1),data_fast.reshape(-1,25,data_fast.shape[1]).mean(1)[:,9] )
+    plt.plot(tvec_fast.reshape(-1,25).mean(1),data_fast.reshape(-1,25,data_fast.shape[1]).mean(1)[:,9] )
     
-    gca().set_color_cycle(None)
+    plt.gca().set_color_cycle(None)
 
-    plot(tvec_slow, data_slow[:,9],'--')
-    xlim(5.13, 5.15)
-    show()
+    plt.plot(tvec_slow, data_slow[:,9],'--')
+    plt.xlim(5.13, 5.15)
+    plt.show()
     
     
     
     
     tvec_ = tvec_fast.reshape(-1,25).mean(1)
     sig_orig = data_fast.reshape(-1,25,data_fast.shape[1]).mean(1)[:,9]
-    sig_filt = interp(tvec_, tvec_slow, data_slow[:,9])
+    sig_filt = np.interp(tvec_, tvec_slow, data_slow[:,9])
     imin,imax = tvec_.searchsorted((4.95,4.98))
     
     from scipy import signal
@@ -1862,21 +1862,21 @@ def main():
 
 
     fsig = signal.lfilter(b,a,sig_orig)
-    plot(tvec_[imin:imax], sig_filt[imin:imax])
-    plot(tvec_[imin:imax], fsig[imin:imax],'--')
-    plot(tvec_[imin:imax], sig_orig[imin:imax])
-    xlim(4.95,4.98);show()
+    plt.plot(tvec_[imin:imax], sig_filt[imin:imax])
+    plt.plot(tvec_[imin:imax], fsig[imin:imax],'--')
+    plt.plot(tvec_[imin:imax], sig_orig[imin:imax])
+    plt.xlim(4.95,4.98);plt.show()
     
     
 
     
     
     
-    plot(tvec_,deconv,'--')
-    plot(tvec_,sig_filt)
-    plot(tvec_,sig_orig)
-    ylim(0,25e3)
-    xlim(4.95,4.98)
+    plt.plot(tvec_,deconv,'--')
+    plt.plot(tvec_,sig_filt)
+    plt.plot(tvec_,sig_orig)
+    plt.ylim(0,25e3)
+    plt.xlim(4.95,4.98)
     
     
     
@@ -1884,23 +1884,23 @@ def main():
 
     
     #plot(fx)
-    plot(np.fft.irfft(np.fft.rfft(sig_filt)/np.fft.rfft(fx)))
+    plt.plot(plt.np.fft.irfft(plt.np.fft.rfft(sig_filt)/plt.np.fft.rfft(fx)))
         
 
     X,Y = signal.deconvolve(sig_filt, fx)
             
         
     
-    plot(abs(np.fft.rfft(sig_orig[imin:imax])))
-    plot(abs(np.fft.rfft(sig_filt[imin:imax])))
+    plt.plot(abs(plt.np.fft.rfft(sig_orig[imin:imax])))
+    plt.plot(abs(plt.np.fft.rfft(sig_filt[imin:imax])))
     
     
     
     
 
-    ffilt =np.fft.rfft(sig_filt[imin:imax])/np.fft.rfft(sig_orig[imin:imax])
+    ffilt =plt.np.fft.rfft(sig_filt[imin:imax])/plt.np.fft.rfft(sig_orig[imin:imax])
     ffilt[10:] = 0
-    plot(np.fft.irfft(ffilt))
+    plt.plot(plt.np.fft.irfft(ffilt))
     
     #MDSserver = self.MDSconn.hostspec
     

@@ -11,7 +11,7 @@ from matplotlib.pyplot import *
 from numpy.matlib import repmat
 from ...tokamak import Tokamak
 from ... import config
-from ...shared_modules import blur_image, nanmedian
+from ...shared_modules import blur_image  # nanmedian comes from numpy
 
 class ToreSupra(Tokamak):
 

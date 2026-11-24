@@ -144,7 +144,7 @@ def sawtooths_detection(input_data):
     scaling = array([tokamak.dx,tokamak.dy])
     offset = array([tokamak.xmin,tokamak.ymin])+scaling/2
     
-    from scipy.ndimage.interpolation import map_coordinates
+    from scipy.ndimage import map_coordinates
 
     
     gres = G.reshape(tokamak.ny,tokamak.nx, tsteps, order='F')

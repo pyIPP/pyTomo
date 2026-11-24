@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from numpy import *
+import matplotlib
 from scipy.interpolate import RectBivariateSpline, interp1d
 from matplotlib.colors import LogNorm,NoNorm
 import os, sys, copy
@@ -65,7 +66,7 @@ def imp_analysis( input_data):
     scaling = array([tokamak.dx,tokamak.dy])
     offset = array([tokamak.xmin,tokamak.ymin])#+scaling/2
     
-    from scipy.ndimage.interpolation import map_coordinates    
+    from scipy.ndimage import map_coordinates    
 
     for i in range(nt): 
         coords = c_[LFS_R[i].ravel(),LFS_z[i].ravel()].T
@@ -359,7 +360,7 @@ def imp_analysis( input_data):
         vmax = 1
         levels=linspace(0,vmax,15)
     import copy as cp
-    cmap = cp.copy(plt.cm.get_cmap("jet"))
+    cmap = cp.copy(matplotlib.colormaps["jet"])
     cmap.set_over('brown')
     cmap.set_under('black')    
         
@@ -382,7 +383,7 @@ def imp_analysis( input_data):
     vmax = nanmax(fsa_emiss,1)
     vmax = mquantiles(vmax,0.95)[0]
     levels=linspace(0,vmax,15)
-    #cmap = copy.copy(plt.cm.get_cmap("jet"))
+    #cmap = copy.copy(matplotlib.colormaps["jet"])
     #cmap.set_over('brown')
     CM = ax[1].contourf(tvec, rho, fsa_emiss.T*fact,levels*fact, vmin=0,vmax=vmax*fact, extend='max',cmap=cmap)
     cax,kw = colorbar.make_axes(ax[1])

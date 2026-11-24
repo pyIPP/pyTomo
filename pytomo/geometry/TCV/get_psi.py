@@ -87,8 +87,8 @@ def get_psi(connect, shotnumber,liuqenumber=None,return_contours=False):
 
 def GetRhoContours(Rmesh,Zmesh, Psi,psi_axis,lcfs, N):
     import matplotlib._cntr as cntr
-    from scipy.ndimage.interpolation import map_coordinates
-    from scipy.ndimage.interpolation import zoom
+    from scipy.ndimage import map_coordinates
+    from scipy.ndimage import zoom
 
     contours = []
     #tin = np.atleast_1d(tin)

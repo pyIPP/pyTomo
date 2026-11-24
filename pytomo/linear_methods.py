@@ -4,14 +4,15 @@
 #from matplotlib.pylab import *
 
 import numpy as np
-from matplotlib.pyplot import *
+import matplotlib.pyplot as plt
 import time
 from scipy import sparse
 from .shared_modules import prepare_inputs, create_derivation_matrix, make_postprocessing, debug
 import scipy.ndimage as ndi
 from scipy.optimize import nnls, _nnls
 from .annulus import get_bd_mat
-from sksparse.cholmod import  cholesky,CholmodWarning,CholmodError
+from sksparse.cholmod import cholesky  # only used by the obsolete solvers (to be removed)
+from .sparse_cholesky import ldl, to_dense, CholmodError, CholmodWarning
 #from scikits.sparse.cholmod import cholesky,CholmodWarning,CholmodError
 from  scipy.linalg import qr, qr_multiply, solve_triangular, cholesky_banded,eigh,svd, inv,lstsq,pinv
 from scipy.sparse.linalg import svds, eigsh
@@ -366,11 +367,11 @@ def PresolveQR(L,C, nx,ny,ndets,BdMat):
     #factor = cholesky(C) #C must by  regular
 
     try:
-        factor = cholesky(C, mode = 'simplicial')
-    except:
+        factor = ldl(C)
+    except (CholmodError, CholmodWarning):
         #solve case when B is singular
         C_trace = C.diagonal().sum()
-        factor = cholesky(C,C_trace*1e-18, mode = 'simplicial')
+        factor = ldl(C, C_trace*1e-18)
     
     D = factor.D()
     
@@ -383,8 +384,7 @@ def PresolveQR(L,C, nx,ny,ndets,BdMat):
     #LC =  np.dot(vt.T,(ut*s[:,None])).T    #L*C^-1  slow 
     
     L = L.tocsr()
-    LC = invsqrtD*factor.solve_L(factor.apply_P(L.T))
-    LC = LC.toarray()
+    LC = to_dense(invsqrtD @ factor.solve_L(factor.apply_P(L.T)))
 
     zero_ind = np.all(LC==0,axis=1)
     LC = LC[~zero_ind,:]
@@ -432,7 +432,7 @@ def PresolveQR(L,C, nx,ny,ndets,BdMat):
     V[~zero_ind,:] = np.dot(U/D[:,None],LC.T).T  #10ms
     
      #theoreticaly this integration step can be applied later on the final solution, it will be  faster( but just about just 20% on total)
-    V = factor.apply_Pt(factor.solve_Lt(invsqrtD*V)).T 
+    V = factor.apply_Pt(factor.solve_Lt(invsqrtD @ V)).T
     U = U.T
     
     #plot(D)
@@ -722,10 +722,10 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
     T = time.time()
     try:
         #assert ~singular, 'singular matrix'
-        F = cholesky(B, mode = 'simplicial') #5ms!!
-    except:# CholmodError, CholmodWarning:
+        F = ldl(B) #5ms!!
+    except (CholmodError, CholmodWarning):
         #solve case when B is singular
-        F = cholesky(B,B_trace*1e-18, mode = 'simplicial')
+        F = ldl(B, B_trace*1e-18)
         #pass
         
         
@@ -743,7 +743,7 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
     
     
     #invsqrtD = sparse.spdiags(1/np.sqrt(D),(0,),len(D),len(D))
-    zero_ins = np.array(LPK.sum(1)==0).ravel()|(F.D()<=0)
+    zero_ins = np.asarray(LPK.sum(1)==0).ravel()|(F.D()<=0)
     #pcolormesh(F.apply_Pt(double(zero_ins)).reshape(ny,nx,order='F')+BdMat.reshape(ny,nx,order='F'))
     #figure()
     #pcolormesh(BdMat.reshape(ny,nx,order='F'))
@@ -753,8 +753,7 @@ def PresolveSVD3(K,B,nx,ny, ndets,BdMat):
     #IPython.embed()
         
     
-    if sparse.issparse(LPK): 
-        LPK = LPK.toarray() #2.5ms
+    LPK = to_dense(LPK) #2.5ms
         
     LPK = LPK[~zero_ins].T  #.5ms
     #LPK_ = (invsqrtD*LPK_).T
@@ -2126,19 +2125,19 @@ def ForcePositivity2(E,W,g,V,D,prod,resid,ndets,BdMat,chi2,tokamak):
             #corr = np.dot(single(w*delta_prod/D), V) #.5ms
             
             image2.ravel(order='F')[list(active_set)] = np.nan
-            figure()
+            plt.figure()
             #suptitle(str(i)+'  '+str(k))
-            subplot(121)
-            imshow( image2.reshape(ny,nx,order='F'),origin='lower', interpolation='nearest', vmin=iE.min(), vmax=None)
-            colorbar()
-            contour(image2,0,colors='w',origin='lower');
-            subplot(122)
-            imshow( image.reshape(ny,nx,order='F'),origin='lower', interpolation='nearest', vmin=iE.min(), vmax=None)
-            colorbar()
-            contour(image,0,colors='w',origin='lower');
+            plt.subplot(121)
+            plt.imshow( image2.reshape(ny,nx,order='F'),origin='lower', interpolation='nearest', vmin=iE.min(), vmax=None)
+            plt.colorbar()
+            plt.contour(image2,0,colors='w',origin='lower');
+            plt.subplot(122)
+            plt.imshow( image.reshape(ny,nx,order='F'),origin='lower', interpolation='nearest', vmin=iE.min(), vmax=None)
+            plt.colorbar()
+            plt.contour(image,0,colors='w',origin='lower');
 
 
-            show()
+            plt.show()
 
 
 
@@ -2952,7 +2951,7 @@ def plot_tomo_error(tvec, E, V,norm,w,D,chi2 ):
     from matplotlib.ticker import MaxNLocator
 
     from make_graphs import my_cmap_
-    f,axis = subplots(1,3, sharex=True,sharey=True)
+    f,axis = plt.subplots(1,3, sharex=True,sharey=True)
     E[E<0] = 0
     f.set_size_inches(10,4)
     
@@ -3019,9 +3018,9 @@ def plot_tomo_error(tvec, E, V,norm,w,D,chi2 ):
     axis[1].set_title('Relative variance')
     axis[2].set_title('Correlation')
     
-    c1=colorbar(img1,ax=axis[0])
-    c2=colorbar(img2,ax=axis[1])
-    c3=colorbar(img3,ax=axis[2])
+    c1=plt.colorbar(img1,ax=axis[0])
+    c2=plt.colorbar(img2,ax=axis[1])
+    c3=plt.colorbar(img3,ax=axis[2])
     tick_locator = MaxNLocator(nbins=5)
     c1.locator = tick_locator
     c1.update_ticks()
@@ -3029,7 +3028,7 @@ def plot_tomo_error(tvec, E, V,norm,w,D,chi2 ):
     #c2.update_ticks()
     c3.locator = tick_locator
     c3.update_ticks()
-    show()
+    plt.show()
     
     
     
@@ -3049,7 +3048,7 @@ def PlotBaseVectors2(V, nx,ny):
     #from matplotlib.pyplot import *
     
 
-    f,ax = subplots(5,15, sharex=True, sharey=True)
+    f,ax = plt.subplots(5,15, sharex=True, sharey=True)
     
     ax = ax.flatten()
 
@@ -3063,7 +3062,7 @@ def PlotBaseVectors2(V, nx,ny):
     ax[0].xaxis.set_major_formatter( NullFormatter() )
     #tight_layout()
 
-    show()
+    plt.show()
 
         
     
@@ -3082,14 +3081,14 @@ def PlotBaseVectors(V, nx,ny,Nmax=np.inf):
         vmax = np.amax(np.abs(solution))
         #vmin = min(vmin,-vmax)
         #print vmin, vmax
-        imshow(solution, origin='lower', vmin = -vmax, vmax = vmax)
-        colorbar()
+        plt.imshow(solution, origin='lower', vmin = -vmax, vmax = vmax)
+        plt.colorbar()
         #im.set_clim((vmin,vmax))
 
         #draw()
-        show()
+        plt.show()
 
-    fig = figure()   
+    fig = plt.figure()   
     fig.show()
 
     
@@ -3111,9 +3110,9 @@ def PlotBaseVectors(V, nx,ny,Nmax=np.inf):
         im.set_data(solution )
         im.set_clim((vmin,vmax))
 
-        draw()
+        plt.draw()
         #show()
-        pause(.1)
+        plt.pause(.1)
         #close()
         
 

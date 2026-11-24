@@ -4,7 +4,6 @@
 
 import numpy as np
 import sys,os
-from matplotlib.pyplot import *
 from ...tokamak import Tokamak
 from collections import OrderedDict
 from ... import config
@@ -374,7 +373,8 @@ np.sqrt(max(data))
         mean_data = np.nanmean(data[ind_t],axis=0)
 
        #include also "nonstatistical noise"  by min_error and sigma
-        error =  np.hypot(error, np.single(mean_data*self.sigma),out=error)
+        # new array: error may be a view of the loader cache, which must not be modified
+        error = np.hypot(error, np.single(mean_data*self.sigma))
         error += np.abs(mean_data)*self.min_error
 
         print('loading time: %.1f s'%( time.time()-t))
@@ -742,7 +742,7 @@ np.sqrt(max(data))
         coeff = 1.89e-28 * (n_e*1e-6)**2 * Zeff * gff / np.sqrt(T_e)
 
         vb_wl = np.outer(coeff , transmission/wavelength**2) * np.exp(-hc / np.outer(T_e,wavelength))
-        vb_wl_int = integrate.simps(vb_wl, x=wavelength, axis=1)
+        vb_wl_int = integrate.simpson(vb_wl, x=wavelength, axis=1)
         
         return vb_wl_int*1e6
         

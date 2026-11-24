@@ -26,7 +26,7 @@ def ReadTomo(path, diag, shot, time,geometry_path):
 
     E = reshape(E, (nx,ny)).T
     ndets  = int(f.readline())
-    data,retro,err,fact = array([float_(f.readline().split()) for i in range(ndets)]).T
+    data,retro,err,fact = array([float64(f.readline().split()) for i in range(ndets)]).T
     err[err<0] = inf
     err*= data
     r1, r2 = f.readline().split()
@@ -41,7 +41,7 @@ def ReadTomo(path, diag, shot, time,geometry_path):
     R_ = [float(f.readline()) for i in range(nx)]
     z_ = [float(f.readline()) for i in range(ny)]
 
-    psi,par,per = array([float_(f.readline().split()) for i in range(ny*nx)]).T
+    psi,par,per = array([float64(f.readline().split()) for i in range(ny*nx)]).T
     psi = reshape(psi, (nx,ny))
     par = reshape(par, (nx,ny))
     per = reshape(per, (nx,ny))
@@ -49,11 +49,11 @@ def ReadTomo(path, diag, shot, time,geometry_path):
     ed2 = f.readline()
     ndets = int(f.readline())
 
-    r1,z1,psi,d,theta,f,_,_,_,_,data_,gain,used,fact_ = array([float_(f.readline().split()) for i in range(ndets)]).T
+    r1,z1,psi,d,theta,f,_,_,_,_,data_,gain,used,fact_ = array([float64(f.readline().split()) for i in range(ndets)]).T
 
 
     border = loadtxt(geometry_path+'/border.txt')
-    from scipy.ndimage.interpolation import zoom
+    from scipy.ndimage import zoom
 
     #zoom to reduce discretisation error when the radiation outside of the borders is set to zero
     n = 10
@@ -382,7 +382,7 @@ class loader_BOLO():
    
         def apply_correction(cam,channels,corr):
             if cam in self.cam_ind:
-                ind =  in1d(self.channels[cam], channels)
+                ind = isin(self.channels[cam], channels)
                 data_all[:,self.cam_ind[cam][ind]]*= corr
                 data_err_all[:,self.cam_ind[cam][ind]]*= corr
 

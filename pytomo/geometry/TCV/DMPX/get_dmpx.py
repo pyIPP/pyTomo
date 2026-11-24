@@ -164,7 +164,7 @@ def mpxdata(connect, shot,action,**kwarg):
     
     
     abso.material= ['Al','Be','Be','nothing']
-    abso.thickness=r_[308,550,125,NaN]*1e-6
+    abso.thickness=r_[308,550,125,nan]*1e-6
 
 
     mpx = mpx_()
@@ -422,7 +422,7 @@ def mpxdata(connect, shot,action,**kwarg):
                         mpx.top.tvec=(mpx.top.tvec+0.04)*0.9697-0.04
 
                     l_t=len(mpx.top.tvec)
-                    #tmpdata=NaN*zeros(l_t,length(mpx.top.signal.dim{2}))
+                    #tmpdata=nan*zeros(l_t,length(mpx.top.signal.dim{2}))
                     tmpdata = empty((l_t, len(mpx.top.ch)),dtype='float32')
                     
                     ch = ['%.2d'%k for k in r_[1:33]]
@@ -690,7 +690,7 @@ def mpxdata(connect, shot,action,**kwarg):
   
                     # Interpolation to get the proper gains wrt to the high tension value
                     mpx.top.gainC[:]=[interp(mpx.top.voltage, V,log(C[:,jj])) for jj in range(definitions.top_nchords)]
-                    mpx.top.gainR[:]=NaN
+                    mpx.top.gainR[:]=nan
                 if I == 6:
                     #
                     # In this case, the different behaviour of the wires is contained in the matrix of calibration coefficients.
@@ -783,7 +783,7 @@ def mpxdata(connect, shot,action,**kwarg):
                     for jj in arange(definitions.bot_nchords):
                         mpx.bot.gainC[jj] = exp(interp(mpx.bot.voltage, V,log(C[:,jj+definitions.top_nchords])))
                     
-                    mpx.bot.gainR[:]=NaN
+                    mpx.bot.gainR[:]=nan
                 if I == 4:
                     #
                     # In this case, the different behaviour of the wires is contained in the matrix of calibration coefficients.
@@ -808,7 +808,7 @@ def mpxdata(connect, shot,action,**kwarg):
                     #tmp=interpos(13,V_bot,log(C_bot_av),[mpx.bot.voltage mpx.bot.voltage],1e6)
                     #mpx.bot.gainC(:)=exp(tmp(1))    
                     mpx.bot.gainC[:] = exp(interp(mpx.bot.voltage, V_bot,log(C_bot_av)))
-                    mpx.bot.gainR[:]=NaN
+                    mpx.bot.gainR[:]=nan
                 
             calib_coeff_t = asarray(calib_coeff_t)
             calib_coeff_b = asarray(calib_coeff_b)
@@ -958,8 +958,8 @@ def mpxdata(connect, shot,action,**kwarg):
 
             if shot<26765:
                 print('No mobile absorber holder for shot<26765')
-                mpx.top.filters['mobile_holder_pos']=NaN
-                mpx.bot.filters['mobile_holder_pos']=NaN
+                mpx.top.filters['mobile_holder_pos']=nan
+                mpx.bot.filters['mobile_holder_pos']=nan
                 I_pos=4
             else:
                 if 'pos' in kwarg and pos in [1,2,3,4]:
